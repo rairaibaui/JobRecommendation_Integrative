@@ -339,18 +339,18 @@
       <i class="fas fa-home sidebar-btn-icon"></i>
       Dashboard
     </a>
-    <a href="{{ route('recommendation') }}" class="sidebar-btn" style="text-decoration: none;">
+    <a href="{{ route('recommendation') }}" class="sidebar-btn {{ request()->routeIs('recommendation') ? 'active' : '' }}" style="text-decoration: none;">
       <i class="fas fa-suitcase sidebar-btn-icon"></i>
       Recommendation
     </a>
-    <a href="{{ route('bookmarks') }}" class="sidebar-btn" style="text-decoration: none;">
+    <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}" style="text-decoration: none;">
       <i class="fas fa-bookmark sidebar-btn-icon"></i>
       Bookmarks
     </a>
-    <div class="sidebar-btn">
+    <a href="{{ route('settings') }}" class="sidebar-btn {{ request()->routeIs('settings') ? 'active' : '' }}" style="text-decoration: none;">
       <i class="fas fa-cog sidebar-btn-icon"></i>
       Settings
-    </div>
+    </a>
     <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;">
       @csrf
       <button type="submit" class="sidebar-btn" style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">

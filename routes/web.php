@@ -27,5 +27,8 @@ Route::get('/recommendation', [DashboardController::class, 'recommendation'])->n
 // 🔹 Bookmarks (requires authentication)
 Route::get('/bookmarks', [DashboardController::class, 'bookmarks'])->name('bookmarks')->middleware('auth');
 
+// 🔹 Settings (requires authentication)
+Route::get('/settings', [DashboardController::class, 'settings'])->name('settings')->middleware('auth');
+
 // 🔹 Logout
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

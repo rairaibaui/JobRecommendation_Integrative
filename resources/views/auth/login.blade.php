@@ -157,6 +157,18 @@
         </div>
     @endif
 
+    <!-- Error Messages -->
+    @if($errors->has('email'))
+        <div style="color: red; margin-bottom: 15px; text-align: center;">
+            {{ $errors->first('email') }}
+        </div>
+    @endif
+    @if($errors->has('password'))
+        <div style="color: red; margin-bottom: 15px; text-align: center;">
+            {{ $errors->first('password') }}
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login') }}">
         @csrf
 

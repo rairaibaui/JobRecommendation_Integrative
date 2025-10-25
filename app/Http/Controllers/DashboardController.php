@@ -73,4 +73,9 @@ class DashboardController extends Controller
     'bookmarkedJobs' => collect($bookmarkedJobs)
 ]);
     }
+
+    public function settings()
+    {
+        return view('settings');
+    }
 }
