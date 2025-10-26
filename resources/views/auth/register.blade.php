@@ -160,19 +160,9 @@
 </head>
 <body>
     <div class="form-container">
-        <div class="header">
-            <h2>CREATE ACCOUNT?</h2>
-            <div class="radio-group">
-                <div class="radio-option">
-                    <input type="radio" id="jobseeker" name="role" checked>
-                    <label for="jobseeker">Job Seeker</label>
-                </div>
-                <div class="radio-option">
-                    <input type="radio" id="employer" name="role">
-                    <label for="employer">Employer</label>
-                </div>
+            <div class="header">
+                <h2>CREATE ACCOUNT?</h2>
             </div>
-        </div>
 
         <form action="{{ route('register.submit') }}" method="POST">
 
@@ -195,20 +185,19 @@
             </div>
 
             <div class="form-row">
-            <div class="form-group">
-                <label for="dob">Date of Birth</label>
-                <input type="date" name="dob" id="dob" required>
-            </div>
-
                 <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="text" name="phone" id="phone" required>
+                    <label for="date_of_birth">Date of Birth</label>
+                    <input type="date" name="date_of_birth" id="date_of_birth" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">Phone Number</label>
+                    <input type="text" name="phone_number" id="phone_number" required>
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="education">Education Level</label>
-                <input type="text" name="education" id="education" required>
+                <label for="education_level">Education Level</label>
+                <input type="text" name="education_level" id="education_level" required>
             </div>
 
             <div class="form-group">
@@ -217,67 +206,74 @@
             </div>
 
             <div class="form-group">
-                <label for="experience">Years of Experience</label>
-                <input type="text" name="experience" id="experience" required>
+                <label for="years_of_experience">Years of Experience</label>
+                <input type="text" name="years_of_experience" id="years_of_experience" required>
             </div>
 
-           <div class="form-group" style="position: relative;">
-    <label for="location">Location (Brgy in Mandaluyong)</label>
-    <div style="position: relative; display: flex; align-items: center;">
-        <select name="location" id="location" required 
-            style="
-                width: 100%;
-                height: 38px;
-                border-radius: 8px;
-                border: 1px solid rgba(0, 0, 0, 0.34);
-                background: #D3D3D3;
-                padding: 0 35px 0 10px;
-                box-sizing: border-box;
-                font-size: 13px;
-                font-family: 'Roboto', sans-serif;
-                color: #000;
-                appearance: none;
-                cursor: pointer;
-            ">
-            <option value="">Select your Location</option>
-            <option value="Addition Hills">Addition Hills</option>
-            <option value="Bagong Silang">Bagong Silang</option>
-            <option value="Barangka Drive">Barangka Drive</option>
-            <option value="Barangka Ibaba">Barangka Ibaba</option>
-            <option value="Barangka Ilaya">Barangka Ilaya</option>
-            <option value="Barangka Itaas">Barangka Itaas</option>
-            <option value="Buayang Bato">Buayang Bato</option>
-            <option value="Burol">Burol</option>
-            <option value="Daang Bakal">Daang Bakal</option>
-            <option value="Hagdang Bato Itaas">Hagdang Bato Itaas</option>
-            <option value="Hagdang Bato Libis">Hagdang Bato Libis</option>
-            <option value="Harapin ang Bukas">Harapin ang Bukas</option>
-            <option value="Highway Hills">Highway Hills</option>
-            <option value="Mabini–J. Rizal">Mabini–J. Rizal</option>
-            <option value="Malamig">Malamig</option>
-            <option value="Mauway">Mauway</option>
-            <option value="Namayan">Namayan</option>
-            <option value="New Zañiga">New Zañiga</option>
-            <option value="Old Zañiga">Old Zañiga</option>
-            <option value="Pag-Asa">Pag-Asa</option>
-            <option value="Plainview">Plainview</option>
-            <option value="Pleasant Hills">Pleasant Hills</option>
-            <option value="Poblacion">Poblacion</option>
-            <option value="San Jose">San Jose</option>
-            <option value="Vergara">Vergara</option>
-            <option value="Wack-Wack Greenhills">Wack-Wack Greenhills</option>
-        </select>
+            <div class="form-group" style="position: relative;">
+                <label for="location">Location (Brgy in Mandaluyong)</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <select name="location" id="location" required 
+                        style="
+                            width: 100%;
+                            height: 38px;
+                            border-radius: 8px;
+                            border: 1px solid rgba(0, 0, 0, 0.34);
+                            background: #D3D3D3;
+                            padding: 0 35px 0 10px;
+                            box-sizing: border-box;
+                            font-size: 13px;
+                            font-family: 'Roboto', sans-serif;
+                            color: #000;
+                            appearance: none;
+                            cursor: pointer;
+                        ">
+                        <option value="">Select your Location</option>
+                        <option value="Addition Hills">Addition Hills</option>
+                        <option value="Bagong Silang">Bagong Silang</option>
+                        <option value="Barangka Drive">Barangka Drive</option>
+                        <option value="Barangka Ibaba">Barangka Ibaba</option>
+                        <option value="Barangka Ilaya">Barangka Ilaya</option>
+                        <option value="Barangka Itaas">Barangka Itaas</option>
+                        <option value="Buayang Bato">Buayang Bato</option>
+                        <option value="Burol">Burol</option>
+                        <option value="Daang Bakal">Daang Bakal</option>
+                        <option value="Hagdang Bato Itaas">Hagdang Bato Itaas</option>
+                        <option value="Hagdang Bato Libis">Hagdang Bato Libis</option>
+                        <option value="Harapin ang Bukas">Harapin ang Bukas</option>
+                        <option value="Highway Hills">Highway Hills</option>
+                        <option value="Mabini–J. Rizal">Mabini–J. Rizal</option>
+                        <option value="Malamig">Malamig</option>
+                        <option value="Mauway">Mauway</option>
+                        <option value="Namayan">Namayan</option>
+                        <option value="New Zañiga">New Zañiga</option>
+                        <option value="Old Zañiga">Old Zañiga</option>
+                        <option value="Pag-Asa">Pag-Asa</option>
+                        <option value="Plainview">Plainview</option>
+                        <option value="Pleasant Hills">Pleasant Hills</option>
+                        <option value="Poblacion">Poblacion</option>
+                        <option value="San Jose">San Jose</option>
+                        <option value="Vergara">Vergara</option>
+                        <option value="Wack-Wack Greenhills">Wack-Wack Greenhills</option>
+                    </select>
+                    <!-- ▼ Location Icon -->
+                    <span style="
+                        position: absolute;
+                        right: 10px;
+                        pointer-events: none;
+                        color: #555;
+                        font-size: 16px;
+                    ">▼</span>
+                </div>
+            </div>
 
-        <!-- ▼ Location Icon -->
-        <span style="
-            position: absolute;
-            right: 10px;
-            pointer-events: none;
-            color: #555;
-            font-size: 16px;
-        ">▼</span>
-    </div>
- </div>
+            <div class="form-group">
+                <label for="user_type">Account Type</label>
+                <select name="user_type" id="user_type" required>
+                    <option value="job_seeker">Job Seeker</option>
+                    <option value="employer">Employer</option>
+                </select>
+            </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
@@ -290,8 +286,8 @@
             </div>
 
             <div class="terms">
-                <input type="checkbox" required>
-                <label>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+                <input type="checkbox" name="terms" id="terms" required>
+                <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
             </div>
 
             <button class="create-btn" type="submit">Create Account</button>
