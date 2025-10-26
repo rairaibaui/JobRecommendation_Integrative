@@ -156,7 +156,66 @@
         .bottom-text a:hover {
             background-color: #f0f0f0;
         }
+
+        .req-item {
+            margin: 2px 0;
+        }
+
+        .req-item.valid {
+            color: #28a745;
+        }
+
+        .req-item.valid::before {
+            content: "✅ ";
+        }
+
+        .req-item.invalid {
+            color: #dc3545;
+        }
+
+        .req-item.invalid::before {
+            content: "❌ ";
+        }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const requirements = {
+                length: document.getElementById('req-length'),
+                uppercase: document.getElementById('req-uppercase'),
+                lowercase: document.getElementById('req-lowercase'),
+                number: document.getElementById('req-number'),
+                symbol: document.getElementById('req-symbol')
+            };
+
+            function validatePassword() {
+                const password = passwordInput.value;
+
+                // Check length
+                const hasLength = password.length >= 8;
+                requirements.length.className = hasLength ? 'req-item valid' : 'req-item invalid';
+
+                // Check uppercase
+                const hasUppercase = /[A-Z]/.test(password);
+                requirements.uppercase.className = hasUppercase ? 'req-item valid' : 'req-item invalid';
+
+                // Check lowercase
+                const hasLowercase = /[a-z]/.test(password);
+                requirements.lowercase.className = hasLowercase ? 'req-item valid' : 'req-item invalid';
+
+                // Check number
+                const hasNumber = /\d/.test(password);
+                requirements.number.className = hasNumber ? 'req-item valid' : 'req-item invalid';
+
+                // Check symbol
+                const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+                requirements.symbol.className = hasSymbol ? 'req-item valid' : 'req-item invalid';
+            }
+
+            passwordInput.addEventListener('input', validatePassword);
+            passwordInput.addEventListener('keyup', validatePassword);
+        });
+    </script>
 </head>
 <body>
     <div class="form-container">
@@ -278,6 +337,13 @@
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password" required>
+                <div id="password-requirements" style="margin-top: 5px; font-size: 12px; color: #666;">
+                    <div id="req-length" class="req-item">❌ At least 8 characters</div>
+                    <div id="req-uppercase" class="req-item">❌ One uppercase letter</div>
+                    <div id="req-lowercase" class="req-item">❌ One lowercase letter</div>
+                    <div id="req-number" class="req-item">❌ One number</div>
+                    <div id="req-symbol" class="req-item">❌ One special character</div>
+                </div>
             </div>
 
             <div class="form-group">
