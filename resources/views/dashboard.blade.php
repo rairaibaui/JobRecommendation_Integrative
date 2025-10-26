@@ -367,7 +367,7 @@
       Job Portal - Mandaluyong
     </div>
 
-    <div class="welcome">Welcome, Raiza!</div>
+    <div class="welcome">Welcome!</div>
 
     <!-- Recommended & Bookmarked Jobs -->
     <div class="cards">
