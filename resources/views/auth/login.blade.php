@@ -173,7 +173,7 @@
         @csrf
 
         <label for="email">Email:</label>
-        <input type="email" name="email" id="email" placeholder="ex. juandelacruz@gmail.com" value="{{ old('email') }}" required autofocus>
+        <input type="email" name="email" id="email" placeholder="ex. juandelacruz@gmail.com" value="{{ session('email') ?? old('email') }}" required autofocus>
 
         <label for="password">Password:</label>
         <input type="password" name="password" id="password" placeholder="Enter your password" required>

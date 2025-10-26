@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User; 
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password; 
 
 class RegisterController extends Controller
@@ -66,7 +67,10 @@ class RegisterController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // 3. Redirection (Redirection sa Login Page)
-        return redirect()->route('login')->with('success', 'Account created successfully! Please sign in using your new credentials.'); 
+        // 3. Redirection to login with credentials
+        return redirect()->route('login')
+            ->with('success', 'Account created successfully! Please login to continue.')
+            ->with('email', $request->email)
+            ->with('registered', true);
     }
 }
