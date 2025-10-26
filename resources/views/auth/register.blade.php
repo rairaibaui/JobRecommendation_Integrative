@@ -213,7 +213,7 @@
             <div class="form-group" style="position: relative;">
                 <label for="location">Location (Brgy in Mandaluyong)</label>
                 <div style="position: relative; display: flex; align-items: center;">
-                    <select name="location" id="location" required 
+                    <select name="location" id="location" required
                         style="
                             width: 100%;
                             height: 38px;
@@ -270,7 +270,7 @@
             <div class="form-group">
                 <label for="user_type">Account Type</label>
                 <select name="user_type" id="user_type" required>
-                    <option value="job_seeker">Job Seeker</option>
+                    <option value="job_seeker" selected>Job Seeker</option>
                     <option value="employer">Employer</option>
                 </select>
             </div>
