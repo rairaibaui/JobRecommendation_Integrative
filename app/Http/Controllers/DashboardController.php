@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -77,5 +79,38 @@ class DashboardController extends Controller
     public function settings()
     {
         return view('settings');
+    }
+
+    public function changePassword()
+    {
+        return view('change-password');
+    }
+
+    public function clearBookmarks(Request $request)
+    {
+        // Logic to clear bookmarks - assuming bookmarks are stored in session or database
+        // For now, we'll clear session bookmarks
+        $request->session()->forget('bookmarkedJobs');
+
+        return redirect()->route('settings')->with('success', 'All bookmarks cleared successfully!');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return redirect()->route('settings')->withErrors(['current_password' => 'The current password is incorrect.']);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return redirect()->route('settings')->with('success', 'Password changed successfully!');
     }
 }

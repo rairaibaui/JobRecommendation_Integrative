@@ -30,5 +30,12 @@ Route::get('/bookmarks', [DashboardController::class, 'bookmarks'])->name('bookm
 // 🔹 Settings (requires authentication)
 Route::get('/settings', [DashboardController::class, 'settings'])->name('settings')->middleware('auth');
 
+// 🔹 Clear Bookmarks (requires authentication)
+Route::post('/clear-bookmarks', [DashboardController::class, 'clearBookmarks'])->name('clear.bookmarks')->middleware('auth');
+
+// 🔹 Change Password (requires authentication)
+Route::get('/change-password', [DashboardController::class, 'changePassword'])->name('change.password')->middleware('auth');
+Route::post('/change-password', [DashboardController::class, 'updatePassword'])->name('change.password.submit')->middleware('auth');
+
 // 🔹 Logout
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
