@@ -150,20 +150,35 @@
                         <input type="text" name="phone_number" value="{{ Auth::user()->phone_number ?? '' }}">
                     </div>
                     <div style="margin-bottom:15px;">
+<<<<<<< HEAD
+=======
+                        <label>Location</label>
+                        <input type="text" name="location" value="{{ Auth::user()->location ?? '' }}">
+                    </div>
+                    <div style="margin-bottom:15px;">
+>>>>>>> da98f6ea400f8836057e05ad81e536a16f62852f
                         <label>Education Level</label>
                         <input type="text" name="education_level" value="{{ Auth::user()->education_level ?? '' }}">
                     </div>
                     <div style="margin-bottom:15px;">
+<<<<<<< HEAD
                         <label>Skills (Comma separated)</label>
+=======
+                        <label>Skills</label>
+>>>>>>> da98f6ea400f8836057e05ad81e536a16f62852f
                         <input type="text" name="skills" value="{{ Auth::user()->skills ?? '' }}">
                     </div>
                     <div style="margin-bottom:15px;">
                         <label>Years of Experience</label>
+<<<<<<< HEAD
                         <input type="number" name="years_of_experience" value="{{ Auth::user()->years_of_experience ?? '' }}">
                     </div>
                     <div style="margin-bottom:15px;">
                         <label>Location (Brgy. in Mandaluyong City)</label>
                         <input type="text" name="location" value="{{ Auth::user()->location ?? '' }}">
+=======
+                        <input type="number" name="years_of_experience" value="{{ Auth::user()->years_of_experience ?? '' }}" min="0">
+>>>>>>> da98f6ea400f8836057e05ad81e536a16f62852f
                     </div>
                     <div style="margin-bottom:15px;">
                         <label>Profile Picture</label>
@@ -186,6 +201,7 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 <!-- JS -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -199,6 +215,21 @@ document.addEventListener('DOMContentLoaded', function () {
             tab.classList.add('active');
             accountCard.style.display = i === 0 ? 'block' : 'none';
             profileCard.style.display = i === 1 ? 'block' : 'none';
+=======
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('.tabs .tab');
+        const accountCard = document.querySelector('.account-card');
+        const profileCard = document.querySelector('.profile-card');
+
+        tabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                accountCard.style.display = i === 0 ? 'block' : 'none';
+                profileCard.style.display = i === 1 ? 'block' : 'none';
+            });
+>>>>>>> da98f6ea400f8836057e05ad81e536a16f62852f
         });
     });
 
