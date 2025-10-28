@@ -140,6 +140,202 @@
 
 
 
+<div id="deactivateModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+        <h2>Deactivate Account</h2>
+        <button onclick="closeDeactivateModal()" class="close-btn">&times;</button>
+        <p style="color:#666; margin:15px 0; line-height:1.5;">Are you sure you want to deactivate your account? You can reactivate later by logging in.</p>
+        <form method="POST" action="{{ route('profile.deactivate') }}">
+            @csrf
+            <div class="button-group">
+                <button type="button" onclick="closeDeactivateModal()" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-danger">Deactivate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<style>
+/* Modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 10px;
+    padding: 25px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-content h2 {
+    color: #1E3A5F;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.modal form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modal label {
+    font-weight: 600;
+    color: #1E3A5F;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.modal input[type="password"],
+.modal input[type="email"],
+.modal input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #E0E6EB;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.modal input[type="password"]:focus,
+.modal input[type="email"]:focus,
+.modal input[type="text"]:focus {
+    outline: none;
+    border-color: #1E3A5F;
+    box-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
+}
+
+.modal p {
+    color: #666;
+    margin: 15px 0;
+    line-height: 1.5;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-cancel {
+    background: #E4E9EE;
+    color: #333;
+    border: 1px solid #B0B8C2;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #D0D7DD;
+}
+
+.btn-primary {
+    background: #1E3A5F;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: #2c4c7a;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+}
+
+/* Responsive modal design */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .modal .button-group {
+        flex-direction: column;
+    }
+
+    .modal .btn-cancel,
+    .modal .btn-primary,
+    .modal .btn-danger {
+        width: 100%;
+    }
+}
+</style>
+
 <style>
 /* Modal styling */
 .modal {

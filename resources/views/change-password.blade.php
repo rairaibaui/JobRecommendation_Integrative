@@ -99,7 +99,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.75); /* white + transparency */
+    background: rgba(103, 95, 95, 0.75); /* white + transparency */
     backdrop-filter: blur(3px); /* optional soft blur */
     z-index: 10;
 "></div>
