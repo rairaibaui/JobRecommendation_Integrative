@@ -277,30 +277,40 @@
   <div class="sidebar">
     <div class="profile-ellipse">
       <div class="profile-icon">
-        <i class="fas fa-user"></i>
+        @if(Auth::user()->profile_picture)
+          <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture"
+            style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+        @else
+          <i class="fas fa-user"></i>
+        @endif
       </div>
     </div>
-    <div class="profile-name">Raiza Palles</div>
-
-    <a href="{{ route('dashboard') }}" class="sidebar-btn" style="text-decoration: none;">
+  
+    <!-- Dynamic User Name -->
+    <div class="profile-name">{{ Auth::user()->first_name }} {{ Auth::user()->last_name }}</div>
+  
+    <a href="{{ route('dashboard') }}" class="sidebar-btn {{ request()->routeIs('dashboard') ? 'active' : '' }}">
       <i class="fas fa-home sidebar-btn-icon"></i>
       Dashboard
     </a>
-    <a href="{{ route('recommendation') }}" class="sidebar-btn {{ request()->routeIs('recommendation') ? 'active' : '' }}" style="text-decoration: none;">
+    <a href="{{ route('recommendation') }}"
+      class="sidebar-btn {{ request()->routeIs('recommendation') ? 'active' : '' }}">
       <i class="fas fa-suitcase sidebar-btn-icon"></i>
       Recommendation
     </a>
-    <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}" style="text-decoration: none;">
+    <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}">
       <i class="fas fa-bookmark sidebar-btn-icon"></i>
       Bookmarks
     </a>
-    <a href="{{ route('settings') }}" class="sidebar-btn {{ request()->routeIs('settings') ? 'active' : '' }}" style="text-decoration: none;">
+    <a href="{{ route('settings') }}" class="sidebar-btn {{ request()->routeIs('settings') ? 'active' : '' }}">
       <i class="fas fa-cog sidebar-btn-icon"></i>
       Settings
     </a>
+  
     <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;">
       @csrf
-      <button type="submit" class="sidebar-btn" style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <button type="submit" class="sidebar-btn"
+        style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
         <i class="fas fa-sign-out-alt sidebar-btn-icon"></i>
         Log out
       </button>
