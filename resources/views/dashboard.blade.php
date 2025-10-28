@@ -390,7 +390,7 @@
           <i class="fas fa-star"></i>
         </div>
         <div class="card-title">Recommended Jobs</div>
-        <div class="view-all">View All Recommendations</div>
+  <a href="{{ route('recommendation') }}" class="view-all">View All Recommendations</a>
       </div>
 
       <div class="card-medium">
@@ -398,7 +398,7 @@
           <i class="fas fa-bookmark"></i>
         </div>
         <div class="card-title">Bookmarked Jobs</div>
-        <div class="view-all">View All Bookmarks</div>
+  <a href="{{ route('bookmarks') }}" class="view-all">View All Bookmarks</a>
       </div>
     </div>
 

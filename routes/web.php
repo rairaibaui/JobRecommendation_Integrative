@@ -2,51 +2,68 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RecommendationController;
 use Illuminate\Support\Facades\Route;
 
-// Redirect root to login
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and contain the "web" middleware group.
+|
+*/
 
-// 🔹 Register
+// Redirect root to login
+Route::get('/', fn () => redirect()->route('login'));
+
+// 🔹 Authentication Routes
+
+// Register
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
 
-// 🔹 Login
+// Login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 
-// 🔹 Dashboard (requires authentication)
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth');
+// Logout
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-// 🔹 Recommendation (requires authentication)
-Route::get('/recommendation', [DashboardController::class, 'recommendation'])->name('recommendation')->middleware('auth');
+// 🔹 Routes that require authentication
+Route::middleware('auth')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// 🔹 Bookmarks (requires authentication)
-Route::get('/bookmarks', [DashboardController::class, 'bookmarks'])->name('bookmarks')->middleware('auth');
+    // Recommendation
+    Route::get('/recommendation', [RecommendationController::class, 'index'])->name('recommendation');
 
-// 🔹 Settings (requires authentication)
-Route::get('/settings', [DashboardController::class, 'settings'])->name('settings')->middleware('auth');
+    // Bookmarks
+    Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks');
 
-// 🔹 Clear Bookmarks (requires authentication)
-Route::post('/clear-bookmarks', [DashboardController::class, 'clearBookmarks'])->name('clear.bookmarks')->middleware('auth');
+    // Settings
+    Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
 
-// 🔹 Change Password (requires authentication)
-Route::get('/change-password', [DashboardController::class, 'changePassword'])->name('change.password')->middleware('auth');
-Route::post('/change-password', [DashboardController::class, 'updatePassword'])->name('change.password.submit')->middleware('auth');
+    // Clear Bookmarks
+    Route::post('/clear-bookmarks', [DashboardController::class, 'clearBookmarks'])->name('clear.bookmarks');
 
-// 🔹 Logout
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    // Change Password
+    Route::get('/change-password', [DashboardController::class, 'changePassword'])->name('change.password');
+    Route::post('/change-password', [DashboardController::class, 'updatePassword'])->name('change.password.submit');
 
-Route::middleware(['auth'])->group(function () {
-    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/change-email', [ProfileController::class, 'changeEmail'])->name('profile.changeEmail');
-    Route::post('/profile/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
-    Route::middleware(['auth'])->group(function () {
-        Route::post('/profile/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
-        Route::post('/profile/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate')->middleware('auth');
+    // Profile management
+    Route::prefix('profile')->group(function () {
+        Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/change-email', [ProfileController::class, 'changeEmail'])->name('profile.changeEmail');
+        Route::post('/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
+        Route::post('/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
+
+        // Profile picture upload
+        Route::post('/profile/upload-photo', [ProfileController::class, 'uploadPhoto'])->name('profile.uploadPhoto')->middleware('auth');
+        Route::post('/profile/remove-photo', [ProfileController::class, 'removePhoto'])->name('profile.removePhoto')->middleware('auth');
     });
 });
