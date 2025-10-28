@@ -148,35 +148,67 @@
                 <div class="card-large profile-card"
                     style="display:none; background:#fff; color:#000; border-radius:10px; padding:25px;">
                     <h2 style="color:#1E3A5F;">Profile Settings</h2>
-                    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+
+                    <form method="POST" action="{{ route('profile.update') }}">
                         @csrf
-                        <div style="margin-bottom:15px;">
+                        <div>
                             <label>First Name</label>
                             <input type="text" name="first_name" value="{{ Auth::user()->first_name }}" required>
                         </div>
-                        <div style="margin-bottom:15px;">
+
+                        <div>
                             <label>Last Name</label>
                             <input type="text" name="last_name" value="{{ Auth::user()->last_name }}" required>
                         </div>
-                        <div style="margin-bottom:15px;">
-                            <label>Phone Number</label>
-                            <input type="text" name="phone_number" value="{{ Auth::user()->phone_number ?? '' }}">
+
+                        <div>
+                            <label>Email Address</label>
+                            <input type="email" value="{{ Auth::user()->email }}" readonly>
                         </div>
-                        <div style="margin-bottom:15px;">
+
+                        <div>
+                            <label>Date of Birth</label>
+                            <input type="date" name="birthday" value="{{ Auth::user()->birthday }}">
+                        </div>
+
+                        <div>
+                            <label>Phone Number</label>
+                            <input type="text" name="phone_number" value="{{ Auth::user()->phone_number }}">
+                        </div>
+
+                        <div>
+                            <label>Education Level</label>
+                            <input type="text" name="education_level" value="{{ Auth::user()->education_level }}">
+                        </div>
+
+                        <div>
+                            <label>Skills (Comma separated)</label>
+                            <input type="text" name="skills" value="{{ Auth::user()->skills }}">
+                        </div>
+
+                        <div>
+                            <label>Years of Experience</label>
+                            <input type="number" name="years_of_experience" value="{{ Auth::user()->years_of_experience }}">
+                        </div>
+
+                        <div>
+                            <label>Location (Brgy. in Mandaluyong City)</label>
+                            <input type="text" name="location" value="{{ Auth::user()->location }}">
+                        </div>
+
+                    <div style="margin-bottom:15px;">
                             <label>Profile Picture</label>
                             <input type="file" name="profile_picture" accept="image/*">
                             @if(Auth::user()->profile_picture)
                                 <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}"
                                     style="width:120px;height:120px;border-radius:50%;object-fit:cover;">
                             @endif
-                        </div>
-                        <div style="margin-bottom:15px;">
-                            <label>Bio</label>
-                            <textarea name="bio">{{ Auth::user()->bio ?? '' }}</textarea>
+
                         </div>
                         <button type="submit">Update Profile</button>
                     </form>
                 </div>
+
 
                 <!-- Modals -->
                 @include('settings.modals')

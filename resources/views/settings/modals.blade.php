@@ -158,26 +158,6 @@
     </div>
 </div>
 
-<div id="deactivateModal"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;">
-    <div style="background:#fff; border-radius:10px; padding:25px; width:90%; max-width:500px; position:relative;">
-        <h2>Deactivate Account</h2>
-        <button onclick="closeDeactivateModal()"
-            style="position:absolute;top:10px;right:10px;font-size:20px;">&times;</button>
-        <p>Are you sure you want to deactivate your account? You can reactivate later by logging in.</p>
-        <form method="POST" action="{{ route('profile.deactivate') }}">
-            @csrf
-            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
-                <button type="button" onclick="closeDeactivateModal()"
-                    style="background:#E4E9EE;color:#333;padding:10px 15px;border-radius:5px;">Cancel</button>
-                <button type="submit"
-                    style="background:#D32F2F;color:#fff;padding:10px 15px;border:none;border-radius:5px;">Deactivate</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-
 
 <!-- JS for Modals -->
 <script>

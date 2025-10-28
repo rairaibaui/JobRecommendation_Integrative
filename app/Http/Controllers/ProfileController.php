@@ -7,31 +7,55 @@ use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
-    // Update general profile info (name, picture)
+    /**
+     * Update general profile info.
+     */
     public function update(Request $request)
     {
         $user = Auth::user();
 
+        // Validate only the fields you want
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'phone_number' => 'nullable|string|max:20',
+            'birthday' => 'nullable|date',
+            'education_level' => 'nullable|string|max:255',
+            'skills' => 'nullable|string|max:500',
+            'years_of_experience' => 'nullable|integer|min:0',
+            'location' => 'nullable|string|max:255',
         ]);
 
-        $user->first_name = $request->first_name;
-        $user->last_name = $request->last_name;
+        // Update user fields in database
+        $user->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'phone_number' => $request->phone_number,
+            'birthday' => $request->birthday,
+            'education_level' => $request->education_level,
+            'skills' => $request->skills,
+            'years_of_experience' => $request->years_of_experience,
+            'location' => $request->location,
+        ]);
 
-        if ($request->hasFile('profile_picture')) {
-            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $user->profile_picture = $path;
-        }
-
-        $user->save();
+        // Save fields in session for automatic display in profile settings
+        session([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'phone_number' => $request->phone_number,
+            'birthday' => $request->birthday,
+            'education_level' => $request->education_level,
+            'skills' => $request->skills,
+            'years_of_experience' => $request->years_of_experience,
+            'location' => $request->location,
+        ]);
 
         return redirect()->back()->with('success', 'Profile updated successfully.');
     }
 
-    // Change email
+    /**
+     * Change email.
+     */
     public function changeEmail(Request $request)
     {
         $user = Auth::user();
@@ -40,33 +64,26 @@ class ProfileController extends Controller
             'email' => 'required|email|unique:users,email,'.$user->id,
         ]);
 
-        $user->email = $request->email;
-        $user->save();
+        $user->update([
+            'email' => $request->email,
+        ]);
+
+        session(['email' => $request->email]); // Save in session
 
         return redirect()->back()->with('success', 'Email updated successfully.');
     }
 
-    // Change phone number
-    public function changePhone(Request $request)
-    {
-        $user = Auth::user();
-
-        $request->validate([
-            'phone_number' => 'required|string|max:15',
-        ]);
-
-        $user->phone_number = $request->phone_number;
-        $user->save();
-
-        return redirect()->back()->with('success', 'Phone number updated successfully.');
-    }
-
-    // Deactivate Account
+    /**
+     * Deactivate account.
+     */
     public function deactivate(Request $request)
     {
         $user = Auth::user();
-        $user->is_active = false; // or 'status' column in your users table
-        $user->save();
+
+        // Assuming you have a 'is_active' column in users table
+        $user->update([
+            'is_active' => false,
+        ]);
 
         Auth::logout();
 
