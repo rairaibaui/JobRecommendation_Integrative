@@ -378,7 +378,6 @@
   <!-- Main Content -->
   <div class="main">
     <div class="top-navbar">
-      <i class="fas fa-bars hamburger"></i>
       Job Portal - Mandaluyong
     </div>
 
