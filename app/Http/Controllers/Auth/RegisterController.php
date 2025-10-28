@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\User; 
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Password; 
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
@@ -16,7 +15,7 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm()
     {
-        return view('auth.register'); 
+        return view('auth.register');
     }
 
     /**
@@ -28,24 +27,24 @@ class RegisterController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users', 
+            'email' => 'required|string|email|max:255|unique:users',
             'date_of_birth' => 'required|date',
-            
+
             // NEW: Added unique:users for phone_number
-            'phone_number' => 'required|digits:11|numeric|unique:users', 
-            
+            'phone_number' => 'required|digits:11|numeric|unique:users',
+
             'education_level' => 'nullable|string|max:255',
             'skills' => 'nullable|string',
             'years_of_experience' => 'nullable|numeric|min:0',
-            'location' => 'required|string|max:255', 
+            'location' => 'required|string|max:255',
             'password' => [
                 'required',
-                'confirmed', 
-                Password::min(8) 
+                'confirmed',
+                Password::min(8)
                     ->letters()
                     ->mixedCase()
                     ->numbers()
-                    ->symbols()
+                    ->symbols(),
             ],
             'terms' => 'accepted',
             'user_type' => 'required|in:job_seeker,employer',
@@ -55,7 +54,7 @@ class RegisterController extends Controller
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
-            'name' => $request->first_name . ' ' . $request->last_name,
+            // 'name' => $request->first_name . ' ' . $request->last_name, // REMOVE THIS LINE
             'email' => $request->email,
             'phone_number' => $request->phone_number,
             'date_of_birth' => $request->date_of_birth,

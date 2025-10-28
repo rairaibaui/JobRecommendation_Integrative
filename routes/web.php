@@ -1,9 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 
 // Redirect root to login
 Route::get('/', function () {
@@ -39,3 +40,13 @@ Route::post('/change-password', [DashboardController::class, 'updatePassword'])-
 
 // 🔹 Logout
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/change-email', [ProfileController::class, 'changeEmail'])->name('profile.changeEmail');
+    Route::post('/profile/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
+    Route::middleware(['auth'])->group(function () {
+        Route::post('/profile/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
+        Route::post('/profile/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate')->middleware('auth');
+    });
+});
