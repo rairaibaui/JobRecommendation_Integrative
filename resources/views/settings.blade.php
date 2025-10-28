@@ -45,18 +45,6 @@
             background: #f44336;
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0;
-            }
-
-            to {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
-        }
-
         /* Tabs */
         .tab.active {
             border-bottom: 2px solid #fff;
@@ -121,14 +109,16 @@
         }
 
         .profile-card input[type="text"],
+        .profile-card input[type="email"],
         .profile-card input[type="file"],
+        .profile-card input[type="number"],
+        .profile-card input[type="date"],
         .profile-card textarea {
             width: 100%;
             border: 1px solid #ccc;
             border-radius: 6px;
             padding: 8px 10px;
             font-size: 14px;
-            transition: border-color 0.2s ease;
         }
 
         .profile-card input:focus,
@@ -161,6 +151,8 @@
         .profile-card img {
             margin-top: 10px;
             border: 2px solid #ddd;
+            border-radius: 50%;
+            object-fit: cover;
         }
 
         /* Modal Styling */
@@ -215,7 +207,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: 0.2s ease;
         }
 
         .close-btn:hover {
@@ -348,15 +340,21 @@
 
                         <label>Profile Picture</label>
                         <input type="file" name="profile_picture" accept="image/*">
+
                         @if(Auth::user()->profile_picture)
-                            <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" width="120" height="120"
-                                style="border-radius:50%;object-fit:cover;">
+                            <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                                <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" width="120" height="120"
+                                    style="border-radius:50%;object-fit:cover; border:2px solid #ddd;">
+                                <label style="font-weight:500;">
+                                    <input type="checkbox" name="remove_picture" value="1">
+                                    Remove current picture
+                                </label>
+                            </div>
                         @endif
 
                         <button type="submit" class="edit-btn">Update Profile</button>
                     </form>
                 </div>
-
             </div>
         </div>
     </div>

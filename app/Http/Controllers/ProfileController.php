@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Storage;
 class ProfileController extends Controller
 {
     /**
-     * Update general profile info including profile picture.
+     * Update general profile info.
      */
     public function update(Request $request)
     {
         $user = Auth::user();
 
-        // Validate fields
+        // Validate inputs
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -25,21 +25,24 @@ class ProfileController extends Controller
             'skills' => 'nullable|string|max:500',
             'years_of_experience' => 'nullable|integer|min:0',
             'location' => 'nullable|string|max:255',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'profile_picture' => 'nullable|image|max:2048',
         ]);
 
-        // Handle profile picture upload
-        if ($request->hasFile('profile_picture')) {
-            // Delete old picture if exists
-            if ($user->profile_picture) {
+        // Handle profile picture upload or removal
+        if ($request->has('remove_picture') && $request->remove_picture) {
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
                 Storage::disk('public')->delete($user->profile_picture);
             }
-
-            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $user->profile_picture = $path;
+            $user->profile_picture = null;
+        } elseif ($request->hasFile('profile_picture')) {
+            // Delete old picture if exists
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+            $user->profile_picture = $request->file('profile_picture')->store('profile_pictures', 'public');
         }
 
-        // Update other fields
+        // Update other profile fields
         $user->update([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
@@ -73,36 +76,13 @@ class ProfileController extends Controller
     }
 
     /**
-     * Change password.
-     */
-    public function changePassword(Request $request)
-    {
-        $user = Auth::user();
-
-        $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|string|min:8|confirmed',
-        ]);
-
-        // Check current password
-        if (!\Hash::check($request->current_password, $user->password)) {
-            return redirect()->back()->withErrors(['current_password' => 'Current password is incorrect']);
-        }
-
-        $user->password = \Hash::make($request->new_password);
-        $user->save();
-
-        return redirect()->back()->with('success', 'Password updated successfully.');
-    }
-
-    /**
-     * Deactivate or delete account.
+     * Deactivate account.
      */
     public function deactivate(Request $request)
     {
         $user = Auth::user();
 
-        // Assuming you have a 'is_active' column or you can delete
+        // Set account inactive (assuming 'is_active' column exists)
         $user->update([
             'is_active' => false,
         ]);
