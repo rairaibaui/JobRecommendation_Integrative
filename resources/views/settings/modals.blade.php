@@ -123,6 +123,22 @@
     </div>
 </div>
 
+<div id="deactivateModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+        <h2>Deactivate Account</h2>
+        <button onclick="closeDeactivateModal()" class="close-btn">&times;</button>
+        <p style="color:#666; margin:15px 0; line-height:1.5;">Are you sure you want to deactivate your account? You can reactivate later by logging in.</p>
+        <form method="POST" action="{{ route('profile.deactivate') }}">
+            @csrf
+            <div class="button-group">
+                <button type="button" onclick="closeDeactivateModal()" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-danger">Deactivate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 
 <style>
 /* Modal styling */
