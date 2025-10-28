@@ -23,13 +23,15 @@ class User extends Authenticatable
     'name',
     'email',
     'phone_number',
-    'date_of_birth',
+        'date_of_birth',
+        'birthday',
     'education_level',
     'skills',
     'years_of_experience',
     'location',
     'user_type',
     'password',
+        'profile_picture',
 ];
 
 
