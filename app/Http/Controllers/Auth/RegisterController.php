@@ -54,9 +54,8 @@ class RegisterController extends Controller
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
-            // 'name' => $request->first_name . ' ' . $request->last_name, // REMOVE THIS LINE
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
+            'email' => $request->email,               // <-- actual input
+            'phone_number' => $request->phone_number, // <-- actual input
             'date_of_birth' => $request->date_of_birth,
             'education_level' => $request->education_level,
             'skills' => $request->skills,

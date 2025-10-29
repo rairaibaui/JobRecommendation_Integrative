@@ -45,5 +45,18 @@ class ProfileController extends Controller
         return redirect()->back()->with('success', 'Profile picture updated successfully.');
     }
 
+    public function changeEmail(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'email' => 'required|email|unique:users,email,'.$user->id,
+        ]);
+
+        $user->email = $request->email;
+        $user->save();
+
+        return redirect()->back()->with('success', 'Email updated successfully.');
+    }
     // Keep other methods (changeEmail, deactivate, etc.) as is
 }

@@ -363,35 +363,58 @@
     @include('settings.modals')
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tabs = document.querySelectorAll('.tabs .tab');
-            const accountCard = document.querySelector('.account-card');
-            const profileCard = document.querySelector('.profile-card');
+    
+   <script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ===== Tabs =====
+    const tabs = document.querySelectorAll('.tabs .tab');
+    const accountCard = document.querySelector('.account-card');
+    const profileCard = document.querySelector('.profile-card');
 
-            tabs.forEach((tab, i) => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    accountCard.style.display = i === 0 ? 'block' : 'none';
-                    profileCard.style.display = i === 1 ? 'block' : 'none';
-                });
-            });
-
-            const overlay = document.getElementById('settingsOverlay');
-            const changePasswordModal = document.getElementById('changePasswordModal');
-            const changeEmailModal = document.getElementById('changeEmailModal');
-            const deleteAccountModal = document.getElementById('deleteAccountModal');
-
-            window.openChangePasswordModal = () => { changePasswordModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-            window.closeChangePasswordModal = () => { changePasswordModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
-
-            window.openChangeEmailModal = () => { changeEmailModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-            window.closeChangeEmailModal = () => { changeEmailModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
-
-            window.openDeleteAccountModal = () => { deleteAccountModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-            window.closeDeleteAccountModal = () => { deleteAccountModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
+    tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            accountCard.style.display = i === 0 ? 'block' : 'none';
+            profileCard.style.display = i === 1 ? 'block' : 'none';
         });
-    </script>
+    });
+
+    // ===== Modals =====
+    const overlay = document.getElementById('settingsOverlay');
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    const changeEmailModal = document.getElementById('changeEmailModal');
+    const deleteAccountModal = document.getElementById('deleteAccountModal');
+
+    window.openChangePasswordModal = () => { changePasswordModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+    window.closeChangePasswordModal = () => { changePasswordModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
+
+    window.openChangeEmailModal = () => { changeEmailModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+    window.closeChangeEmailModal = () => { changeEmailModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
+
+    window.openDeleteAccountModal = () => { deleteAccountModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+    window.closeDeleteAccountModal = () => { deleteAccountModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
+
+    // ===== Flash Messages Auto-hide =====
+    const successMsg = document.querySelector('.success-message');
+    const errorMsg = document.querySelector('.error-message');
+
+    if (successMsg) {
+        setTimeout(() => {
+            successMsg.style.transition = 'opacity 0.5s';
+            successMsg.style.opacity = '0';
+            setTimeout(() => successMsg.remove(), 500);
+        }, 2000); // 2 seconds
+    }
+
+    if (errorMsg) {
+        setTimeout(() => {
+            errorMsg.style.transition = 'opacity 0.5s';
+            errorMsg.style.opacity = '0';
+            setTimeout(() => errorMsg.remove(), 500);
+        }, 2000); // 2 seconds
+    }
+});
+</script>
 
 @endsection
