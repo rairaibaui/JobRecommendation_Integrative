@@ -245,6 +245,42 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .job-preview {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .job-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    opacity: 0;
+    margin-top: 0;
+    padding: 0 10px;
+  }
+
+  .job-details.expanded {
+    max-height: 1000px;
+    opacity: 1;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+  }
+
+  .job-details h4 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 10px;
+  }
+
+  .skills-section {
+    margin-top: 20px;
   }
 
   .job-title {
@@ -431,20 +467,34 @@
       @foreach($jobs as $job)
       <div class="job-card" data-title="{{ $job['title'] }}" data-location="{{ $job['location'] ?? '' }}" data-type="{{ $job['type'] ?? '' }}" data-salary="{{ $job['salary'] ?? '' }}" data-description="{{ $job['description'] ?? '' }}" data-skills='@json($job['skills'] ?? [])'>
         <div class="job-title">{{ $job['title'] }}</div>
-        <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ $job['location'] ?? '' }}</div>
-        <div class="job-type"><i class="fas fa-briefcase"></i> {{ $job['type'] ?? '' }}</div>
-        <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ $job['salary'] ?? '' }}</div>
-        <div class="job-description">{{ $job['description'] ?? '' }}</div>
-        <div class="skills-header"><strong>Skills Required:</strong></div>
-        <div class="job-skills">
-          @if(!empty($job['skills']))
-            @foreach($job['skills'] as $skill)
-              <div class="skill">{{ $skill }}</div>
-            @endforeach
-          @endif
+        <div class="job-preview">
+          <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ $job['location'] ?? '' }}</div>
+          <div class="job-type"><i class="fas fa-briefcase"></i> {{ $job['type'] ?? '' }}</div>
+          <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ $job['salary'] ?? '' }}</div>
         </div>
+        
+        <div class="job-details">
+          <div class="job-description">
+            <h4>Job Description</h4>
+            {{ $job['description'] ?? '' }}
+          </div>
+          
+          <div class="skills-section">
+            <h4>Required Skills</h4>
+            <div class="job-skills">
+              @if(!empty($job['skills']))
+                @foreach($job['skills'] as $skill)
+                  <div class="skill">{{ $skill }}</div>
+                @endforeach
+              @endif
+            </div>
+          </div>
+        </div>
+
         <div class="job-actions">
-          <button class="view-details">View Details</button>
+          <button class="view-details" onclick="toggleJobDetails(this)">
+            <i class="fas fa-chevron-down"></i> View Details
+          </button>
           <button class="bookmark-btn" onclick="toggleBookmark(this)" title="{{ in_array($job['title'], $bookmarkedTitles ?? []) ? 'Unbookmark this job' : 'Bookmark this job' }}" data-title="{{ $job['title'] }}">
             <i class="{{ in_array($job['title'], $bookmarkedTitles ?? []) ? 'fas' : 'far' }} fa-bookmark"></i>
           </button>
@@ -454,6 +504,9 @@
 
     </div>
   </div>
+
+  <!-- Include job details JavaScript -->
+  <script src="{{ asset('js/job-details.js') }}"></script>
 
   <script>
   function getCsrfToken() {

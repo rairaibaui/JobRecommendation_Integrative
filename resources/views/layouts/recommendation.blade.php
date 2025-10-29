@@ -186,6 +186,42 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .job-preview {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .job-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    opacity: 0;
+    margin-top: 0;
+    padding: 0 10px;
+  }
+
+  .job-details.expanded {
+    max-height: 1000px;
+    opacity: 1;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+  }
+
+  .job-details h4 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 10px;
+  }
+
+  .skills-section {
+    margin-top: 20px;
   }
 
   /* subtle lift on hover for cards */
@@ -348,8 +384,8 @@
   </div>
 
   @yield('content')
+  <script src="{{ asset('js/job-details.js') }}"></script>
+  @stack('scripts')
 </body>
-@stack('scripts')
-</html>
 </html>
 
