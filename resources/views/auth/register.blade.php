@@ -30,6 +30,9 @@
 
         .header {
             margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         h2 {
@@ -172,11 +175,17 @@
 <body>
     <div class="form-container">
         <div class="header">
-            <h2>CREATE ACCOUNT?</h2>
+            <h2>CREATE ACCOUNT</h2>
+            <!-- Account type switch in the upper right -->
+            <div style="display:flex; gap:8px; background:#f5f5f5; border:1px solid #ddd; border-radius:10px; padding:4px;">
+                <button type="button" id="btn-job" class="type-btn active" onclick="selectType('job_seeker')" style="border:none; padding:8px 12px; border-radius:8px; cursor:pointer; background:#fff;">Job Seeker</button>
+                <button type="button" id="btn-emp" class="type-btn" onclick="selectType('employer')" style="border:none; padding:8px 12px; border-radius:8px; cursor:pointer; background:transparent;">Employer</button>
+            </div>
         </div>
 
-        <form action="{{ route('register.submit') }}" method="POST">
+        <form action="{{ route('register.submit') }}" method="POST" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="user_type" id="user_type" value="{{ old('user_type','job_seeker') }}">
 
             <div class="form-row">
                 <div class="form-group">
@@ -200,7 +209,28 @@
                 @error('email') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 
-            <div class="form-row">
+            <!-- Employer-only fields -->
+            <div id="employer-fields" style="display:none;">
+                <div class="form-group">
+                    <label for="company_name">Company/Business Name</label>
+                    <input type="text" name="company_name" id="company_name" value="{{ old('company_name') }}" class="@error('company_name') input-error @enderror">
+                    @error('company_name') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
+                    <label for="job_title">Job Title</label>
+                    <input type="text" name="job_title" id="job_title" value="{{ old('job_title') }}" class="@error('job_title') input-error @enderror">
+                    @error('job_title') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
+                    <label for="business_permit">Company/Business Verification Document (Business Permit)</label>
+                    <input type="file" name="business_permit" id="business_permit" accept=".pdf,.jpg,.jpeg,.png" class="@error('business_permit') input-error @enderror">
+                    @error('business_permit') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
+            <!-- Job-seeker-only fields -->
+            <div id="jobseeker-fields">
+                <div class="form-row">
                 <div class="form-group">
                     <label for="birthday">Date of Birth</label>
                     <input type="date" name="birthday" id="birthday" value="{{ old('birthday') }}"
@@ -213,33 +243,33 @@
                         class="@error('phone_number') input-error @enderror" required>
                     @error('phone_number') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
-            </div>
+                </div>
 
-            <div class="form-group">
-                <label for="education_level">Education Level</label>
-                <input type="text" name="education_level" id="education_level" value="{{ old('education_level') }}"
-                    class="@error('education_level') input-error @enderror">
-                @error('education_level') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
+                <div class="form-group">
+                    <label for="education_level">Education Level</label>
+                    <input type="text" name="education_level" id="education_level" value="{{ old('education_level') }}"
+                        class="@error('education_level') input-error @enderror">
+                    @error('education_level') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
 
-            <div class="form-group">
-                <label for="skills">Skills (Comma separated)</label>
-                <input type="text" name="skills" id="skills" value="{{ old('skills') }}"
-                    class="@error('skills') input-error @enderror">
-                @error('skills') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
+                <div class="form-group">
+                    <label for="skills">Skills (Comma separated)</label>
+                    <input type="text" name="skills" id="skills" value="{{ old('skills') }}"
+                        class="@error('skills') input-error @enderror">
+                    @error('skills') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
 
-            <div class="form-group">
-                <label for="years_of_experience">Years of Experience</label>
-                <input type="text" name="years_of_experience" id="years_of_experience"
-                    value="{{ old('years_of_experience', '0') }}" class="@error('years_of_experience') input-error @enderror"
-                    type="number" min="0">
-                @error('years_of_experience') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
+                <div class="form-group">
+                    <label for="years_of_experience">Years of Experience</label>
+                    <input type="text" name="years_of_experience" id="years_of_experience"
+                        value="{{ old('years_of_experience', '0') }}" class="@error('years_of_experience') input-error @enderror"
+                        type="number" min="0">
+                    @error('years_of_experience') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
 
-            <div class="form-group" style="position: relative;">
-                <label for="location">Location (Brgy in Mandaluyong)</label>
-                <select name="location" id="location" class="@error('location') input-error @enderror" required>
+                <div class="form-group" style="position: relative;">
+                    <label for="location">Location (Brgy in Mandaluyong)</label>
+                    <select name="location" id="location" class="@error('location') input-error @enderror" required>
                     <option value="">Select your Location</option>
                     <option value="Addition Hills" {{ old('location') == 'Addition Hills' ? 'selected' : '' }}>Addition Hills
                     </option>
@@ -281,17 +311,9 @@
                     <option value="Vergara" {{ old('location') == 'Vergara' ? 'selected' : '' }}>Vergara</option>
                     <option value="Wack-Wack Greenhills" {{ old('location') == 'Wack-Wack Greenhills' ? 'selected' : '' }}>
                         Wack-Wack Greenhills</option>
-                </select>
-                @error('location') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
-
-            <div class="form-group">
-                <label for="user_type">Account Type</label>
-                <select name="user_type" id="user_type" class="@error('user_type') input-error @enderror" required>
-                    <option value="job_seeker" {{ old('user_type') == 'job_seeker' ? 'selected' : '' }}>Job Seeker</option>
-                    <option value="employer" {{ old('user_type') == 'employer' ? 'selected' : '' }}>Employer</option>
-                </select>
-                @error('user_type') <span class="error-text">{{ $message }}</span> @enderror
+                    </select>
+                    @error('location') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
             </div>
 
             <div class="form-group">
@@ -322,6 +344,34 @@
             </div>
         </form>
     </div>
+    <script>
+        function selectType(type) {
+            const userTypeInput = document.getElementById('user_type');
+            const btnJob = document.getElementById('btn-job');
+            const btnEmp = document.getElementById('btn-emp');
+            const jsFields = document.getElementById('jobseeker-fields');
+            const empFields = document.getElementById('employer-fields');
+
+            userTypeInput.value = type;
+            if (type === 'employer') {
+                btnEmp.style.background = '#fff';
+                btnJob.style.background = 'transparent';
+                jsFields.style.display = 'none';
+                empFields.style.display = 'block';
+            } else {
+                btnJob.style.background = '#fff';
+                btnEmp.style.background = 'transparent';
+                jsFields.style.display = 'block';
+                empFields.style.display = 'none';
+            }
+        }
+
+        // Initialize based on old value
+        (function() {
+            const initial = '{{ old('user_type','job_seeker') }}';
+            selectType(initial);
+        })();
+    </script>
 </body>
 
 </html>

@@ -21,6 +21,8 @@ class User extends Authenticatable
     protected $fillable = [
         'first_name',
         'last_name',
+        'company_name',
+        'job_title',
         'email',
         'phone_number',
         'birthday',
@@ -36,6 +38,7 @@ class User extends Authenticatable
         'portfolio_links',
         'availability',
         'resume_file',
+        'business_permit_path',
         'user_type',
         'password',
         'profile_picture',
