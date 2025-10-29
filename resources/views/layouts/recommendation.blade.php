@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Recommendation - Job Portal Mandaluyong</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -187,6 +188,15 @@
     gap: 10px;
   }
 
+  /* subtle lift on hover for cards */
+  .job-card {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .job-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 18px 30px rgba(0,0,0,0.14);
+  }
+
   .job-title {
     font-family: 'Roboto', sans-serif;
     font-size: 20px;
@@ -269,6 +279,26 @@
     color: #FFF;
   }
 
+  /* Bookmark button shared styles (used in dashboard/recommendation/bookmarks) */
+  .bookmark-btn {
+    background: transparent;
+    border: 1px solid rgba(100,142,181,0.15);
+    color: #648EB5;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 18px;
+    padding: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 180ms ease;
+  }
+  .bookmark-btn i { transition: color 160ms ease, transform 160ms ease; }
+  .bookmark-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+  .bookmark-btn i.fas { color: #FFD166; /* gold for bookmarked */ transform: scale(1.06); }
+  .bookmark-btn i.far { color: #648EB5; }
+
 </style>
 </head>
 <body>
@@ -318,7 +348,8 @@
   </div>
 
   @yield('content')
-
 </body>
+@stack('scripts')
+</html>
 </html>
 

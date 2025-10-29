@@ -66,4 +66,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/profile/upload-photo', [ProfileController::class, 'uploadPhoto'])->name('profile.uploadPhoto')->middleware('auth');
         Route::post('/profile/remove-photo', [ProfileController::class, 'removePhoto'])->name('profile.removePhoto')->middleware('auth');
     });
+
+    // Bookmark management
+    Route::prefix('bookmark')->group(function () {
+        Route::post('/add', [BookmarkController::class, 'store'])->name('bookmark.add');
+        Route::post('/remove', [BookmarkController::class, 'destroy'])->name('bookmark.remove');
+    });
 });

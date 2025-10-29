@@ -26,17 +26,17 @@
                     </div>
                 @else
                     @foreach($bookmarks as $job)
-                        <div class="job-card">
-                            <div class="job-title">{{ $job['title'] }}</div>
-                            <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ $job['location'] ?? 'N/A' }}</div>
-                            <div class="job-type"><i class="fas fa-briefcase"></i> {{ $job['type'] ?? 'Full-time' }}</div>
-                            <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ $job['salary'] ?? 'Negotiable' }}
+                        <div class="job-card" data-title="{{ $job->title }}">
+                            <div class="job-title">{{ $job->title }}</div>
+                            <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ $job->location ?? 'N/A' }}</div>
+                            <div class="job-type"><i class="fas fa-briefcase"></i> {{ $job->type ?? 'Full-time' }}</div>
+                            <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ $job->salary ?? 'Negotiable' }}
                             </div>
-                            <div class="job-description">{{ $job['description'] ?? '' }}</div>
+                            <div class="job-description">{{ $job->description ?? '' }}</div>
                             <div class="skills-header"><strong>Skills Required:</strong></div>
                             <div class="job-skills">
-                                @if(!empty($job['skills']))
-                                    @foreach($job['skills'] as $skill)
+                                @if(!empty($job->skills))
+                                    @foreach($job->skills as $skill)
                                         <div class="skill">{{ $skill }}</div>
                                     @endforeach
                                 @else
@@ -45,7 +45,9 @@
                             </div>
                             <div class="job-actions">
                                 <button class="view-details">View Details</button>
-                                <button class="save-job">Remove Bookmark</button>
+                                <button class="bookmark-btn" onclick="removeBookmark(this)" title="Remove bookmark">
+                                    <i class="fas fa-bookmark"></i>
+                                </button>
                             </div>
                         </div>
                     @endforeach
@@ -171,3 +173,32 @@
         }
     </style>
 @endsection
+
+@push('scripts')
+<script>
+function getCsrfToken(){
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
+function removeBookmark(button){
+    const card = button.closest('.job-card');
+    const title = card.dataset.title;
+
+    fetch("{{ route('bookmark.remove') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+        },
+        body: JSON.stringify({ job: { title: title } })
+    }).then(res => res.json()).then(data => {
+        if(data.success){
+            // Remove the card from the DOM so it disappears immediately
+            card.remove();
+        } else {
+            alert('Failed to remove bookmark');
+        }
+    }).catch(()=> alert('Error'));
+}
+</script>
+@endpush

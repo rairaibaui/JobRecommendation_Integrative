@@ -40,7 +40,13 @@ class DashboardController extends Controller
             ],
         ];
 
-        return view('dashboard', compact('jobs'));
+        // determine which jobs are bookmarked by current user
+        $bookmarkedTitles = [];
+        if (auth()->check()) {
+            $bookmarkedTitles = auth()->user()->bookmarks()->pluck('title')->toArray();
+        }
+
+        return view('dashboard', compact('jobs', 'bookmarkedTitles'));
     }
 
     public function recommendation()

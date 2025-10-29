@@ -26,7 +26,13 @@ class RecommendationController extends Controller
             ],
         ];
 
+        // Determine which jobs are bookmarked by current user (by title)
+        $bookmarkedTitles = [];
+        if (auth()->check()) {
+            $bookmarkedTitles = auth()->user()->bookmarks()->pluck('title')->toArray();
+        }
+
         // Pass to the Blade view
-        return view('recommendation', ['jobs' => $jobs]);
+        return view('recommendation', ['jobs' => $jobs, 'bookmarkedTitles' => $bookmarkedTitles]);
     }
 }

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Dashboard -                                                         Job Portal Mandaluyong</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -302,13 +303,17 @@
     gap: 20px;
     margin-top: auto;
   }
-
-  .view-details, .save-job {
+  .view-details, .bookmark-btn {
     padding: 10px 15px;
-    border-radius: 6px;
+    border-radius: 8px;
     border: none;
     font-size: 16px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 180ms ease;
   }
 
   .view-details {
@@ -317,10 +322,25 @@
     color: #648EB5;
   }
 
-  .save-job {
-    background: #648EB5;
-    color: #FFF;
+  /* Bookmark icon button */
+  .bookmark-btn {
+    background: transparent;
+    border: 1px solid rgba(100,142,181,0.15);
+    color: #648EB5;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 18px;
+    padding: 6px;
   }
+
+  .bookmark-btn i { transition: color 160ms ease, transform 160ms ease; }
+  .bookmark-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+  .bookmark-btn i.fas { color: #FFD166; /* gold for bookmarked */ transform: scale(1.06); }
+  .bookmark-btn i.far { color: #648EB5; }
+
+  /* Make job-actions align right when space allows */
+  .job-actions { justify-self: end; align-items: center; }
 
 </style>
 </head>
@@ -408,45 +428,105 @@
         <h3>Top Job Recommendations</h3>
         <p>This is based on the skills that you have</p>
       </div>
-      <div class="job-card">
-        <div class="job-title">Cashier</div>
-        <div class="job-location"><i class="fas fa-map-marker-alt"></i> Mandaluyong City</div>
-        <div class="job-type"><i class="fas fa-briefcase"></i> Full-time</div>
-        <div class="job-salary"><i class="fas fa-money-bill-wave"></i> Php 645/day</div>
-        <div class="job-description">Handle cash transactions, provide customer service, and maintain a clean and organized checkout area.</div>
+      @foreach($jobs as $job)
+      <div class="job-card" data-title="{{ $job['title'] }}" data-location="{{ $job['location'] ?? '' }}" data-type="{{ $job['type'] ?? '' }}" data-salary="{{ $job['salary'] ?? '' }}" data-description="{{ $job['description'] ?? '' }}" data-skills='@json($job['skills'] ?? [])'>
+        <div class="job-title">{{ $job['title'] }}</div>
+        <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ $job['location'] ?? '' }}</div>
+        <div class="job-type"><i class="fas fa-briefcase"></i> {{ $job['type'] ?? '' }}</div>
+        <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ $job['salary'] ?? '' }}</div>
+        <div class="job-description">{{ $job['description'] ?? '' }}</div>
         <div class="skills-header"><strong>Skills Required:</strong></div>
         <div class="job-skills">
-          <div class="skill">Customer Service</div>
-          <div class="skill">Cash Handling</div>
-          <div class="skill">Basic Math</div>
+          @if(!empty($job['skills']))
+            @foreach($job['skills'] as $skill)
+              <div class="skill">{{ $skill }}</div>
+            @endforeach
+          @endif
         </div>
         <div class="job-actions">
           <button class="view-details">View Details</button>
-          <button class="save-job">Save Job</button>
+          <button class="bookmark-btn" onclick="toggleBookmark(this)" title="{{ in_array($job['title'], $bookmarkedTitles ?? []) ? 'Unbookmark this job' : 'Bookmark this job' }}" data-title="{{ $job['title'] }}">
+            <i class="{{ in_array($job['title'], $bookmarkedTitles ?? []) ? 'fas' : 'far' }} fa-bookmark"></i>
+          </button>
         </div>
       </div>
-
-      <div class="job-card">
-        <div class="job-title">Sales Associate</div>
-        <div class="job-location"><i class="fas fa-map-marker-alt"></i> Mandaluyong City</div>
-        <div class="job-type"><i class="fas fa-briefcase"></i> Full-time</div>
-        <div class="job-salary"><i class="fas fa-money-bill-wave"></i> Php 645/day</div>
-        <div class="job-description">Assist customers, process sales transactions, and maintain store appearance.</div>
-        <div class="skills-header"><strong>Skills Required:</strong></div>
-        <div class="job-skills">
-          <div class="skill">Customer Service</div>
-          <div class="skill">Cash Handling</div>
-          <div class="skill">Sales</div>
-        </div>
-        <div class="job-actions">
-          <button class="view-details">View Details</button>
-          <button class="save-job">Save Job</button>
-        </div>
-      </div>
+      @endforeach
 
     </div>
   </div>
 
-</body>
-</html>
+  <script>
+  function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  }
+
+  function toggleBookmark(button) {
+    const icon = button.querySelector('i');
+    const jobCard = button.closest('.job-card');
+    const title = button.dataset.title || jobCard.dataset.title;
+    const job = {
+      title: title,
+      location: jobCard.dataset.location,
+      type: jobCard.dataset.type,
+      salary: jobCard.dataset.salary,
+      description: jobCard.dataset.description,
+      skills: JSON.parse(jobCard.dataset.skills || '[]')
+    };
+
+    const isBookmarking = icon.classList.contains('far');
+    const url = isBookmarking ? "{{ route('bookmark.add') }}" : "{{ route('bookmark.remove') }}";
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken()
+      },
+      body: JSON.stringify({ job: job })
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+    .then(({ ok, data }) => {
+      if (!ok) throw data;
+
+      if (isBookmarking) {
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        button.title = 'Unbookmark this job';
+        showMessage('Bookmarked — visible in Bookmarks page', 'success');
+      } else {
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        button.title = 'Bookmark this job';
+        showMessage('Removed from bookmarks', 'info');
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      showMessage('Failed to update bookmark', 'error');
+    });
+  }
+
+  function showMessage(message, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = message;
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '20px';
+    messageDiv.style.right = '20px';
+    messageDiv.style.padding = '10px 20px';
+    messageDiv.style.borderRadius = '4px';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.color = 'white';
+    switch(type) {
+      case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break;
+      case 'info': messageDiv.style.backgroundColor = '#2196F3'; break;
+      case 'error': messageDiv.style.backgroundColor = '#f44336'; break;
+      default: messageDiv.style.backgroundColor = '#2196F3';
+    }
+    document.body.appendChild(messageDiv);
+    setTimeout(() => messageDiv.remove(), 3000);
+  }
+  </script>
+
+  </body>
+  </html>
 
