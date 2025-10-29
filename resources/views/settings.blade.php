@@ -113,18 +113,66 @@
         .profile-card input[type="file"],
         .profile-card input[type="number"],
         .profile-card input[type="date"],
-        .profile-card textarea {
+        .profile-card textarea,
+        .profile-card select {
             width: 100%;
             border: 1px solid #ccc;
             border-radius: 6px;
             padding: 8px 10px;
             font-size: 14px;
+            transition: all 0.2s ease;
+            background-color: white;
+        }
+
+        .profile-card select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231E3A5F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 1em;
+            padding-right: 40px;
+        }
+
+        .profile-card select:hover {
+            border-color: #648EB5;
+            background-color: #f8f9fa;
         }
 
         .profile-card input:focus,
-        .profile-card textarea:focus {
+        .profile-card textarea:focus,
+        .profile-card select:focus {
             border-color: #1E3A5F;
             outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+        }
+
+        /* Input help text */
+        .input-help {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* Required field indicator */
+        .required-field::after {
+            content: '*';
+            color: #dc3545;
+            margin-left: 4px;
+        }
+
+        /* Field group spacing */
+        .field-group {
+            margin-bottom: 20px;
+        }
+
+        /* Hover effects */
+        .profile-card input:hover,
+        .profile-card textarea:hover {
+            border-color: #648EB5;
         }
 
         .profile-card textarea {
@@ -332,13 +380,55 @@
                         <label>Skills (Comma separated)</label>
                         <input type="text" name="skills" value="{{ Auth::user()->skills }}">
 
-                        <label>Years of Experience</label>
-                        <input type="number" name="years_of_experience" value="{{ Auth::user()->years_of_experience }}">
+                        <div class="field-group">
+                            <label>Years of Experience</label>
+                            <input type="number" name="years_of_experience" value="{{ Auth::user()->years_of_experience }}" min="0">
+                        </div>
 
-                        <label>Location (Brgy. in Mandaluyong City)</label>
-                        <input type="text" name="location" value="{{ Auth::user()->location }}">
+                        <div class="field-group">
+                            <label class="required-field">Barangay in Mandaluyong City</label>
+                            <div class="input-help">Select your barangay from the list below</div>
+                            <select name="location" class="form-select">
+                                <option value="">Select your barangay</option>
+                                <option value="Addition Hills" {{ Auth::user()->location == 'Addition Hills' ? 'selected' : '' }}>Addition Hills</option>
+                                <option value="Bagong Silang" {{ Auth::user()->location == 'Bagong Silang' ? 'selected' : '' }}>Bagong Silang</option>
+                                <option value="Barangka Drive" {{ Auth::user()->location == 'Barangka Drive' ? 'selected' : '' }}>Barangka Drive</option>
+                                <option value="Barangka Ibaba" {{ Auth::user()->location == 'Barangka Ibaba' ? 'selected' : '' }}>Barangka Ibaba</option>
+                                <option value="Barangka Ilaya" {{ Auth::user()->location == 'Barangka Ilaya' ? 'selected' : '' }}>Barangka Ilaya</option>
+                                <option value="Barangka Itaas" {{ Auth::user()->location == 'Barangka Itaas' ? 'selected' : '' }}>Barangka Itaas</option>
+                                <option value="Buayang Bato" {{ Auth::user()->location == 'Buayang Bato' ? 'selected' : '' }}>Buayang Bato</option>
+                                <option value="Burol" {{ Auth::user()->location == 'Burol' ? 'selected' : '' }}>Burol</option>
+                                <option value="Daang Bakal" {{ Auth::user()->location == 'Daang Bakal' ? 'selected' : '' }}>Daang Bakal</option>
+                                <option value="Hagdang Bato Itaas" {{ Auth::user()->location == 'Hagdang Bato Itaas' ? 'selected' : '' }}>Hagdang Bato Itaas</option>
+                                <option value="Hagdang Bato Libis" {{ Auth::user()->location == 'Hagdang Bato Libis' ? 'selected' : '' }}>Hagdang Bato Libis</option>
+                                <option value="Harapin Ang Bukas" {{ Auth::user()->location == 'Harapin Ang Bukas' ? 'selected' : '' }}>Harapin Ang Bukas</option>
+                                <option value="Highway Hills" {{ Auth::user()->location == 'Highway Hills' ? 'selected' : '' }}>Highway Hills</option>
+                                <option value="Hulo" {{ Auth::user()->location == 'Hulo' ? 'selected' : '' }}>Hulo</option>
+                                <option value="Mabini-J. Rizal" {{ Auth::user()->location == 'Mabini-J. Rizal' ? 'selected' : '' }}>Mabini-J. Rizal</option>
+                                <option value="Malamig" {{ Auth::user()->location == 'Malamig' ? 'selected' : '' }}>Malamig</option>
+                                <option value="Mauway" {{ Auth::user()->location == 'Mauway' ? 'selected' : '' }}>Mauway</option>
+                                <option value="Namayan" {{ Auth::user()->location == 'Namayan' ? 'selected' : '' }}>Namayan</option>
+                                <option value="New Zañiga" {{ Auth::user()->location == 'New Zañiga' ? 'selected' : '' }}>New Zañiga</option>
+                                <option value="Old Zañiga" {{ Auth::user()->location == 'Old Zañiga' ? 'selected' : '' }}>Old Zañiga</option>
+                                <option value="Pag-asa" {{ Auth::user()->location == 'Pag-asa' ? 'selected' : '' }}>Pag-asa</option>
+                                <option value="Plainview" {{ Auth::user()->location == 'Plainview' ? 'selected' : '' }}>Plainview</option>
+                                <option value="Pleasant Hills" {{ Auth::user()->location == 'Pleasant Hills' ? 'selected' : '' }}>Pleasant Hills</option>
+                                <option value="Poblacion" {{ Auth::user()->location == 'Poblacion' ? 'selected' : '' }}>Poblacion</option>
+                                <option value="San Jose" {{ Auth::user()->location == 'San Jose' ? 'selected' : '' }}>San Jose</option>
+                                <option value="Vergara" {{ Auth::user()->location == 'Vergara' ? 'selected' : '' }}>Vergara</option>
+                                <option value="Wack-Wack Greenhills" {{ Auth::user()->location == 'Wack-Wack Greenhills' ? 'selected' : '' }}>Wack-Wack Greenhills</option>
+                            </select>
+                        </div>
 
-                        <label>Profile Picture</label>
+                        <div class="field-group">
+                            <label>Complete Address</label>
+                            <div class="input-help">Enter your full address details (e.g., Block 1 Lot 2, 123 Main Street, Building Name)</div>
+                            <input type="text" name="address" value="{{ Auth::user()->address }}" 
+                                   placeholder="House/Unit No., Street Name, Building Name">
+                        </div>
+
+                        <div class="field-group">
+                            <label>Profile Picture</label>
                         <input type="file" name="profile_picture" accept="image/*">
 
                         @if(Auth::user()->profile_picture)
