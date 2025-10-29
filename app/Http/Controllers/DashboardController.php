@@ -12,38 +12,44 @@ class DashboardController extends Controller
     {
         $jobs = [
             [
+                'id' => 1,
                 'title' => 'Frontend Developer',
                 'company' => 'Tech Innovations Inc.',
                 'location' => 'Mandaluyong City',
                 'type' => 'Full-Time',
-                'salary' => 2500,
+                'salary' => 'PHP 2,500/day',
                 'description' => 'Work with a talented team to build responsive web apps.',
                 'skills' => ['HTML', 'CSS', 'JavaScript', 'Vue.js'],
+                'apply_url' => '#'
             ],
             [
+                'id' => 2,
                 'title' => 'Backend Developer',
                 'company' => 'NextGen Solutions',
                 'location' => 'Makati City',
                 'type' => 'Full-Time',
-                'salary' => 3000,
+                'salary' => 'PHP 3,000/day',
                 'description' => 'Develop and maintain APIs using Laravel framework.',
                 'skills' => ['PHP', 'Laravel', 'MySQL'],
+                'apply_url' => '#'
             ],
             [
+                'id' => 3,
                 'title' => 'UI/UX Designer',
                 'company' => 'Creative Minds Studio',
                 'location' => 'Quezon City',
                 'type' => 'Part-Time',
-                'salary' => 1800,
+                'salary' => 'PHP 1,800/day',
                 'description' => 'Design beautiful user interfaces and improve user experience.',
                 'skills' => ['Figma', 'Adobe XD', 'Wireframing'],
+                'apply_url' => '#'
             ],
         ];
 
         // determine which jobs are bookmarked by current user
         $bookmarkedTitles = [];
-        if (auth()->check()) {
-            $bookmarkedTitles = auth()->user()->bookmarks()->pluck('title')->toArray();
+        if (Auth::check()) {
+            $bookmarkedTitles = Auth::user()->bookmarks()->pluck('title')->toArray();
         }
 
         return view('dashboard', compact('jobs', 'bookmarkedTitles'));

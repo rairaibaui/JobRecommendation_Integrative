@@ -21,15 +21,21 @@ class User extends Authenticatable
     protected $fillable = [
         'first_name',
         'last_name',
-        'name',
         'email',
         'phone_number',
-        'date_of_birth',
         'birthday',
         'education_level',
         'skills',
         'years_of_experience',
         'location',
+        'address',
+        'summary',
+        'education',
+        'experiences',
+        'languages',
+        'portfolio_links',
+        'availability',
+        'resume_file',
         'user_type',
         'password',
         'profile_picture',
@@ -50,13 +56,14 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'birthday' => 'date',
+        'education' => 'array',
+        'experiences' => 'array',
+        'years_of_experience' => 'integer',
+    ];
 
     public function bookmarks()
     {

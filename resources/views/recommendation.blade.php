@@ -14,32 +14,42 @@
             <p>Jobs matched to your skills and preferences.</p>
         </div>
 
-        <!-- Search Bar Container -->
-        <div style="width: 898px; height: 74px; flex-shrink: 0; border-radius: 8px; background: #FFF; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; padding: 0 20px;">
-            <div class="inner-search-box" style="width: 850px; height: 50px; background: #F5F5F5; border-radius: 8px; display: flex; align-items: center; padding: 0 15px; border: 2px solid #648EB5; transition: all 0.3s ease;">
-                <i class="fas fa-search" style="font-size: 20px; color: #648EB5; margin-right: 10px;"></i>
-                <input type="text" placeholder="Search for jobs..." style="flex: 1; border: none; outline: none; background: transparent; font-size: 18px; font-family: 'Roboto', sans-serif;">
-            </div>
-        </div>
-
-        <p style="font-family: 'Roboto', sans-serif; font-size: 20px; color: #333; margin-bottom: 10px;">Showing {{ count($jobs) }} {{ Str::plural('job', count($jobs)) }}</p>
+        <p style="font-family: 'Roboto', sans-serif; font-size: 20px; color: #333; margin-bottom: 10px;">
+            Showing {{ count($jobs) }} {{ Str::plural('job', count($jobs)) }}
+        </p>
 
         <!-- Job list (stacked like dashboard) -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
             @foreach($jobs as $job)
-            <div class="job-card" data-title="{{ $job['title'] }}" data-location="{{ $job['location'] ?? '' }}" data-type="{{ $job['type'] ?? '' }}" data-salary="{{ $job['salary'] ?? '' }}" data-description="{{ $job['description'] ?? '' }}" data-skills='@json($job['skills'] ?? [])'>
+            <div class="job-card" 
+                 data-title="{{ $job['title'] }}" 
+                 data-location="{{ $job['location'] ?? '' }}" 
+                 data-type="{{ $job['type'] ?? '' }}" 
+                 data-salary="{{ $job['salary'] ?? '' }}" 
+                 data-description="{{ $job['description'] ?? '' }}" 
+                 data-skills='@json($job['skills'] ?? [])'>
+                
                 <div class="job-title">{{ $job['title'] }}</div>
 
                 <div class="job-preview">
-                    <div class="job-location"><i class="fas fa-map-marker-alt"></i> {{ $job['location'] ?? '' }}</div>
-                    <div class="job-type"><i class="fas fa-briefcase"></i> {{ $job['type'] ?? '' }}</div>
-                    <div class="job-salary"><i class="fas fa-money-bill-wave"></i> {{ $job['salary'] ?? '' }}</div>
+                    <div class="job-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ $job['location'] ?? 'N/A' }}</span>
+                    </div>
+                    <div class="job-type">
+                        <i class="fas fa-briefcase"></i>
+                        <span>{{ $job['type'] ?? 'Full-time' }}</span>
+                    </div>
+                    <div class="job-salary">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>{{ $job['salary'] ?? 'Negotiable' }}</span>
+                    </div>
                 </div>
 
                 <div class="job-details">
                     <div class="job-description">
                         <h4>Job Description</h4>
-                        {{ $job['description'] ?? '' }}
+                        <p>{{ $job['description'] ?? 'No description available.' }}</p>
                     </div>
 
                     <div class="skills-section">
@@ -47,20 +57,27 @@
                         <div class="job-skills">
                             @if(!empty($job['skills']))
                                 @foreach($job['skills'] as $skill)
-                                    <div class="skill">{{ $skill }}</div>
+                                    <span class="skill">{{ $skill }}</span>
                                 @endforeach
+                            @else
+                                <span class="skill">No specific skills listed</span>
                             @endif
                         </div>
                     </div>
                 </div>
 
                 <div class="job-actions">
-                    <button class="view-details" onclick="toggleJobDetails(this)">
-                        <i class="fas fa-chevron-down"></i> View Details
+                    <button class="view-details" onclick="toggleDetails(this)">
+                        <i class="fas fa-chevron-down"></i>
+                        View Details
                     </button>
-
-                    <button class="bookmark-btn" onclick="toggleBookmark(this)" title="{{ in_array($job['title'], $bookmarkedTitles ?? []) ? 'Unbookmark this job' : 'Bookmark this job' }}" data-title="{{ $job['title'] }}">
-                        <i class="{{ in_array($job['title'], $bookmarkedTitles ?? []) ? 'fas' : 'far' }} fa-bookmark"></i>
+                    <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
+                        <i class="fas fa-paper-plane"></i>
+                        Apply
+                    </button>
+                    <button class="bookmark-btn" onclick="toggleBookmark(this)">
+                        @php $isBookmarked = isset($bookmarkedTitles) && in_array($job['title'], $bookmarkedTitles); @endphp
+                        <i class="{{ $isBookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
                     </button>
                 </div>
             </div>
@@ -70,46 +87,220 @@
 </div>
 
 <style>
-.inner-search-box:hover { border-color: #648EB5; box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
-.inner-search-box:focus-within { border-color: #648EB5; box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+/* Job Card Styles */
+.job-card {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.job-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+}
+
+.job-title {
+    font-family: 'Roboto', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.job-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 15px;
+    color: #666;
+}
+
+.job-location, .job-type, .job-salary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+}
+
+.job-location i, .job-type i, .job-salary i {
+    color: #648EB5;
+    width: 16px;
+}
+
+.job-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    opacity: 0;
+    margin-top: 0;
+    padding: 0 10px;
+}
+
+.job-details.expanded {
+    max-height: 1000px;
+    opacity: 1;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.job-description {
+    margin-bottom: 20px;
+}
+
+.job-description h4, .skills-section h4 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.job-description p {
+    color: #666;
+    line-height: 1.6;
+}
+
+.job-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.skill {
+    background: #648EB5;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 14px;
+}
+
+.job-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.view-details, .apply-btn, .bookmark-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.view-details {
+    background: #f8f9fa;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.apply-btn {
+    background: #648EB5;
+    color: white;
+    flex: 1;
+}
+
+.bookmark-btn {
+    background: white;
+    border: 1px solid #648EB5;
+    color: #648EB5;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+}
+
+.bookmark-btn i.fas {
+    color: #FFD166;
+}
+
+.job-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
 </style>
 @endsection
 
 @push('scripts')
 <script>
-function getCsrfToken() { return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); }
+function getCsrfToken() { 
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); 
+}
+
+function toggleDetails(button) {
+    const jobCard = button.closest('.job-card');
+    const details = jobCard.querySelector('.job-details');
+    const icon = button.querySelector('i');
+    
+    if (details.classList.contains('expanded')) {
+        details.classList.remove('expanded');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        button.innerHTML = '<i class="fas fa-chevron-down"></i> View Details';
+    } else {
+        details.classList.add('expanded');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
+    }
+}
 
 function toggleBookmark(button) {
-    const icon = button.querySelector('i');
-    const jobCard = button.closest('.job-card');
-    const title = button.dataset.title || jobCard.dataset.title;
+    const card = button.closest('.job-card');
     const job = {
-        title: title,
-        location: jobCard.dataset.location,
-        type: jobCard.dataset.type,
-        salary: jobCard.dataset.salary,
-        description: jobCard.dataset.description,
-        skills: JSON.parse(jobCard.dataset.skills || '[]')
+        title: card.dataset.title || '',
+        location: card.dataset.location || '',
+        type: card.dataset.type || '',
+        salary: card.dataset.salary || '',
+        description: card.dataset.description || '',
+        skills: card.dataset.skills ? JSON.parse(card.dataset.skills) : []
     };
+    const icon = button.querySelector('i');
+    const isBookmarked = icon.classList.contains('fas');
+    const url = isBookmarked ? "{{ route('bookmark.remove') }}" : "{{ route('bookmark.add') }}";
 
-    const isBookmarking = icon.classList.contains('far');
-    const url = isBookmarking ? "{{ route('bookmark.add') }}" : "{{ route('bookmark.remove') }}";
+    button.disabled = true;
 
     fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+        },
         body: JSON.stringify({ job: job })
     })
-    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
     .then(({ ok, data }) => {
-        if (!ok) throw data;
-        if (isBookmarking) {
-            icon.classList.remove('far'); icon.classList.add('fas'); button.title = 'Unbookmark this job'; showMessage('Bookmarked — visible in Bookmarks page', 'success');
+        if (!ok) {
+            showMessage(data.message || 'Failed to update bookmark', 'error');
+            return;
+        }
+
+        if (isBookmarked) {
+            icon.classList.remove('fas');
+            icon.classList.add('far');
+            showMessage('Removed from bookmarks', 'info');
         } else {
-            icon.classList.remove('fas'); icon.classList.add('far'); button.title = 'Bookmark this job'; showMessage('Removed from bookmarks', 'info');
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            showMessage('Bookmarked — visible in Bookmarks page', 'success');
         }
     })
-    .catch(err => { console.error(err); showMessage('Failed to update bookmark', 'error'); });
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Failed to update bookmark', 'error');
+    })
+    .finally(() => { button.disabled = false; });
 }
 
 function showMessage(message, type) {
@@ -118,13 +309,23 @@ function showMessage(message, type) {
     messageDiv.style.position = 'fixed';
     messageDiv.style.top = '20px';
     messageDiv.style.right = '20px';
-    messageDiv.style.padding = '10px 20px';
+    messageDiv.style.padding = '12px 24px';
     messageDiv.style.borderRadius = '4px';
-    messageDiv.style.zIndex = '1000';
+    messageDiv.style.zIndex = '10000';
     messageDiv.style.color = 'white';
-    switch(type) { case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break; case 'info': messageDiv.style.backgroundColor = '#2196F3'; break; case 'error': messageDiv.style.backgroundColor = '#f44336'; break; default: messageDiv.style.backgroundColor = '#2196F3'; }
+    messageDiv.style.transform = 'translateY(-20px)';
+    messageDiv.style.opacity = '0';
+    messageDiv.style.transition = 'all 0.3s ease';
+    messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    switch(type) { 
+        case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break; 
+        case 'info': messageDiv.style.backgroundColor = '#2196F3'; break; 
+        case 'error': messageDiv.style.backgroundColor = '#f44336'; break; 
+        default: messageDiv.style.backgroundColor = '#2196F3'; 
+    }
     document.body.appendChild(messageDiv);
-    setTimeout(() => messageDiv.remove(), 3000);
+    setTimeout(() => { messageDiv.style.transform = 'translateY(0)'; messageDiv.style.opacity = '1'; }, 10);
+    setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2700);
 }
 </script>
 @endpush

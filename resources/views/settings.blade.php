@@ -312,6 +312,18 @@
                 <p style="color: #fff;">Manage your account preferences, profile, and security settings.</p>
             </div>
 
+            <!-- Selected Job Alert -->
+            <div id="selectedJobAlert" style="display:none; background:#fff; padding:20px; border-radius:8px; margin-bottom:20px; border-left:4px solid #648EB5;">
+                <h4 style="color:#1E3A5F; margin-bottom:10px;">Complete Your Profile to Apply</h4>
+                <div id="selectedJobDetails" style="margin-bottom:15px;">
+                    <!-- Job details will be inserted here -->
+                </div>
+                <p style="color:#666; font-size:14px;">
+                    Please complete your profile below to proceed with your application.
+                    Make sure to include your education, experience, and skills.
+                </p>
+            </div>
+
             <div class="settings-container" style="margin-top:30px;">
                 <!-- Tabs -->
                 <div class="tabs" style="display:flex; border-bottom:1px solid #8AA4B8; margin-bottom:20px;">
@@ -441,6 +453,99 @@
                                 </label>
                             </div>
                         @endif
+                        
+                        <div class="field-group">
+                            <label>Professional Summary</label>
+                            <div class="input-help">A short paragraph about your background — this will be used when you apply to jobs.</div>
+                            <textarea name="summary">{{ old('summary', Auth::user()->summary) }}</textarea>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Education</label>
+                            <div id="educationList">
+                                @php 
+                                    $edu = Auth::user()->education;
+                                    if (!is_array($edu)) {
+                                        try {
+                                            $edu = json_decode($edu ?: '[]', true) ?: [];
+                                        } catch (Exception $e) {
+                                            $edu = [];
+                                        }
+                                    }
+                                @endphp
+                                @if(!empty($edu))
+                                    @foreach($edu as $i => $e)
+                                        <div class="education-item" data-index="{{ $i }}" style="margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;">
+                                            <input type="text" name="education[{{ $i }}][degree]" placeholder="Degree / Course" value="{{ $e['degree'] ?? '' }}" style="margin-bottom:6px;" />
+                                            <input type="text" name="education[{{ $i }}][school]" placeholder="School / Institution" value="{{ $e['school'] ?? '' }}" style="margin-bottom:6px;" />
+                                            <input type="text" name="education[{{ $i }}][year]" placeholder="Year (e.g., 2018)" value="{{ $e['year'] ?? '' }}" />
+                                            <button type="button" onclick="removeEducation(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+                            <button type="button" id="addEducationBtn" class="edit-btn" style="margin-top:8px;">Add Education</button>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Work Experience</label>
+                            <div id="experienceList">
+                                @php 
+                                    $exps = Auth::user()->experiences;
+                                    if (!is_array($exps)) {
+                                        try {
+                                            $exps = json_decode($exps ?: '[]', true) ?: [];
+                                        } catch (Exception $e) {
+                                            $exps = [];
+                                        }
+                                    }
+                                @endphp
+                                @if(!empty($exps))
+                                    @foreach($exps as $i => $ex)
+                                        <div class="experience-item" data-index="{{ $i }}" style="margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;">
+                                            <input type="text" name="experiences[{{ $i }}][position]" placeholder="Position" value="{{ $ex['position'] ?? '' }}" style="margin-bottom:6px;" />
+                                            <input type="text" name="experiences[{{ $i }}][company]" placeholder="Company" value="{{ $ex['company'] ?? '' }}" style="margin-bottom:6px;" />
+                                            <input type="text" name="experiences[{{ $i }}][start_date]" placeholder="Start (e.g., Jan 2020)" value="{{ $ex['start_date'] ?? '' }}" style="margin-bottom:6px;" />
+                                            <input type="text" name="experiences[{{ $i }}][end_date]" placeholder="End (e.g., Dec 2022 or Present)" value="{{ $ex['end_date'] ?? '' }}" style="margin-bottom:6px;" />
+                                            <textarea name="experiences[{{ $i }}][responsibilities]" placeholder="Key responsibilities">{{ $ex['responsibilities'] ?? '' }}</textarea>
+                                            <button type="button" onclick="removeExperience(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+                            <button type="button" id="addExperienceBtn" class="edit-btn" style="margin-top:8px;">Add Experience</button>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Languages</label>
+                            <input type="text" name="languages" value="{{ old('languages', Auth::user()->languages) }}" placeholder="e.g., English (Fluent), Filipino (Native)">
+                        </div>
+
+                        <div class="field-group">
+                            <label>Portfolio / Links</label>
+                            <div class="input-help">Add links to your portfolio, GitHub, LinkedIn (comma separated)</div>
+                            <input type="text" name="portfolio_links" value="{{ old('portfolio_links', Auth::user()->portfolio_links) }}">
+                        </div>
+
+                        <div class="field-group">
+                            <label>Availability</label>
+                            <select name="availability">
+                                <option value="" {{ Auth::user()->availability == '' ? 'selected' : '' }}>Select availability</option>
+                                <option value="immediate" {{ Auth::user()->availability == 'immediate' ? 'selected' : '' }}>Immediate</option>
+                                <option value="2_weeks" {{ Auth::user()->availability == '2_weeks' ? 'selected' : '' }}>2 weeks</option>
+                                <option value="1_month" {{ Auth::user()->availability == '1_month' ? 'selected' : '' }}>1 month</option>
+                            </select>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Upload Resume (PDF/DOC)</label>
+                            <input type="file" name="resume_file" accept=".pdf,.doc,.docx">
+                            @if(Auth::user()->resume_file)
+                                <div style="margin-top:8px;">
+                                    Current: <a href="{{ asset('storage/' . Auth::user()->resume_file) }}" target="_blank">View uploaded resume</a>
+                                </div>
+                            @endif
+                        </div>
 
                         <button type="submit" class="edit-btn">Update Profile</button>
                     </form>
@@ -456,6 +561,37 @@
     
    <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Check for selected job from dashboard
+    const selectedJob = localStorage.getItem('selectedJob');
+    if (selectedJob) {
+        const jobData = JSON.parse(selectedJob);
+        const alertDiv = document.getElementById('selectedJobAlert');
+        const detailsDiv = document.getElementById('selectedJobDetails');
+        
+        if (alertDiv && detailsDiv) {
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom:10px;">
+                    <strong style="color:#1E3A5F;">Job Title:</strong> ${jobData.title}<br>
+                    <strong style="color:#1E3A5F;">Location:</strong> ${jobData.location}<br>
+                    <strong style="color:#1E3A5F;">Type:</strong> ${jobData.type}<br>
+                    <strong style="color:#1E3A5F;">Salary:</strong> ${jobData.salary}
+                </div>
+                <div style="margin-bottom:10px;">
+                    <strong style="color:#1E3A5F;">Required Skills:</strong><br>
+                    ${jobData.skills.map(skill => `<span style="background:#648EB5; color:white; padding:2px 8px; border-radius:4px; margin:2px; display:inline-block;">${skill}</span>`).join(' ')}
+                </div>
+            `;
+            alertDiv.style.display = 'block';
+
+            // Switch to profile tab
+            const profileTab = document.querySelector('.tabs .tab:nth-child(2)');
+            if (profileTab) profileTab.click();
+        }
+
+        // Clear the selected job
+        localStorage.removeItem('selectedJob');
+    }
+
     // ===== Tabs =====
     const tabs = document.querySelectorAll('.tabs .tab');
     const accountCard = document.querySelector('.account-card');
@@ -503,6 +639,154 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMsg.style.opacity = '0';
             setTimeout(() => errorMsg.remove(), 500);
         }, 2000); // 2 seconds
+    }
+
+    // ===== Dynamic Education & Experience Fields =====
+    const educationList = document.getElementById('educationList');
+    const addEducationBtn = document.getElementById('addEducationBtn');
+    const experienceList = document.getElementById('experienceList');
+    const addExperienceBtn = document.getElementById('addExperienceBtn');
+
+    function nextIndex(container) {
+        const items = container ? container.querySelectorAll('[data-index]') : [];
+        return items.length ? (Math.max(...Array.from(items).map(i => Number(i.getAttribute('data-index')))) + 1) : 0;
+    }
+
+    window.removeEducation = function(btn) {
+        const item = btn.closest('.education-item');
+        if (item) item.remove();
+    }
+
+    window.removeExperience = function(btn) {
+        const item = btn.closest('.experience-item');
+        if (item) item.remove();
+    }
+
+    addEducationBtn?.addEventListener('click', () => {
+        const idx = nextIndex(educationList);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'education-item';
+        wrapper.setAttribute('data-index', idx);
+        wrapper.style = 'margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;';
+        wrapper.innerHTML = `
+            <input type="text" name="education[${idx}][degree]" placeholder="Degree / Course" style="margin-bottom:6px;" />
+            <input type="text" name="education[${idx}][school]" placeholder="School / Institution" style="margin-bottom:6px;" />
+            <input type="text" name="education[${idx}][year]" placeholder="Year (e.g., 2018)" />
+            <button type="button" onclick="removeEducation(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
+        `;
+        educationList.appendChild(wrapper);
+    });
+
+    addExperienceBtn?.addEventListener('click', () => {
+        const idx = nextIndex(experienceList);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'experience-item';
+        wrapper.setAttribute('data-index', idx);
+        wrapper.style = 'margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;';
+        wrapper.innerHTML = `
+            <input type="text" name="experiences[${idx}][position]" placeholder="Position" style="margin-bottom:6px;" />
+            <input type="text" name="experiences[${idx}][company]" placeholder="Company" style="margin-bottom:6px;" />
+            <input type="text" name="experiences[${idx}][start_date]" placeholder="Start (e.g., Jan 2020)" style="margin-bottom:6px;" />
+            <input type="text" name="experiences[${idx}][end_date]" placeholder="End (e.g., Dec 2022 or Present)" style="margin-bottom:6px;" />
+            <textarea name="experiences[${idx}][responsibilities]" placeholder="Key responsibilities"></textarea>
+            <button type="button" onclick="removeExperience(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
+        `;
+        experienceList.appendChild(wrapper);
+    });
+
+    // ===== Helper: CSRF token and toast messages =====
+    function getCsrfToken() { return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); }
+
+    function showMessage(message, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.textContent = message;
+        messageDiv.style.position = 'fixed';
+        messageDiv.style.top = '20px';
+        messageDiv.style.right = '20px';
+        messageDiv.style.padding = '10px 20px';
+        messageDiv.style.borderRadius = '4px';
+        messageDiv.style.zIndex = '10000';
+        messageDiv.style.color = 'white';
+        messageDiv.style.boxShadow = '0 6px 12px rgba(0,0,0,0.12)';
+        switch(type) {
+            case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break;
+            case 'info': messageDiv.style.backgroundColor = '#2196F3'; break;
+            case 'error': messageDiv.style.backgroundColor = '#f44336'; break;
+            default: messageDiv.style.backgroundColor = '#2196F3';
+        }
+        document.body.appendChild(messageDiv);
+        setTimeout(() => { messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 400); }, 3000);
+    }
+
+    // ===== Ajax submit for profile form =====
+    const profileForm = document.querySelector('.profile-card form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const submitBtn = profileForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            const formData = new FormData(profileForm);
+            formData.append('_token', getCsrfToken());
+
+            // Convert education and experiences arrays to proper format
+            const educationItems = profileForm.querySelectorAll('.education-item');
+            educationItems.forEach((item, index) => {
+                const itemData = {};
+                item.querySelectorAll('input').forEach(input => {
+                    const name = input.getAttribute('name').match(/\[(\w+)\]$/)[1];
+                    itemData[name] = input.value;
+                });
+                formData.set(`education[${index}]`, JSON.stringify(itemData));
+            });
+
+            const experienceItems = profileForm.querySelectorAll('.experience-item');
+            experienceItems.forEach((item, index) => {
+                const itemData = {};
+                item.querySelectorAll('input, textarea').forEach(input => {
+                    const name = input.getAttribute('name').match(/\[(\w+)\]$/)[1];
+                    itemData[name] = input.value;
+                });
+                formData.set(`experiences[${index}]`, JSON.stringify(itemData));
+            });
+
+            // Debug: Log form data
+            console.log('Form data:', Object.fromEntries(formData.entries()));
+
+            fetch(profileForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }).then(async res => {
+                if (submitBtn) submitBtn.disabled = false;
+                const data = await res.json();
+                console.log('Response:', data); // Debug: Log response
+
+                if (res.ok) {
+                    showMessage(data.message || 'Profile updated successfully.', 'success');
+                    // Refresh profile pic if one was uploaded
+                    const picInput = profileForm.querySelector('input[name="profile_picture"]');
+                    if (picInput?.files?.length) {
+                        setTimeout(() => window.location.reload(), 800);
+                    }
+                } else if (res.status === 422) {
+                    const errs = data.errors || {};
+                    const messages = Object.values(errs).flat().join(' ');
+                    showMessage(messages || 'Validation failed.', 'error');
+                    console.error('Validation errors:', errs); // Debug: Log validation errors
+                } else {
+                    showMessage(data.message || 'Failed to update profile.', 'error');
+                    console.error('Error response:', data); // Debug: Log error response
+                }
+            }).catch((error) => {
+                console.error('Fetch error:', error); // Debug: Log any fetch errors
+                if (submitBtn) submitBtn.disabled = false;
+                showMessage('Error updating profile. Check console for details.', 'error');
+            });
+        });
     }
 });
 </script>

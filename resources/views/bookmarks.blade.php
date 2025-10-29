@@ -68,7 +68,11 @@
                                     <i class="fas fa-chevron-down"></i> View Details
                                 </button>
 
-                                <button class="bookmark-btn" onclick="removeBookmark(this)" title="Remove bookmark" data-title="{{ $job->title }}">
+                                <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
+                                    <i class="fas fa-paper-plane"></i> Apply
+                                </button>
+
+                                <button class="bookmark-btn" onclick="removeBookmark(this)" title="Remove bookmark">
                                     <i class="fas fa-bookmark"></i>
                                 </button>
                             </div>
@@ -80,6 +84,153 @@
     </div>
 
     <style>
+        /* Job Card Styles */
+        .job-card {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 200ms ease, box-shadow 200ms ease;
+        }
+
+        .job-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+
+        .job-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .job-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        .job-location, .job-type, .job-salary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .job-preview i {
+            color: #648EB5;
+            width: 16px;
+        }
+
+        .job-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            opacity: 0;
+            margin-top: 0;
+            padding: 0 10px;
+        }
+
+        .job-details.expanded {
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .job-description {
+            margin-bottom: 20px;
+        }
+
+        .job-description h4 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .job-description p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .skills-section h4 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .job-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .skill {
+            background: #648EB5;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .view-details, .apply-btn, .bookmark-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .view-details {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .apply-btn {
+            background: #648EB5;
+            color: white;
+            flex: 1;
+        }
+
+        .bookmark-btn {
+            background: white;
+            border: 1px solid #648EB5;
+            color: #648EB5;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .bookmark-btn i.fas {
+            color: #FFD166;
+        }
+
+        .job-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
         /* Empty state styling */
         .no-bookmarks {
             width: 100%;
@@ -133,7 +284,23 @@
 
 @push('scripts')
 <script>
-function getCsrfToken(){ return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); }
+    function toggleJobDetails(button) {
+        const jobCard = button.closest('.job-card');
+        const details = jobCard.querySelector('.job-details');
+        const icon = button.querySelector('i');
+        
+        if (details.classList.contains('expanded')) {
+            details.classList.remove('expanded');
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            button.innerHTML = '<i class="fas fa-chevron-down"></i> View Details';
+        } else {
+            details.classList.add('expanded');
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
+        }
+    }
 
 function showMessage(message, type) {
     const messageDiv = document.createElement('div');
@@ -141,14 +308,20 @@ function showMessage(message, type) {
     messageDiv.style.position = 'fixed';
     messageDiv.style.top = '20px';
     messageDiv.style.right = '20px';
-    messageDiv.style.padding = '10px 20px';
+    messageDiv.style.padding = '12px 24px';
     messageDiv.style.borderRadius = '4px';
-    messageDiv.style.zIndex = '1000';
+    messageDiv.style.zIndex = '10000';
     messageDiv.style.color = 'white';
     messageDiv.style.transform = 'translateY(-20px)';
     messageDiv.style.opacity = '0';
     messageDiv.style.transition = 'all 0.3s ease';
-    switch(type) { case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break; case 'info': messageDiv.style.backgroundColor = '#2196F3'; break; case 'error': messageDiv.style.backgroundColor = '#f44336'; break; default: messageDiv.style.backgroundColor = '#2196F3'; }
+    messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    switch(type) { 
+        case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break; 
+        case 'info': messageDiv.style.backgroundColor = '#2196F3'; break; 
+        case 'error': messageDiv.style.backgroundColor = '#f44336'; break; 
+        default: messageDiv.style.backgroundColor = '#2196F3'; 
+    }
     document.body.appendChild(messageDiv);
     setTimeout(() => { messageDiv.style.transform = 'translateY(0)'; messageDiv.style.opacity = '1'; }, 10);
     setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2700);
@@ -158,23 +331,52 @@ function removeBookmark(button){
     const card = button.closest('.job-card');
     const title = card.dataset.title;
 
+    // Disable button while request is in-flight
+    button.disabled = true;
+
     fetch("{{ route('bookmark.remove') }}", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() },
         body: JSON.stringify({ job: { title: title } })
-    }).then(res => res.json()).then(data => {
-        if(data.success){
-            card.style.transition = 'all 0.3s ease'; card.style.opacity = '0'; card.style.transform = 'translateY(-20px)';
-            setTimeout(() => {
-                card.remove();
-                const remainingCards = document.querySelectorAll('.job-card');
-                if (remainingCards.length === 0) { location.reload(); }
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+    .then(({ ok, data }) => {
+        if(!ok) {
+            button.disabled = false;
+            showMessage(data.message || 'Failed to remove bookmark', 'error');
+            return;
+        }
+
+        // Animate card out
+        card.style.transition = 'all 0.3s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(-20px)';
+
+        setTimeout(() => {
+            card.remove();
+
+            // Check if any bookmarks remain
+            const remainingCards = document.querySelectorAll('.job-card');
+            if (remainingCards.length === 0) {
+                // Reload page to show empty state
+                location.reload();
+            } else {
+                // Update count
                 const countElement = document.querySelector('.recommendation-header + p');
-                if (countElement) { const currentCount = remainingCards.length; countElement.textContent = `Showing ${currentCount} saved ${currentCount === 1 ? 'job' : 'jobs'}`; }
-            }, 300);
-            showMessage('Removed from bookmarks', 'info');
-        } else { showMessage('Failed to remove bookmark', 'error'); }
-    }).catch(() => showMessage('Error removing bookmark', 'error'));
+                if (countElement) {
+                    const currentCount = remainingCards.length;
+                    countElement.textContent = `Showing ${currentCount} saved ${currentCount === 1 ? 'job' : 'jobs'}`;
+                }
+            }
+        }, 300);
+
+        showMessage('Removed from bookmarks', 'info');
+    })
+    .catch((error) => {
+        console.error('Error removing bookmark:', error);
+        button.disabled = false;
+        showMessage('Error removing bookmark', 'error');
+    });
 }
 </script>
 @endpush

@@ -202,10 +202,10 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="date_of_birth">Date of Birth</label>
-                    <input type="date" name="date_of_birth" id="date_of_birth" value="{{ old('date_of_birth') }}"
-                        class="@error('date_of_birth') input-error @enderror" required>
-                    @error('date_of_birth') <span class="error-text">{{ $message }}</span> @enderror
+                    <label for="birthday">Date of Birth</label>
+                    <input type="date" name="birthday" id="birthday" value="{{ old('birthday') }}"
+                        class="@error('birthday') input-error @enderror">
+                    @error('birthday') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label for="phone_number">Phone Number</label>
@@ -218,22 +218,22 @@
             <div class="form-group">
                 <label for="education_level">Education Level</label>
                 <input type="text" name="education_level" id="education_level" value="{{ old('education_level') }}"
-                    class="@error('education_level') input-error @enderror" required>
+                    class="@error('education_level') input-error @enderror">
                 @error('education_level') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 
             <div class="form-group">
                 <label for="skills">Skills (Comma separated)</label>
                 <input type="text" name="skills" id="skills" value="{{ old('skills') }}"
-                    class="@error('skills') input-error @enderror" required>
+                    class="@error('skills') input-error @enderror">
                 @error('skills') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 
             <div class="form-group">
                 <label for="years_of_experience">Years of Experience</label>
                 <input type="text" name="years_of_experience" id="years_of_experience"
-                    value="{{ old('years_of_experience') }}" class="@error('years_of_experience') input-error @enderror"
-                    required>
+                    value="{{ old('years_of_experience', '0') }}" class="@error('years_of_experience') input-error @enderror"
+                    type="number" min="0">
                 @error('years_of_experience') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 

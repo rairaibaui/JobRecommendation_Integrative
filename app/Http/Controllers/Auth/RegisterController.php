@@ -28,14 +28,12 @@ class RegisterController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'date_of_birth' => 'required|date',
-
-            // NEW: Added unique:users for phone_number
+            'birthday' => 'nullable|date',
             'phone_number' => 'required|digits:11|numeric|unique:users',
 
             'education_level' => 'nullable|string|max:255',
             'skills' => 'nullable|string',
-            'years_of_experience' => 'nullable|numeric|min:0',
+            'years_of_experience' => 'nullable|integer|min:0',
             'location' => 'required|string|max:255',
             'password' => [
                 'required',
@@ -56,7 +54,7 @@ class RegisterController extends Controller
             'last_name' => $request->last_name,
             'email' => $request->email,               // <-- actual input
             'phone_number' => $request->phone_number, // <-- actual input
-            'date_of_birth' => $request->date_of_birth,
+            'birthday' => $request->birthday,
             'education_level' => $request->education_level,
             'skills' => $request->skills,
             'years_of_experience' => $request->years_of_experience,

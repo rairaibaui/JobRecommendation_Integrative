@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
     // Profile management
     Route::prefix('profile')->group(function () {
         Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
+        Route::get('/resume', [ProfileController::class, 'resume'])->name('profile.resume');
         Route::post('/change-email', [ProfileController::class, 'changeEmail'])->name('profile.changeEmail');
         Route::post('/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
         Route::post('/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
@@ -72,4 +73,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/add', [BookmarkController::class, 'store'])->name('bookmark.add');
         Route::post('/remove', [BookmarkController::class, 'destroy'])->name('bookmark.remove');
     });
+
+    // Job application
+    Route::post('/job/apply', [App\Http\Controllers\ApplicationController::class, 'store'])->name('job.apply');
 });
