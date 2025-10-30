@@ -302,8 +302,9 @@
     </style>
 
     <div class="main">
-        <div class="top-navbar">
-            <i class="fas fa-bars hamburger"></i> Job Portal - Mandaluyong
+        <div class="top-navbar" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>Job Portal - Mandaluyong</div>
+            @include('partials.notifications')
         </div>
 
         <div class="card-large">
@@ -495,7 +496,7 @@
                         @if(Auth::user()->profile_picture)
                             <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
                                 <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" width="120" height="120"
-                                    style="border-radius:50%;object-fit:cover; border:2px solid #ddd;">
+                                    style="border-radius:50%;object-fit:cover; border:none; outline:none;">
                                 <label style="font-weight:500;">
                                     <input type="checkbox" name="remove_picture" value="1">
                                     Remove current picture

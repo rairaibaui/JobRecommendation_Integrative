@@ -59,19 +59,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
   .profile-icon {
-    width: 40px;
-    height: 45px;
+    width: 62px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
   }
 
   .profile-icon i {
     font-size: 30px;
     color: #FFF;
+  }
+
+  .profile-icon img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    display: block;
   }
 
   .sidebar-btn {
@@ -563,11 +577,8 @@
   <div class="profile-ellipse">
     <div class="profile-icon">
       @if(Auth::user()->profile_picture)
-        <!-- Kung may profile picture, ipakita ito -->
-        <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture"
-          style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+        <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture">
       @else
-        <!-- Default icon kung walang picture -->
         <i class="fas fa-user"></i>
       @endif
     </div>
@@ -642,6 +653,29 @@
     </div>
 
     <div class="welcome">Welcome, {{ Auth::user()->first_name }}! 👋</div>
+
+    @if(Auth::user()->user_type === 'job_seeker')
+      @if(Auth::user()->employment_status === 'employed')
+        <div style="display:flex; align-items:center; gap:10px; margin:6px 0 10px 0;">
+          <span style="background:#d1e7dd; color:#0f5132; padding:6px 12px; border-radius:16px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
+            <i class="fas fa-briefcase"></i>
+            Currently employed @if(Auth::user()->hired_by_company) at {{ Auth::user()->hired_by_company }} @endif
+          </span>
+          @if(Auth::user()->hired_date)
+            <span style="background:#e2e3e5; color:#41464b; padding:6px 12px; border-radius:16px; font-size:12px;">
+              <i class="fas fa-calendar-alt"></i> since {{ Auth::user()->hired_date->format('M d, Y') }}
+            </span>
+          @endif
+        </div>
+      @else
+        <div style="margin:6px 0 10px 0;">
+          <span style="background:#d1ecf1; color:#0c5460; padding:6px 12px; border-radius:16px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
+            <i class="fas fa-search"></i>
+            Actively seeking opportunities
+          </span>
+        </div>
+      @endif
+    @endif
 
     <!-- Recommended & Bookmarked Jobs -->
     <div class="cards">

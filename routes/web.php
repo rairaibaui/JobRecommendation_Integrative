@@ -11,6 +11,7 @@ use App\Http\Controllers\EmployerApplicantsController;
 use App\Http\Controllers\EmployerHistoryController;
 use App\Http\Controllers\EmployerEmployeesController;
 use App\Http\Controllers\EmployerAnalyticsController;
+use App\Http\Controllers\EmployerAuditLogController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MyApplicationsController;
@@ -66,6 +67,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/employer/history', [EmployerHistoryController::class, 'index'])->name('employer.history');
     // Employer Analytics (Statistics & Insights)
     Route::get('/employer/analytics', [EmployerAnalyticsController::class, 'index'])->name('employer.analytics');
+    // Employer Audit Logs
+    Route::get('/employer/audit-logs', [EmployerAuditLogController::class, 'index'])->name('employer.auditLogs');
     // Employer Employees (Accepted/Hired applicants)
     Route::get('/employer/employees', [EmployerEmployeesController::class, 'index'])->name('employer.employees');
     Route::post('/employer/employees/{user}/terminate', [EmployerEmployeesController::class, 'terminate'])->name('employer.employees.terminate');

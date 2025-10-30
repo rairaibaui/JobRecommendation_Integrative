@@ -87,9 +87,9 @@
 }
 </style>
 <div class="main" style="position: relative;">
-    <div class="top-navbar">
-        <i class="fas fa-bars hamburger"></i>
-        Job Portal - Mandaluyong
+    <div class="top-navbar" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>Job Portal - Mandaluyong</div>
+        @include('partials.notifications')
     </div>
 
     <!-- Background overlay (soft white transparent) -->

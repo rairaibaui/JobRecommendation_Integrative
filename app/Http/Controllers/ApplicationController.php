@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Application;
-use App\Models\Notification;
 
 class ApplicationController extends Controller
 {
@@ -17,8 +17,8 @@ class ApplicationController extends Controller
         // Check if job seeker is already employed
         if ($user->user_type === 'job_seeker' && $user->employment_status === 'employed') {
             return response()->json([
-                'success' => false, 
-                'message' => 'You are currently employed by ' . ($user->hired_by_company ?? 'a company') . '. You cannot apply for other jobs while employed.',
+                'success' => false,
+                'message' => 'You are currently employed by '.($user->hired_by_company ?? 'a company').'. You cannot apply for other jobs while employed.',
             ], 403);
         }
 
@@ -31,9 +31,9 @@ class ApplicationController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Validation failed: ' . $validator->errors()->first(),
-                'errors' => $validator->errors()
+                'success' => false,
+                'message' => 'Validation failed: '.$validator->errors()->first(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -66,15 +66,36 @@ class ApplicationController extends Controller
                 ],
             ]);
 
+            // Notify employer about new application
+            if ($app->job_posting_id) {
+                $jobPosting = \App\Models\JobPosting::find($app->job_posting_id);
+                if ($jobPosting && $jobPosting->employer_id) {
+                    $applicantName = trim($user->first_name.' '.$user->last_name) ?: $user->email;
+
+                    Notification::create([
+                        'user_id' => $jobPosting->employer_id,
+                        'type' => 'new_application',
+                        'title' => 'New Application Received',
+                        'message' => "{$applicantName} has applied for {$app->job_title}.",
+                        'data' => [
+                            'application_id' => $app->id,
+                            'job_title' => $app->job_title,
+                            'applicant_name' => $applicantName,
+                            'applicant_id' => $user->id,
+                        ],
+                    ]);
+                }
+            }
+
             return response()->json([
-                'success' => true, 
+                'success' => true,
                 'message' => 'Application submitted successfully!',
-                'application_id' => $app->id
+                'application_id' => $app->id,
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Failed to save application: ' . $e->getMessage()
+                'success' => false,
+                'message' => 'Failed to save application: '.$e->getMessage(),
             ], 500);
         }
     }

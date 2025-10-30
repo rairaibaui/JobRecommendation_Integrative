@@ -11,12 +11,14 @@
   * { box-sizing: border-box; margin:0; padding:0; }
   body { width:100vw; min-height:100vh; display:flex; font-family:'Roboto', sans-serif; background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%); padding:88px 20px 20px 20px; gap:20px; }
   .sidebar { position:fixed; left:20px; top:88px; width:250px; height:calc(100vh - 108px); border-radius:8px; background:#FFF; padding:20px; display:flex; flex-direction:column; gap:20px; }
-  .profile-ellipse { width:62px; height:64px; border-radius:50%; background: linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%); display:flex; align-items:center; justify-content:center; align-self:center; }
+  .sidebar .profile-ellipse { align-self:center; }
+  .profile-ellipse { width:62px; height:64px; border-radius:50%; background:linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .profile-icon { width:62px; height:64px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:50%; }
   .profile-icon i { font-size:30px; color:#FFF; }
-  .profile-icon img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
-  .profile-name { align-self:center; font-family:'Poppins', sans-serif; font-size:18px; font-weight:600; color:#000; margin-bottom:8px; text-align:center; }
-  .company-name { align-self:center; font-family:'Roboto', sans-serif; font-size:14px; font-weight:400; color:#666; margin-bottom:20px; text-align:center; }
+  .profile-icon img { width:100%; height:100%; border-radius:50%; object-fit:cover; border:none; outline:none; box-shadow:none; display:block; }
+  .profile-name { align-self:center; font-family:'Poppins', sans-serif; font-size:18px; font-weight:600; color:#000; margin-bottom:8px; }
+  .company-name { align-self:center; font-family:'Roboto', sans-serif; font-size:14px; font-weight:400; color:#666; margin-bottom:20px; }
+  .sidebar .sidebar-btn { align-self:flex-start; }
   .sidebar-btn { display:flex; align-items:center; gap:10px; height:39px; padding:0 10px; border-radius:8px; background:transparent; color:#000; font-size:20px; cursor:pointer; text-decoration:none; transition:all .3s; }
   .sidebar-btn:hover { background:#e8f0f7; }
   .sidebar-btn.active { background:#648EB5; box-shadow:0 7px 4px rgba(0,0,0,0.25); color:#000; width:100%; }
@@ -33,13 +35,9 @@
 <body>
   <div class="top-navbar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <i class="fas fa-bars"></i>
       <span>APPLICANT PROFILE</span>
     </div>
-    <form method="POST" action="{{ route('logout') }}" style="margin:0;">
-      @csrf
-      <button type="submit" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-    </form>
+    @include('partials.notifications')
   </div>
 
   <div class="sidebar">
@@ -113,14 +111,60 @@
       @if(data_get($snap,'education'))
       <div class="section">
         <h3 class="sec-title"><i class="fas fa-graduation-cap"></i> Education</h3>
-        <p style="white-space:pre-wrap; color:#555;">{{ is_array(data_get($snap,'education')) ? json_encode(data_get($snap,'education')) : data_get($snap,'education') }}</p>
+        @php 
+          $education = data_get($snap,'education');
+          if (!is_array($education)) {
+            try {
+              $education = json_decode($education, true) ?: [];
+            } catch (Exception $e) {
+              $education = [];
+            }
+          }
+        @endphp
+        @if(!empty($education))
+          @foreach($education as $edu)
+            <div style="margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #EEE;">
+              <strong style="color:#333; display:block; margin-bottom:4px;">{{ $edu['degree'] ?? 'Degree' }}</strong>
+              <div style="color:#666; font-size:14px;">
+                @if(isset($edu['school'])){{ $edu['school'] }}@endif
+                @if(isset($edu['year'])) • Class of {{ $edu['year'] }}@endif
+              </div>
+            </div>
+          @endforeach
+        @endif
       </div>
       @endif
 
       @if(data_get($snap,'experience'))
       <div class="section">
         <h3 class="sec-title"><i class="fas fa-briefcase"></i> Experience</h3>
-        <p style="white-space:pre-wrap; color:#555;">{{ is_array(data_get($snap,'experience')) ? json_encode(data_get($snap,'experience')) : data_get($snap,'experience') }}</p>
+        @php 
+          $experience = data_get($snap,'experience');
+          if (!is_array($experience)) {
+            try {
+              $experience = json_decode($experience, true) ?: [];
+            } catch (Exception $e) {
+              $experience = [];
+            }
+          }
+        @endphp
+        @if(!empty($experience))
+          @foreach($experience as $exp)
+            <div style="margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #EEE;">
+              <strong style="color:#333; display:block; margin-bottom:4px;">{{ $exp['position'] ?? 'Position' }}</strong>
+              <div style="color:#666; font-size:14px;">
+                @if(isset($exp['company'])){{ $exp['company'] }}@endif
+                @if(isset($exp['start_date']) || isset($exp['end_date']))
+                  <br><i class="fas fa-calendar"></i> 
+                  {{ $exp['start_date'] ?? '' }}@if(isset($exp['start_date']) && isset($exp['end_date'])) - @endif{{ $exp['end_date'] ?? '' }}
+                @endif
+              </div>
+              @if(isset($exp['description']))
+                <p style="color:#555; margin-top:6px; font-size:14px;">{{ $exp['description'] }}</p>
+              @endif
+            </div>
+          @endforeach
+        @endif
       </div>
       @endif
 

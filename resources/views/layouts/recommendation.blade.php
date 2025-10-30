@@ -62,16 +62,27 @@
   }
 
   .profile-icon {
-    width: 40px;
-    height: 45px;
+    width: 62px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
   }
 
   .profile-icon i {
     font-size: 30px;
     color: #FFF;
+  }
+
+  .profile-icon img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: none;
+    outline: none;
   }
 
   .sidebar-btn {
@@ -344,8 +355,7 @@
     <div class="profile-ellipse">
       <div class="profile-icon">
         @if(Auth::user()->profile_picture)
-          <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture"
-            style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+          <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture">
         @else
           <i class="fas fa-user"></i>
         @endif

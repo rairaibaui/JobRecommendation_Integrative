@@ -11,12 +11,14 @@
   * { box-sizing: border-box; margin:0; padding:0; }
   body { width:100vw; height:100vh; display:flex; font-family:'Roboto', sans-serif; background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%); padding:88px 20px 20px 20px; gap:20px; }
   .sidebar { position:fixed; left:20px; top:88px; width:250px; height:calc(100vh - 108px); border-radius:8px; background:#FFF; padding:20px; display:flex; flex-direction:column; gap:20px; }
-  .profile-ellipse { width:62px; height:64px; border-radius:50%; background: linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%); display:flex; align-items:center; justify-content:center; align-self:center; }
+  .sidebar .profile-ellipse { align-self:center; }
+  .profile-ellipse { width:62px; height:64px; border-radius:50%; background:linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .profile-icon { width:62px; height:64px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:50%; }
   .profile-icon i { font-size:30px; color:#FFF; }
-  .profile-icon img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
-  .profile-name { align-self:center; font-family:'Poppins', sans-serif; font-size:18px; font-weight:600; color:#000; margin-bottom:8px; text-align:center; }
-  .company-name { align-self:center; font-family:'Roboto', sans-serif; font-size:14px; font-weight:400; color:#666; margin-bottom:20px; text-align:center; }
+  .profile-icon img { width:100%; height:100%; border-radius:50%; object-fit:cover; border:none; outline:none; box-shadow:none; display:block; }
+  .profile-name { align-self:center; font-family:'Poppins', sans-serif; font-size:18px; font-weight:600; color:#000; margin-bottom:8px; }
+  .company-name { align-self:center; font-family:'Roboto', sans-serif; font-size:14px; font-weight:400; color:#666; margin-bottom:20px; }
+  .sidebar .sidebar-btn { align-self:flex-start; }
   .sidebar-btn { display:flex; align-items:center; gap:10px; height:39px; padding:0 10px; border-radius:8px; background:transparent; color:#000; font-size:20px; cursor:pointer; text-decoration:none; transition:all .3s; }
   .sidebar-btn:hover { background:#e8f0f7; }
   .sidebar-btn.active { background:#648EB5; box-shadow:0 7px 4px rgba(0,0,0,0.25); color:#000; width:100%; }
@@ -33,13 +35,11 @@
 <body>
   <div class="top-navbar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <i class="fas fa-bars"></i>
       <span>EMPLOYER • EMPLOYEES</span>
     </div>
-    <form method="POST" action="{{ route('logout') }}" style="margin:0;">
-      @csrf
-      <button type="submit" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-    </form>
+    <div style="display:flex; align-items:center; gap:16px;">
+      @include('partials.notifications')
+    </div>
   </div>
 
   <div class="sidebar">
@@ -133,18 +133,74 @@
     </div>
   </div>
   <!-- Termination Modal -->
-  <div id="terminateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:12px; padding:26px; max-width:520px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-      <h3 style="margin:0 0 14px 0; color:#E53935; display:flex; align-items:center; gap:10px;"><i class="fas fa-user-times"></i> Terminate Employment</h3>
-      <p id="terminateText" style="color:#555; font-size:14px; margin-bottom:10px;">Are you sure you want to terminate this employee?</p>
-      <label style="font-weight:600; color:#334A5E; font-size:13px;">Reason (optional)</label>
-      <textarea id="terminateReason" placeholder="Enter reason (optional)" style="width:100%; min-height:90px; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea>
-      <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
-        <button type="button" onclick="closeTerminateModal()" class="edit-btn" style="background:#6c757d;color:#fff;border:none;">Cancel</button>
-        <button type="button" onclick="submitTerminate()" class="edit-btn" style="background:#E53935;color:#fff;border:none;">Confirm Termination</button>
+  <!-- Terminate Modal -->
+  <div id="terminateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:#fff; border-radius:16px; padding:0; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.4); overflow:hidden; animation:slideIn 0.3s ease-out;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg, #E53935 0%, #C62828 100%); padding:24px; color:#fff;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+          <div style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-user-times" style="font-size:24px;"></i>
+          </div>
+          <h3 style="margin:0; font-size:22px; font-weight:700;">Terminate Employment</h3>
+        </div>
+        <p style="margin:0; opacity:0.9; font-size:13px;">This action will end the employee's current employment</p>
+      </div>
+      
+      <!-- Body -->
+      <div style="padding:24px;">
+        <div style="background:#fff3cd; border-left:4px solid #ffc107; padding:12px 16px; border-radius:6px; margin-bottom:20px;">
+          <p id="terminateText" style="color:#856404; font-size:14px; margin:0; font-weight:500;">
+            <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>
+            Are you sure you want to terminate this employee?
+          </p>
+        </div>
+        
+        <div style="margin-bottom:4px;">
+          <label style="font-weight:600; color:#334A5E; font-size:14px; display:block; margin-bottom:8px;">
+            <i class="fas fa-comment-dots" style="margin-right:6px; color:#648EB5;"></i>
+            Reason for Termination <span style="color:#999; font-weight:400;">(Optional)</span>
+          </label>
+          <textarea id="terminateReason" 
+                    placeholder="Provide details about the termination reason..." 
+                    style="width:100%; min-height:100px; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; font-family:'Roboto', sans-serif; resize:vertical; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#648EB5'" 
+                    onblur="this.style.borderColor='#e0e0e0'"></textarea>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background:#f8f9fa; padding:20px 24px; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid #e0e0e0;">
+        <button type="button" 
+                onclick="closeTerminateModal()" 
+                style="padding:10px 24px; border-radius:8px; border:2px solid #6c757d; background:#fff; color:#6c757d; font-weight:600; cursor:pointer; font-size:14px; transition:all 0.3s;"
+                onmouseover="this.style.background='#6c757d'; this.style.color='#fff';" 
+                onmouseout="this.style.background='#fff'; this.style.color='#6c757d';">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button type="button" 
+                onclick="submitTerminate()" 
+                style="padding:10px 24px; border-radius:8px; border:none; background:linear-gradient(135deg, #E53935 0%, #C62828 100%); color:#fff; font-weight:600; cursor:pointer; font-size:14px; box-shadow:0 4px 12px rgba(229,57,53,0.3); transition:all 0.3s;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(229,57,53,0.4)';" 
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(229,57,53,0.3)';">
+          <i class="fas fa-check"></i> Confirm Termination
+        </button>
       </div>
     </div>
   </div>
+
+  <style>
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
 
   <script>
     let terminateUserId = null;

@@ -98,6 +98,28 @@ class EmployerApplicantsController extends Controller
                     $application->interview_notes = $request->input('interview_notes');
                 }
                 $application->save();
+                
+                // Send notification to job seeker when interview is scheduled
+                if ($newStatus === 'for_interview' && $application->interview_date) {
+                    $companyName = $employer->company_name ?? ($employer->first_name . ' ' . $employer->last_name);
+                    $interviewDate = \Carbon\Carbon::parse($application->interview_date)->format('l, F j, Y \a\t g:i A');
+                    
+                    \App\Models\Notification::create([
+                        'user_id' => $application->user_id,
+                        'type' => 'interview_scheduled',
+                        'title' => 'Interview Scheduled!',
+                        'message' => "You have an interview scheduled with {$companyName} for the position of {$application->job_title} on {$interviewDate}.",
+                        'data' => [
+                            'application_id' => $application->id,
+                            'job_title' => $application->job_title,
+                            'company_name' => $companyName,
+                            'interview_date' => $application->interview_date,
+                            'interview_location' => $application->interview_location,
+                            'interview_notes' => $application->interview_notes,
+                        ],
+                        'read' => false,
+                    ]);
+                }
             }
 
         // If hiring (accepting) the applicant, update their employment status
@@ -109,6 +131,39 @@ class EmployerApplicantsController extends Controller
                 $jobSeeker->hired_date = now();
                 $jobSeeker->save();
             }
+            
+            // Send acceptance notification
+            $companyName = $employer->company_name ?? ($employer->first_name . ' ' . $employer->last_name);
+            \App\Models\Notification::create([
+                'user_id' => $application->user_id,
+                'type' => 'application_accepted',
+                'title' => 'Congratulations! You\'re Hired! 🎉',
+                'message' => "Congratulations! {$companyName} has accepted your application for the position of {$application->job_title}. Welcome to the team!",
+                'data' => [
+                    'application_id' => $application->id,
+                    'job_title' => $application->job_title,
+                    'company_name' => $companyName,
+                ],
+                'read' => false,
+            ]);
+        }
+        
+        // Send rejection notification
+        if ($newStatus === 'rejected') {
+            $companyName = $employer->company_name ?? ($employer->first_name . ' ' . $employer->last_name);
+            \App\Models\Notification::create([
+                'user_id' => $application->user_id,
+                'type' => 'application_rejected',
+                'title' => 'Application Update',
+                'message' => "Thank you for your interest in the {$application->job_title} position at {$companyName}. Unfortunately, we have decided to move forward with other candidates at this time.",
+                'data' => [
+                    'application_id' => $application->id,
+                    'job_title' => $application->job_title,
+                    'company_name' => $companyName,
+                    'rejection_reason' => $rejectionReason,
+                ],
+                'read' => false,
+            ]);
         }
 
         // Create history record for hired or rejected applicants

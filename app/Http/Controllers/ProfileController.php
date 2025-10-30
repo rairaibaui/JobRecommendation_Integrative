@@ -21,119 +21,119 @@ class ProfileController extends Controller
             if (!$user) {
                 return response()->json(['message' => 'User not found'], 404);
             }
-            
+
             // Validate all profile fields
             $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'birthday' => 'nullable|date',
-            'phone_number' => 'nullable|string|max:20',
-            'education_level' => 'nullable|string|max:255',
-            'skills' => 'nullable|string',
-            'summary' => 'nullable|string',
-            'education' => 'nullable|array',
-            'experiences' => 'nullable|array',
-            'languages' => 'nullable|string',
-            'portfolio_links' => 'nullable|string',
-            'availability' => 'nullable|string',
-            'resume_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
-            'years_of_experience' => 'nullable|numeric|min:0',
-            'location' => 'required|string|max:255',
-            'address' => 'nullable|string|max:255',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'remove_picture' => 'nullable|boolean',
-        ]);
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'birthday' => 'nullable|date',
+                'phone_number' => 'nullable|string|max:20',
+                'education_level' => 'nullable|string|max:255',
+                'skills' => 'nullable|string',
+                'summary' => 'nullable|string',
+                'education' => 'nullable|array',
+                'experiences' => 'nullable|array',
+                'languages' => 'nullable|string',
+                'portfolio_links' => 'nullable|string',
+                'availability' => 'nullable|string',
+                'resume_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+                'years_of_experience' => 'nullable|numeric|min:0',
+                'location' => 'required|string|max:255',
+                'address' => 'nullable|string|max:255',
+                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'remove_picture' => 'nullable|boolean',
+            ]);
 
-        // Track what was updated
-        $pictureUpdated = false;
-        $detailsUpdated = false;
+            // Track what was updated
+            $pictureUpdated = false;
+            $detailsUpdated = false;
 
-        // Update profile details using fillable fields
-        $data = $request->only([
-            'first_name',
-            'last_name',
-            'birthday',
-            'phone_number',
-            'summary',
-            'languages',
-            'portfolio_links',
-            'availability',
-            'education_level',
-            'skills',
-            'years_of_experience',
-            'location',
-            'address'
-        ]);
-        
-        // Debug: Log the birthday value
-        Log::info('Profile Update - Birthday from request:', [
-            'birthday_in_data' => $data['birthday'] ?? 'not set',
-            'birthday_from_request' => $request->birthday ?? 'not set',
-            'all_request_data' => $request->all()
-        ]);
-        
-        // Handle education array
-        if ($request->has('education')) {
-            $education = collect($request->education)->map(function ($item) {
-                return is_string($item) ? json_decode($item, true) : $item;
-            })->toArray();
-            $data['education'] = $education;
-        }
-        
-        // Handle experiences array
-        if ($request->has('experiences')) {
-            $experiences = collect($request->experiences)->map(function ($item) {
-                return is_string($item) ? json_decode($item, true) : $item;
-            })->toArray();
-            $data['experiences'] = $experiences;
-        }
-        
-        $user->fill($data);
-        $user->education_level = $request->education_level;
-        $user->skills = $request->skills;
-        $user->years_of_experience = $request->years_of_experience;
-        $user->location = $request->location;
-        $user->address = $request->address;
-        
-        // Explicitly set birthday to ensure it's saved
-        if ($request->has('birthday') && $request->birthday) {
-            $user->birthday = $request->birthday;
-            Log::info('Birthday explicitly set:', ['birthday' => $user->birthday]);
-        }
+            // Update profile details using fillable fields
+            $data = $request->only([
+                'first_name',
+                'last_name',
+                'birthday',
+                'phone_number',
+                'summary',
+                'languages',
+                'portfolio_links',
+                'availability',
+                'education_level',
+                'skills',
+                'years_of_experience',
+                'location',
+                'address',
+            ]);
 
-        // Always mark as updated since we're handling arrays
-        $detailsUpdated = true;
+            // Debug: Log the birthday value
+            Log::info('Profile Update - Birthday from request:', [
+                'birthday_in_data' => $data['birthday'] ?? 'not set',
+                'birthday_from_request' => $request->birthday ?? 'not set',
+                'all_request_data' => $request->all(),
+            ]);
 
-        // Handle profile picture
-        if ($request->has('remove_picture') && $request->remove_picture) {
-            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-                Storage::disk('public')->delete($user->profile_picture);
+            // Handle education array
+            if ($request->has('education')) {
+                $education = collect($request->education)->map(function ($item) {
+                    return is_string($item) ? json_decode($item, true) : $item;
+                })->toArray();
+                $data['education'] = $education;
             }
-            $user->profile_picture = null;
-            $pictureUpdated = true;
-        }
 
-        if ($request->hasFile('profile_picture')) {
-            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-                Storage::disk('public')->delete($user->profile_picture);
+            // Handle experiences array
+            if ($request->has('experiences')) {
+                $experiences = collect($request->experiences)->map(function ($item) {
+                    return is_string($item) ? json_decode($item, true) : $item;
+                })->toArray();
+                $data['experiences'] = $experiences;
             }
-            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $user->profile_picture = $path;
-            $pictureUpdated = true;
-        }
 
-        // Handle resume file upload
-        if ($request->hasFile('resume_file')) {
-            if ($user->resume_file && Storage::disk('public')->exists($user->resume_file)) {
-                Storage::disk('public')->delete($user->resume_file);
+            $user->fill($data);
+            $user->education_level = $request->education_level;
+            $user->skills = $request->skills;
+            $user->years_of_experience = $request->years_of_experience;
+            $user->location = $request->location;
+            $user->address = $request->address;
+
+            // Explicitly set birthday to ensure it's saved
+            if ($request->has('birthday') && $request->birthday) {
+                $user->birthday = $request->birthday;
+                Log::info('Birthday explicitly set:', ['birthday' => $user->birthday]);
             }
-            $rpath = $request->file('resume_file')->store('resumes', 'public');
-            $user->resume_file = $rpath;
-        }
+
+            // Always mark as updated since we're handling arrays
+            $detailsUpdated = true;
+
+            // Handle profile picture
+            if ($request->has('remove_picture') && $request->remove_picture) {
+                if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                    Storage::disk('public')->delete($user->profile_picture);
+                }
+                $user->profile_picture = null;
+                $pictureUpdated = true;
+            }
+
+            if ($request->hasFile('profile_picture')) {
+                if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                    Storage::disk('public')->delete($user->profile_picture);
+                }
+                $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+                $user->profile_picture = $path;
+                $pictureUpdated = true;
+            }
+
+            // Handle resume file upload
+            if ($request->hasFile('resume_file')) {
+                if ($user->resume_file && Storage::disk('public')->exists($user->resume_file)) {
+                    Storage::disk('public')->delete($user->resume_file);
+                }
+                $rpath = $request->file('resume_file')->store('resumes', 'public');
+                $user->resume_file = $rpath;
+            }
 
             try {
                 $user->save();
-                
+
                 // Prepare message
                 if ($pictureUpdated && $detailsUpdated) {
                     $message = 'Profile details and picture updated successfully.';
@@ -148,30 +148,31 @@ class ProfileController extends Controller
                     return response()->json([
                         'success' => true,
                         'message' => $message,
-                        'user' => $user->fresh()
+                        'user' => $user->fresh(),
                     ]);
                 }
 
                 return redirect()->back()->with('success', $message);
-                
             } catch (\Exception $e) {
-                Log::error('Profile update error: ' . $e->getMessage());
+                Log::error('Profile update error: '.$e->getMessage());
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to save profile: ' . $e->getMessage()
+                    'message' => 'Failed to save profile: '.$e->getMessage(),
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Profile update error: ' . $e->getMessage());
+            Log::error('Profile update error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating profile: ' . $e->getMessage()
+                'message' => 'Error updating profile: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Return resume/profile as JSON for the apply flow
+     * Return resume/profile as JSON for the apply flow.
      */
     public function resume(Request $request)
     {
@@ -192,7 +193,7 @@ class ProfileController extends Controller
             'languages' => $user->languages,
             'portfolio_links' => $user->portfolio_links,
             'availability' => $user->availability,
-            'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
+            'profile_picture' => $user->profile_picture ? asset('storage/'.$user->profile_picture) : null,
             'employment_status' => $user->employment_status ?? 'unemployed',
             'hired_by_company' => $user->hired_by_company,
             'hired_date' => $user->hired_date ? $user->hired_date->format('Y-m-d') : null,
@@ -208,20 +209,20 @@ class ProfileController extends Controller
             'email' => 'required|email|unique:users,email,'.$user->id,
         ]);
 
-    $user->email = $request->email;
-    $user->save();
+        $user->email = $request->email;
+        $user->save();
 
         return redirect()->back()->with('success', 'Email updated successfully.');
     }
     // Keep other methods (changeEmail, deactivate, etc.) as is
 
     /**
-     * Job seeker resigns from current employment
+     * Job seeker resigns from current employment.
      */
     public function resign(Request $request)
     {
-    /** @var User $user */
-    $user = User::find(Auth::id());
+        /** @var User $user */
+        $user = User::find(Auth::id());
         if (!$user || ($user->user_type ?? null) !== 'job_seeker') {
             abort(403, 'Unauthorized');
         }
@@ -263,14 +264,32 @@ class ProfileController extends Controller
             'decision_date' => now(),
         ]);
 
+        // Notify the employer about the resignation
+        if ($lastHire && $lastHire->employer_id) {
+            $employerUser = User::find($lastHire->employer_id);
+            if ($employerUser) {
+                $userName = trim($user->first_name.' '.$user->last_name) ?: $user->email;
+                $jobTitle = $lastHire->job_title ?? 'Unknown Position';
+
+                \App\Models\Notification::create([
+                    'user_id' => $employerUser->id,
+                    'type' => 'employee_resigned',
+                    'title' => 'Employee Resigned',
+                    'message' => "{$userName} has resigned from the position of {$jobTitle}.",
+                    'read' => false,
+                ]);
+            }
+        }
+
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'You have resigned. Your status is now set to actively seeking.']);
         }
+
         return redirect()->back()->with('success', 'You have resigned. You can now apply for new job postings.');
     }
 
     /**
-     * Update employer profile (company details)
+     * Update employer profile (company details).
      */
     public function updateEmployer(Request $request)
     {
@@ -289,19 +308,34 @@ class ProfileController extends Controller
             'address' => 'nullable|string|max:255',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'remove_picture' => 'nullable|boolean',
         ]);
 
         $user->company_name = $request->company_name;
-        if ($request->filled('first_name')) $user->first_name = $request->first_name;
-        if ($request->filled('last_name')) $user->last_name = $request->last_name;
-        if ($request->filled('job_title')) $user->job_title = $request->job_title;
+        if ($request->filled('first_name')) {
+            $user->first_name = $request->first_name;
+        }
+        if ($request->filled('last_name')) {
+            $user->last_name = $request->last_name;
+        }
+        if ($request->filled('job_title')) {
+            $user->job_title = $request->job_title;
+        }
         $user->phone_number = $request->phone_number; // required
         $user->address = $request->address;
 
+        // Handle profile picture removal
+        if ($request->has('remove_picture') && $request->remove_picture) {
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+            $user->profile_picture = null;
+        }
+
         // Company logo/profile picture
         if ($request->hasFile('profile_picture')) {
-            if ($user->profile_picture && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile_picture)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->profile_picture);
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
             }
             $path = $request->file('profile_picture')->store('profile_pictures', 'public');
             $user->profile_picture = $path;
@@ -309,8 +343,8 @@ class ProfileController extends Controller
 
         // Business permit upload
         if ($request->hasFile('business_permit')) {
-            if ($user->business_permit_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->business_permit_path)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->business_permit_path);
+            if ($user->business_permit_path && Storage::disk('public')->exists($user->business_permit_path)) {
+                Storage::disk('public')->delete($user->business_permit_path);
             }
             $bpath = $request->file('business_permit')->store('business_permits', 'public');
             $user->business_permit_path = $bpath;
@@ -321,6 +355,7 @@ class ProfileController extends Controller
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Employer profile updated successfully.']);
         }
+
         return redirect()->route('settings')->with('success', 'Employer profile updated successfully.');
     }
 }

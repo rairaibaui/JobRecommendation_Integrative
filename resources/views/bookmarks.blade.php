@@ -4,7 +4,6 @@
     <div class="main">
         <div class="top-navbar" style="display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; align-items:center; gap:12px;">
-                <i class="fas fa-bars hamburger"></i>
                 Job Portal - Mandaluyong
             </div>
             <div class="notif-wrapper" style="position:relative;">

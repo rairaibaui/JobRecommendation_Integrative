@@ -91,6 +91,36 @@ class EmployerEmployeesController extends Controller
             'decision_date' => now(),
         ]);
 
+        // Notifications: inform both the job seeker and the employer
+        try {
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'type' => 'employment_terminated',
+                'title' => 'Employment Terminated',
+                'message' => "Your employment with {$employerName} has been terminated." . ($request->filled('reason') ? " Reason: " . $request->input('reason') : ''),
+                'data' => [
+                    'employer_name' => $employerName,
+                    'reason' => $request->input('reason'),
+                ],
+                'read' => false,
+            ]);
+
+            \App\Models\Notification::create([
+                'user_id' => $employer->id,
+                'type' => 'employee_terminated',
+                'title' => 'Employee Terminated',
+                'message' => "You have terminated employment for {$user->first_name} {$user->last_name}.",
+                'data' => [
+                    'job_seeker_id' => $user->id,
+                    'job_seeker_name' => trim(($user->first_name.' '.$user->last_name)),
+                    'reason' => $request->input('reason'),
+                ],
+                'read' => false,
+            ]);
+        } catch (\Throwable $e) {
+            // Silent fail: do not block termination on notification errors
+        }
+
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Employee has been terminated.']);
         }
