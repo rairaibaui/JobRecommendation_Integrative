@@ -201,16 +201,126 @@ class ProfileController extends Controller
 
     public function changeEmail(Request $request)
     {
-        $user = Auth::user();
+        /** @var User $user */
+        $user = User::find(Auth::id());
 
         $request->validate([
             'email' => 'required|email|unique:users,email,'.$user->id,
         ]);
 
-        $user->email = $request->email;
-        $user->save();
+    $user->email = $request->email;
+    $user->save();
 
         return redirect()->back()->with('success', 'Email updated successfully.');
     }
     // Keep other methods (changeEmail, deactivate, etc.) as is
+
+    /**
+     * Job seeker resigns from current employment
+     */
+    public function resign(Request $request)
+    {
+    /** @var User $user */
+    $user = User::find(Auth::id());
+        if (!$user || ($user->user_type ?? null) !== 'job_seeker') {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        if (($user->employment_status ?? 'unemployed') !== 'employed') {
+            return redirect()->back()->with('success', 'Your status is already set to not employed.');
+        }
+
+        // Capture employer context from the last hire
+        $lastHire = \App\Models\ApplicationHistory::where('job_seeker_id', $user->id)
+            ->where('decision', 'hired')
+            ->orderByDesc('decision_date')
+            ->first();
+
+        $companyNameBefore = $user->hired_by_company;
+
+        // Update employment fields
+        $user->employment_status = 'unemployed';
+        $user->hired_by_company = null;
+        $user->hired_date = null;
+        $user->save();
+
+        // Record resignation in history for traceability
+        \App\Models\ApplicationHistory::create([
+            'application_id' => $lastHire->application_id ?? null,
+            'employer_id' => $lastHire->employer_id ?? null,
+            'job_seeker_id' => $user->id,
+            'job_posting_id' => $lastHire->job_posting_id ?? null,
+            'job_title' => $lastHire->job_title ?? null,
+            'company_name' => $companyNameBefore,
+            'decision' => 'resigned',
+            'rejection_reason' => $request->input('reason'),
+            'applicant_snapshot' => $lastHire->applicant_snapshot ?? null,
+            'job_snapshot' => $lastHire->job_snapshot ?? null,
+            'decision_date' => now(),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'You have resigned. Your status is now set to actively seeking.']);
+        }
+        return redirect()->back()->with('success', 'You have resigned. You can now apply for new job postings.');
+    }
+
+    /**
+     * Update employer profile (company details)
+     */
+    public function updateEmployer(Request $request)
+    {
+        /** @var User $user */
+        $user = User::find(Auth::id());
+        if (!$user || ($user->user_type ?? null) !== 'employer') {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'company_name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'job_title' => 'nullable|string|max:255',
+            'phone_number' => 'required|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $user->company_name = $request->company_name;
+        if ($request->filled('first_name')) $user->first_name = $request->first_name;
+        if ($request->filled('last_name')) $user->last_name = $request->last_name;
+        if ($request->filled('job_title')) $user->job_title = $request->job_title;
+        $user->phone_number = $request->phone_number; // required
+        $user->address = $request->address;
+
+        // Company logo/profile picture
+        if ($request->hasFile('profile_picture')) {
+            if ($user->profile_picture && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile_picture)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->profile_picture);
+            }
+            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $user->profile_picture = $path;
+        }
+
+        // Business permit upload
+        if ($request->hasFile('business_permit')) {
+            if ($user->business_permit_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->business_permit_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->business_permit_path);
+            }
+            $bpath = $request->file('business_permit')->store('business_permits', 'public');
+            $user->business_permit_path = $bpath;
+        }
+
+        $user->save();
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Employer profile updated successfully.']);
+        }
+        return redirect()->route('settings')->with('success', 'Employer profile updated successfully.');
+    }
 }

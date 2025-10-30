@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employer/dashboard', [EmployerDashboardController::class, 'index'])->name('employer.dashboard');
     // Employer Applicants Management
     Route::get('/employer/applicants', [EmployerApplicantsController::class, 'index'])->name('employer.applicants');
+    Route::get('/employer/applications/{application}/applicant', [EmployerApplicantsController::class, 'showApplicant'])->name('employer.applicants.show');
     Route::post('/employer/applications/{application}/status', [EmployerApplicantsController::class, 'updateStatus'])->name('employer.applications.updateStatus');
     Route::delete('/employer/applications/{application}', [EmployerApplicantsController::class, 'destroy'])->name('employer.applications.destroy');
     
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employer/history', [EmployerHistoryController::class, 'index'])->name('employer.history');
     // Employer Employees (Accepted/Hired applicants)
     Route::get('/employer/employees', [EmployerEmployeesController::class, 'index'])->name('employer.employees');
+    Route::post('/employer/employees/{user}/terminate', [EmployerEmployeesController::class, 'terminate'])->name('employer.employees.terminate');
     
     // Employer Job Postings
     Route::get('/employer/jobs', [JobPostingController::class, 'index'])->name('employer.jobs');
@@ -94,10 +96,14 @@ Route::middleware('auth')->group(function () {
     // Profile management
     Route::prefix('profile')->group(function () {
         Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/update-employer', [ProfileController::class, 'updateEmployer'])->name('profile.updateEmployer');
         Route::get('/resume', [ProfileController::class, 'resume'])->name('profile.resume');
         Route::post('/change-email', [ProfileController::class, 'changeEmail'])->name('profile.changeEmail');
         Route::post('/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
         Route::post('/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
+
+        // Employment actions (job seeker resign)
+        Route::post('/resign', [ProfileController::class, 'resign'])->name('profile.resign');
 
         // Profile picture upload
         Route::post('/profile/upload-photo', [ProfileController::class, 'uploadPhoto'])->name('profile.uploadPhoto')->middleware('auth');

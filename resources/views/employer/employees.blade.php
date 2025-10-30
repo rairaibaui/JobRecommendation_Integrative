@@ -102,7 +102,17 @@
                       @endif
                     </div>
                   </div>
-                  <span class="badge-hired"><i class="fas fa-check"></i> HIRED</span>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    @php $isStillEmployed = optional($rec->jobSeeker)->employment_status === 'employed'; @endphp
+                    <span class="badge-hired" style="background: {{ $isStillEmployed ? '#d1e7dd' : '#e2e3e5' }}; color: {{ $isStillEmployed ? '#0f5132' : '#6c757d' }};">
+                      <i class="fas {{ $isStillEmployed ? 'fa-check' : 'fa-user-slash' }}"></i> {{ $isStillEmployed ? 'EMPLOYED' : 'NO LONGER WORKING' }}
+                    </span>
+                    @if($isStillEmployed)
+                      <button type="button" onclick="openTerminateModal({{ $rec->jobSeeker->id }}, '{{ addslashes(data_get($rec->applicant_snapshot,'first_name').' '.data_get($rec->applicant_snapshot,'last_name')) }}')" class="edit-btn" style="background:#E53935;color:#fff;border:none;">
+                        <i class="fas fa-user-times"></i> Terminate
+                      </button>
+                    @endif
+                  </div>
                 </div>
                 <div style="margin-top:8px; font-size:12px; color:#666;">
                   <i class="fas fa-calendar"></i> Hired on {{ $rec->decision_date->format('M d, Y') }}
@@ -119,5 +129,45 @@
       @endif
     </div>
   </div>
+  <!-- Termination Modal -->
+  <div id="terminateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:26px; max-width:520px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 14px 0; color:#E53935; display:flex; align-items:center; gap:10px;"><i class="fas fa-user-times"></i> Terminate Employment</h3>
+      <p id="terminateText" style="color:#555; font-size:14px; margin-bottom:10px;">Are you sure you want to terminate this employee?</p>
+      <label style="font-weight:600; color:#334A5E; font-size:13px;">Reason (optional)</label>
+      <textarea id="terminateReason" placeholder="Enter reason (optional)" style="width:100%; min-height:90px; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea>
+      <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+        <button type="button" onclick="closeTerminateModal()" class="edit-btn" style="background:#6c757d;color:#fff;border:none;">Cancel</button>
+        <button type="button" onclick="submitTerminate()" class="edit-btn" style="background:#E53935;color:#fff;border:none;">Confirm Termination</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let terminateUserId = null;
+    function openTerminateModal(userId, name){
+      terminateUserId = userId;
+      document.getElementById('terminateText').innerHTML = `Are you sure you want to terminate <strong>${name}</strong>?`;
+      document.getElementById('terminateModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeTerminateModal(){
+      terminateUserId = null;
+      document.getElementById('terminateReason').value = '';
+      document.getElementById('terminateModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+    function submitTerminate(){
+      if(!terminateUserId) return;
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/employer/employees/${terminateUserId}/terminate`;
+      const csrf = document.createElement('input'); csrf.type='hidden'; csrf.name='_token'; csrf.value='{{ csrf_token() }}';
+      const reason = document.createElement('input'); reason.type='hidden'; reason.name='reason'; reason.value=document.getElementById('terminateReason').value;
+      form.append(csrf, reason);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  </script>
 </body>
 </html>

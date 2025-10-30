@@ -21,13 +21,13 @@ class EmployerHistoryController extends Controller
     {
         $employer = $this->ensureEmployer();
 
-        $decision = $request->query('decision'); // 'hired' or 'rejected'
+    $decision = $request->query('decision'); // 'hired' | 'rejected' | 'terminated' | 'resigned'
 
         $historyQuery = ApplicationHistory::where('employer_id', $employer->id)
             ->with(['jobSeeker', 'jobPosting'])
             ->orderByDesc('decision_date');
 
-        if ($decision && in_array($decision, ['hired', 'rejected'])) {
+        if ($decision && in_array($decision, ['hired', 'rejected', 'terminated', 'resigned'])) {
             $historyQuery->where('decision', $decision);
         }
 
@@ -38,6 +38,8 @@ class EmployerHistoryController extends Controller
             'total' => ApplicationHistory::where('employer_id', $employer->id)->count(),
             'hired' => ApplicationHistory::where('employer_id', $employer->id)->hired()->count(),
             'rejected' => ApplicationHistory::where('employer_id', $employer->id)->rejected()->count(),
+            'terminated' => ApplicationHistory::where('employer_id', $employer->id)->where('decision', 'terminated')->count(),
+            'resigned' => ApplicationHistory::where('employer_id', $employer->id)->where('decision', 'resigned')->count(),
         ];
 
         return view('employer.history', compact('history', 'stats', 'decision'));

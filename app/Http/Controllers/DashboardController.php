@@ -40,7 +40,10 @@ class DashboardController extends Controller
         // determine which jobs are bookmarked by current user
         $bookmarkedTitles = [];
         if (Auth::check()) {
-            $bookmarkedTitles = Auth::user()->bookmarks()->pluck('title')->toArray();
+            $u = \App\Models\User::find(Auth::id());
+            if ($u) {
+                $bookmarkedTitles = $u->bookmarks()->pluck('title')->toArray();
+            }
         }
 
         return view('dashboard', compact('jobs', 'bookmarkedTitles'));
@@ -81,6 +84,11 @@ class DashboardController extends Controller
 
     public function settings()
     {
+    /** @var \App\Models\User $user */
+    $user = \App\Models\User::find(Auth::id());
+        if (($user->user_type ?? null) === 'employer') {
+            return view('employer.settings');
+        }
         return view('settings');
     }
 
@@ -105,7 +113,8 @@ class DashboardController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        $user = Auth::user();
+    /** @var \App\Models\User $user */
+    $user = \App\Models\User::find(Auth::id());
 
         if (!Hash::check($request->current_password, $user->password)) {
             return redirect()->route('settings')->withErrors(['current_password' => 'The current password is incorrect.']);

@@ -275,6 +275,11 @@
                             <i class="fas fa-chevron-down"></i> View Full Profile
                           </button>
 
+                          <!-- Open dedicated Applicant Profile Page -->
+                          <a href="{{ route('employer.applicants.show', $app) }}" class="btn-view-profile" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; margin-left:8px;">
+                            <i class="fas fa-external-link-alt"></i> Open Profile Page
+                          </a>
+
                           <!-- Full Applicant Details -->
                           <div class="applicant-full-details">
                             <h5 style="color:#334A5E; margin-bottom:10px; font-size:14px;"><i class="fas fa-file-alt"></i> Complete Application</h5>
@@ -484,58 +489,8 @@
       const icon = button.querySelector('i');
       
       if (details.classList.contains('expanded')) {
-      // Interview Modal Functions
-      let currentInterviewAppId = null;
-      function openInterviewModal(appId) {
-        currentInterviewAppId = appId;
-        document.getElementById('interviewModal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-      }
-      function closeInterviewModal() {
-        currentInterviewAppId = null;
-        document.getElementById('interviewModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
-      }
-      function submitInterviewSchedule() {
-        const date = document.getElementById('interviewDate').value;
-        const location = document.getElementById('interviewLocation').value;
-        const notes = document.getElementById('interviewNotes').value;
-        if (!date) { alert('Please choose an interview date.'); return; }
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/employer/applications/${currentInterviewAppId}/status`;
-        const csrf = document.createElement('input'); csrf.type = 'hidden'; csrf.name = '_token'; csrf.value = '{{ csrf_token() }}';
-        const status = document.createElement('input'); status.type = 'hidden'; status.name = 'status'; status.value = 'for_interview';
-        const fDate = document.createElement('input'); fDate.type = 'hidden'; fDate.name = 'interview_date'; fDate.value = date;
-        const fLoc = document.createElement('input'); fLoc.type = 'hidden'; fLoc.name = 'interview_location'; fLoc.value = location;
-        const fNotes = document.createElement('input'); fNotes.type = 'hidden'; fNotes.name = 'interview_notes'; fNotes.value = notes;
-        form.append(csrf, status, fDate, fLoc, fNotes);
-        document.body.appendChild(form);
-        form.submit();
-      }
         details.classList.remove('expanded');
         icon.classList.remove('fa-chevron-up');
-    <!-- Interview Scheduling Modal -->
-    <div id="interviewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
-      <div style="background:#fff; border-radius:12px; padding:30px; max-width:520px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-        <h3 style="margin:0 0 20px 0; color:#17a2b8; display:flex; align-items:center; gap:10px;">
-          <i class="fas fa-calendar-alt"></i> Schedule Interview
-        </h3>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <label style="font-weight:600; color:#334A5E;">Interview Date & Time</label>
-          <input type="datetime-local" id="interviewDate" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
-          <label style="font-weight:600; color:#334A5E;">Location</label>
-          <input type="text" id="interviewLocation" placeholder="Company office or online meeting link" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
-          <label style="font-weight:600; color:#334A5E;">Notes</label>
-          <textarea id="interviewNotes" placeholder="Optional instructions (what to bring, who to look for)" style="padding:10px; border:1px solid #ddd; border-radius:6px; min-height:90px;"></textarea>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
-          <button type="button" onclick="closeInterviewModal()" style="padding:10px 20px; background:#6c757d; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px;">Cancel</button>
-          <button type="button" onclick="submitInterviewSchedule()" style="padding:10px 20px; background:#17a2b8; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px;"><i class="fas fa-save"></i> Save</button>
-        </div>
-      </div>
-    </div>
-
         icon.classList.add('fa-chevron-down');
         button.innerHTML = '<i class="fas fa-chevron-down"></i> View Full Profile';
       } else {
@@ -544,6 +499,36 @@
         icon.classList.add('fa-chevron-up');
         button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Full Profile';
       }
+    }
+
+    // Interview Modal Functions
+    let currentInterviewAppId = null;
+    function openInterviewModal(appId) {
+      currentInterviewAppId = appId;
+      document.getElementById('interviewModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeInterviewModal() {
+      currentInterviewAppId = null;
+      document.getElementById('interviewModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+    function submitInterviewSchedule() {
+      const date = document.getElementById('interviewDate').value;
+      const location = document.getElementById('interviewLocation').value;
+      const notes = document.getElementById('interviewNotes').value;
+      if (!date) { alert('Please choose an interview date.'); return; }
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/employer/applications/${currentInterviewAppId}/status`;
+      const csrf = document.createElement('input'); csrf.type = 'hidden'; csrf.name = '_token'; csrf.value = '{{ csrf_token() }}';
+      const status = document.createElement('input'); status.type = 'hidden'; status.name = 'status'; status.value = 'for_interview';
+      const fDate = document.createElement('input'); fDate.type = 'hidden'; fDate.name = 'interview_date'; fDate.value = date;
+      const fLoc = document.createElement('input'); fLoc.type = 'hidden'; fLoc.name = 'interview_location'; fLoc.value = location;
+      const fNotes = document.createElement('input'); fNotes.type = 'hidden'; fNotes.name = 'interview_notes'; fNotes.value = notes;
+      form.append(csrf, status, fDate, fLoc, fNotes);
+      document.body.appendChild(form);
+      form.submit();
     }
 
     // Rejection Modal Functions
@@ -598,6 +583,27 @@
       form.submit();
     }
   </script>
+
+  <!-- Interview Scheduling Modal -->
+  <div id="interviewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:30px; max-width:520px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 20px 0; color:#17a2b8; display:flex; align-items:center; gap:10px;">
+        <i class="fas fa-calendar-alt"></i> Schedule Interview
+      </h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <label style="font-weight:600; color:#334A5E;">Interview Date & Time</label>
+        <input type="datetime-local" id="interviewDate" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+        <label style="font-weight:600; color:#334A5E;">Location</label>
+        <input type="text" id="interviewLocation" placeholder="Company office or online meeting link" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+        <label style="font-weight:600; color:#334A5E;">Notes</label>
+        <textarea id="interviewNotes" placeholder="Optional instructions (what to bring, who to look for)" style="padding:10px; border:1px solid #ddd; border-radius:6px; min-height:90px;"></textarea>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+        <button type="button" onclick="closeInterviewModal()" style="padding:10px 20px; background:#6c757d; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px;">Cancel</button>
+        <button type="button" onclick="submitInterviewSchedule()" style="padding:10px 20px; background:#17a2b8; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px;"><i class="fas fa-save"></i> Save</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Rejection Reason Modal -->
   <div id="rejectModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">

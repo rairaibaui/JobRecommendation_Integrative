@@ -93,6 +93,14 @@
           <h3>{{ $stats['rejected'] }}</h3>
           <p>Rejected</p>
         </div>
+        <div class="stat" style="border-left-color:#6c757d;">
+          <h3>{{ $stats['terminated'] }}</h3>
+          <p>Terminated</p>
+        </div>
+        <div class="stat" style="border-left-color:#ffc107;">
+          <h3>{{ $stats['resigned'] }}</h3>
+          <p>Resigned</p>
+        </div>
       </div>
     </div>
 
@@ -108,6 +116,12 @@
         <a href="{{ route('employer.history', ['decision' => 'rejected']) }}" class="filter-btn {{ request('decision') === 'rejected' ? 'active' : '' }}">
           <i class="fas fa-times-circle"></i> Rejected
         </a>
+        <a href="{{ route('employer.history', ['decision' => 'terminated']) }}" class="filter-btn {{ request('decision') === 'terminated' ? 'active' : '' }}">
+          <i class="fas fa-user-slash"></i> Terminated
+        </a>
+        <a href="{{ route('employer.history', ['decision' => 'resigned']) }}" class="filter-btn {{ request('decision') === 'resigned' ? 'active' : '' }}">
+          <i class="fas fa-door-open"></i> Resigned
+        </a>
       </div>
     </div>
 
@@ -118,6 +132,10 @@
           <i class="fas fa-check-circle" style="color:#43A047;"></i> Hired Applicants
         @elseif(request('decision') === 'rejected')
           <i class="fas fa-times-circle" style="color:#E53935;"></i> Rejected Applicants
+        @elseif(request('decision') === 'terminated')
+          <i class="fas fa-user-slash" style="color:#6c757d;"></i> Terminated Employees
+        @elseif(request('decision') === 'resigned')
+          <i class="fas fa-door-open" style="color:#ffc107;"></i> Resignations
         @else
           <i class="fas fa-list"></i> All Records
         @endif
@@ -138,11 +156,15 @@
                   @endif
                 </p>
               </div>
-              <span class="decision-badge {{ $record->decision }}">
+              <span class="decision-badge {{ $record->decision }}" style="{{ $record->decision === 'hired' ? 'background:#43A047;color:#fff;' : ($record->decision === 'rejected' ? 'background:#E53935;color:#fff;' : ($record->decision === 'terminated' ? 'background:#6c757d;color:#fff;' : 'background:#ffc107;color:#000;')) }}">
                 @if($record->decision === 'hired')
                   <i class="fas fa-check"></i> HIRED
-                @else
+                @elseif($record->decision === 'rejected')
                   <i class="fas fa-times"></i> REJECTED
+                @elseif($record->decision === 'terminated')
+                  <i class="fas fa-user-slash"></i> TERMINATED
+                @elseif($record->decision === 'resigned')
+                  <i class="fas fa-door-open"></i> RESIGNED
                 @endif
               </span>
             </div>
@@ -176,9 +198,9 @@
               </div>
             </div>
 
-            @if($record->decision === 'rejected' && $record->rejection_reason)
+            @if(in_array($record->decision, ['rejected','terminated','resigned']) && $record->rejection_reason)
               <div class="rejection-reason">
-                <strong style="color:#856404;"><i class="fas fa-info-circle"></i> Rejection Reason:</strong>
+                <strong style="color:#856404;"><i class="fas fa-info-circle"></i> {{ ucfirst($record->decision) }} Reason:</strong>
                 <p style="margin:4px 0 0 0; color:#856404;">{{ $record->rejection_reason }}</p>
               </div>
             @endif

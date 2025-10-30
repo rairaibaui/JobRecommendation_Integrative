@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationHistory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,6 +25,7 @@ class EmployerEmployeesController extends Controller
         // List of hired applicants (accepted) for this employer
         $employees = ApplicationHistory::where('employer_id', $employer->id)
             ->where('decision', 'hired')
+            ->with(['jobSeeker'])
             ->orderByDesc('decision_date')
             ->get();
 
@@ -32,5 +34,62 @@ class EmployerEmployeesController extends Controller
         ];
 
         return view('employer.employees', compact('employees', 'stats'));
+    }
+
+    public function terminate(Request $request, User $user)
+    {
+        $employer = $this->ensureEmployer();
+
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        // Only allow terminating if the user is currently employed and was hired by this employer (by name match)
+        if (($user->user_type ?? null) !== 'job_seeker') {
+            abort(400, 'Invalid user');
+        }
+
+        if (($user->employment_status ?? 'unemployed') !== 'employed') {
+            return back()->with('success', 'This job seeker is not currently employed.');
+        }
+
+        $employerName = $employer->company_name ?? trim(($employer->first_name.' '.$employer->last_name));
+        if ($user->hired_by_company && $employerName && strcasecmp($user->hired_by_company, $employerName) !== 0) {
+            abort(403, 'You can only terminate employees you hired.');
+        }
+
+        // Find the last hire record to attach context
+        $lastHire = ApplicationHistory::where('job_seeker_id', $user->id)
+            ->where('employer_id', $employer->id)
+            ->where('decision', 'hired')
+            ->orderByDesc('decision_date')
+            ->first();
+
+        // Update employment fields
+        $companyNameBefore = $user->hired_by_company;
+        $user->employment_status = 'unemployed';
+        $user->hired_by_company = null;
+        $user->hired_date = null;
+        $user->save();
+
+        // Record termination in history
+        ApplicationHistory::create([
+            'application_id' => $lastHire->application_id ?? null,
+            'employer_id' => $employer->id,
+            'job_seeker_id' => $user->id,
+            'job_posting_id' => $lastHire->job_posting_id ?? null,
+            'job_title' => $lastHire->job_title ?? null,
+            'company_name' => $companyNameBefore ?: $employerName,
+            'decision' => 'terminated',
+            'rejection_reason' => $request->input('reason'),
+            'applicant_snapshot' => $lastHire->applicant_snapshot ?? null,
+            'job_snapshot' => $lastHire->job_snapshot ?? null,
+            'decision_date' => now(),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Employee has been terminated.']);
+        }
+        return back()->with('success', 'Employee has been terminated.');
     }
 }

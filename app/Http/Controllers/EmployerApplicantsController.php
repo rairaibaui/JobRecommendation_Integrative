@@ -145,4 +145,24 @@ class EmployerApplicantsController extends Controller
 
         return back()->with('success', 'Application deleted successfully');
     }
+
+    // View full applicant profile (for employers)
+    public function showApplicant(Request $request, Application $application)
+    {
+        $employer = $this->ensureEmployer();
+
+        // Authorization: application must belong to a job posting owned by this employer
+        $jobPosting = \App\Models\JobPosting::find($application->job_posting_id);
+        if (!$jobPosting || (int)$jobPosting->employer_id !== (int)$employer->id) {
+            abort(403, 'Unauthorized to view this applicant.');
+        }
+
+        $applicant = \App\Models\User::find($application->user_id);
+
+        return view('employer.applicant-profile', [
+            'application' => $application,
+            'applicant' => $applicant,
+            'jobPosting' => $jobPosting,
+        ]);
+    }
 }

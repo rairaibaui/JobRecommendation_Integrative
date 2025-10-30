@@ -11,9 +11,17 @@ class JobPostingController extends Controller
     // Show form to create a new job posting
     public function create()
     {
-        $user = Auth::user();
+        /** @var \App\Models\User $user */
+        $user = \App\Models\User::find(Auth::id());
         if ($user->user_type !== 'employer') {
             abort(403, 'Only employers can post jobs');
+        }
+
+        // Require essential employer settings before creating a job post
+        if (empty($user->company_name) || empty($user->phone_number)) {
+            return redirect()->route('settings')->withErrors([
+                'phone_number' => 'Please complete your Employer Settings (Company Name and Contact Number) before posting a job.'
+            ]);
         }
 
         return view('employer.job-create', compact('user'));
@@ -22,9 +30,17 @@ class JobPostingController extends Controller
     // Store a new job posting
     public function store(Request $request)
     {
-        $user = Auth::user();
+        /** @var \App\Models\User $user */
+        $user = \App\Models\User::find(Auth::id());
         if ($user->user_type !== 'employer') {
             abort(403, 'Only employers can post jobs');
+        }
+
+        // Safety check to ensure company contact details exist
+        if (empty($user->company_name) || empty($user->phone_number)) {
+            return redirect()->route('settings')->withErrors([
+                'phone_number' => 'Please add your Company Name and Contact Number in Employer Settings before posting.'
+            ]);
         }
 
         $validated = $request->validate([

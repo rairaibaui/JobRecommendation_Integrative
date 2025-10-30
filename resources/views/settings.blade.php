@@ -392,8 +392,18 @@
                                         <i class="fas fa-calendar-alt"></i> <strong>Since:</strong> {{ Auth::user()->hired_date->format('M d, Y') }}
                                     </p>
                                 @endif
+                                <div style="display:flex; gap:10px; margin-top:12px;">
+                                    <form method="POST" action="{{ route('profile.resign') }}" onsubmit="return confirm('Are you sure you want to resign? This will set your status to actively seeking.')">
+                                        @csrf
+                                        <input type="hidden" name="reason" id="resignReasonInput">
+                                        <button type="submit" class="edit-btn" style="background:#dc3545;color:#fff;border:none;">
+                                            <i class="fas fa-door-open"></i> Resign
+                                        </button>
+                                    </form>
+                                    <button class="edit-btn" onclick="openResignModal()" style="background:#ffc107;color:#000; border:none;">Add Reason</button>
+                                </div>
                                 <p style="margin:12px 0 0 0; color:#856404; font-size:12px; font-style:italic;">
-                                    <i class="fas fa-info-circle"></i> You cannot apply for other jobs while employed. Your status will be updated automatically.
+                                    <i class="fas fa-info-circle"></i> You cannot apply for other jobs while employed. After resigning, you can apply again.
                                 </p>
                             @else
                                 <div style="display:flex; align-items:center; gap:10px;">
@@ -420,7 +430,7 @@
                         <input type="email" value="{{ Auth::user()->email }}" readonly>
 
                         <label>Date of Birth</label>
-                        <input type="date" name="birthday" value="{{ Auth::user()->birthday ? Auth::user()->birthday->format('Y-m-d') : '' }}">
+                        <input type="date" name="birthday" value="{{ Auth::user()->birthday ? \Carbon\Carbon::parse(Auth::user()->birthday)->format('Y-m-d') : '' }}">
 
                         <label>Phone Number</label>
                         <input type="text" name="phone_number" value="{{ Auth::user()->phone_number }}">
@@ -659,6 +669,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openDeleteAccountModal = () => { deleteAccountModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
     window.closeDeleteAccountModal = () => { deleteAccountModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
+
+    // Resign modal small helper
+    window.openResignModal = () => {
+        const reason = prompt('Optional: Enter a reason for your resignation');
+        if (reason !== null) {
+            const input = document.getElementById('resignReasonInput');
+            if (input) input.value = reason;
+            // Submit the form
+            const form = document.querySelector('form[action="{{ route('profile.resign') }}"]');
+            if (form) form.submit();
+        }
+    }
 
     // ===== Flash Messages Auto-hide =====
     const successMsg = document.querySelector('.success-message');
