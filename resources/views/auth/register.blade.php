@@ -239,6 +239,18 @@
             @csrf
             <input type="hidden" name="user_type" id="user_type" value="{{ old('user_type','job_seeker') }}">
 
+            @if(session('error'))
+                <div style="background:#ffe6e6; color:#a40000; border:1px solid #ffb3b3; padding:10px 12px; border-radius:8px; margin-bottom:12px;">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:10px 12px; border-radius:8px; margin-bottom:12px;">
+                    <strong>There were some problems with your input.</strong>
+                </div>
+            @endif
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="first_name">First Name</label>
@@ -255,7 +267,7 @@
             </div>
 
             <div class="form-group">
-                <label for="email">Email Address</label>
+                <label for="email"><span id="email-label-text">Email Address</span></label>
                 <input type="email" name="email" id="email" value="{{ old('email') }}"
                     class="@error('email') input-error @enderror" required>
                 @error('email') <span class="error-text">{{ $message }}</span> @enderror
@@ -419,6 +431,11 @@
             const btnEmp = document.getElementById('btn-emp');
             const jsFields = document.getElementById('jobseeker-fields');
             const empFields = document.getElementById('employer-fields');
+            // Inputs to toggle required/disabled
+            const phoneInput = document.getElementById('phone_number');
+            const locInput = document.getElementById('location');
+            const companyInput = document.getElementById('company_name');
+            const permitInput = document.getElementById('business_permit');
 
             userTypeInput.value = type;
             if (type === 'employer') {
@@ -426,11 +443,29 @@
                 btnJob.style.background = 'transparent';
                 jsFields.style.display = 'none';
                 empFields.style.display = 'block';
+                const el = document.getElementById('email-label-text');
+                if (el) el.textContent = 'Work Email';
+
+                // Disable job-seeker required fields so browser doesn't block submit
+                if (phoneInput) { phoneInput.required = false; phoneInput.disabled = true; }
+                if (locInput) { locInput.required = false; locInput.disabled = true; }
+                // Ensure employer fields are enabled (HTML required handled server-side)
+                if (companyInput) { companyInput.disabled = false; }
+                if (permitInput) { permitInput.disabled = false; }
             } else {
                 btnJob.style.background = '#fff';
                 btnEmp.style.background = 'transparent';
                 jsFields.style.display = 'block';
                 empFields.style.display = 'none';
+                const el = document.getElementById('email-label-text');
+                if (el) el.textContent = 'Email Address';
+
+                // Re-enable and require job-seeker fields
+                if (phoneInput) { phoneInput.disabled = false; phoneInput.required = true; }
+                if (locInput) { locInput.disabled = false; locInput.required = true; }
+                // Optionally disable employer-only inputs when not used
+                if (companyInput) { companyInput.disabled = true; }
+                if (permitInput) { permitInput.disabled = true; }
             }
         }
 

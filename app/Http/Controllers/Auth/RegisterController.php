@@ -48,29 +48,34 @@ class RegisterController extends Controller
                 ],
                 'terms' => 'accepted',
             ]);
+            try {
+                // Store business permit
+                $permitPath = null;
+                if ($request->hasFile('business_permit')) {
+                    $permitPath = $request->file('business_permit')->store('business_permits', 'public');
+                }
 
-            // Store business permit
-            $permitPath = null;
-            if ($request->hasFile('business_permit')) {
-                $permitPath = $request->file('business_permit')->store('business_permits', 'public');
+                // Generate placeholder phone/location to satisfy schema constraints
+                $generatedPhone = strval(random_int(10000000000, 99999999999));
+                $location = 'Unknown';
+
+                $user = User::create([
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'],
+                    'email' => $validated['email'],
+                    'company_name' => $validated['company_name'],
+                    'job_title' => $validated['job_title'] ?? null,
+                    'business_permit_path' => $permitPath,
+                    'phone_number' => $generatedPhone,
+                    'location' => $location,
+                    'user_type' => 'employer',
+                    'password' => Hash::make($validated['password']),
+                ]);
+            } catch (\Throwable $e) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Registration failed. Please check your inputs and try again.');
             }
-
-            // Generate placeholder phone/location to satisfy schema constraints
-            $generatedPhone = strval(random_int(10000000000, 99999999999));
-            $location = 'Unknown';
-
-            $user = User::create([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'company_name' => $validated['company_name'],
-                'job_title' => $validated['job_title'] ?? null,
-                'business_permit_path' => $permitPath,
-                'phone_number' => $generatedPhone,
-                'location' => $location,
-                'user_type' => 'employer',
-                'password' => Hash::make($validated['password']),
-            ]);
         } else {
             // Job seeker validation
             $validated = $request->validate([
@@ -95,19 +100,25 @@ class RegisterController extends Controller
                 'terms' => 'accepted',
             ]);
 
-            $user = User::create([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'phone_number' => $validated['phone_number'],
-                'birthday' => $validated['birthday'] ?? null,
-                'education_level' => $validated['education_level'] ?? null,
-                'skills' => $validated['skills'] ?? null,
-                'years_of_experience' => $validated['years_of_experience'] ?? null,
-                'location' => $validated['location'],
-                'user_type' => 'job_seeker',
-                'password' => Hash::make($validated['password']),
-            ]);
+            try {
+                $user = User::create([
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'],
+                    'email' => $validated['email'],
+                    'phone_number' => $validated['phone_number'],
+                    'birthday' => $validated['birthday'] ?? null,
+                    'education_level' => $validated['education_level'] ?? null,
+                    'skills' => $validated['skills'] ?? null,
+                    'years_of_experience' => $validated['years_of_experience'] ?? null,
+                    'location' => $validated['location'],
+                    'user_type' => 'job_seeker',
+                    'password' => Hash::make($validated['password']),
+                ]);
+            } catch (\Throwable $e) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Registration failed. Please check your inputs and try again.');
+            }
         }
 
         // 3. Redirection to login with credentials
