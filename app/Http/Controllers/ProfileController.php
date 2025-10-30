@@ -52,7 +52,6 @@ class ProfileController extends Controller
             $data = $request->only([
                 'first_name',
                 'last_name',
-                'birthday',
                 'phone_number',
                 'summary',
                 'languages',
@@ -95,10 +94,10 @@ class ProfileController extends Controller
             $user->location = $request->location;
             $user->address = $request->address;
 
-            // Explicitly set birthday to ensure it's saved
+            // Explicitly set date_of_birth to ensure it's saved
             if ($request->has('birthday') && $request->birthday) {
-                $user->birthday = $request->birthday;
-                Log::info('Birthday explicitly set:', ['birthday' => $user->birthday]);
+                $user->date_of_birth = $request->birthday;
+                Log::info('Date of birth explicitly set:', ['date_of_birth' => $user->date_of_birth]);
             }
 
             // Always mark as updated since we're handling arrays

@@ -54,6 +54,25 @@
                 
                 <div class="job-title">{{ $job['title'] }}</div>
 
+                <!-- Match Score Display (only for job seekers with skills) -->
+                @if(isset($job['match_score']) && $job['match_score'] > 0)
+                <div class="match-indicator" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <div class="match-score" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-star"></i>
+                        {{ $job['match_score'] }}% Match
+                    </div>
+                    @if(isset($job['matching_skills']) && $job['matching_skills']->count() > 0)
+                    <div class="matching-skills-preview" style="font-size: 12px; color: #666;">
+                        <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+                        Matches: {{ $job['matching_skills']->take(3)->implode(', ') }}
+                        @if($job['matching_skills']->count() > 3)
+                            +{{ $job['matching_skills']->count() - 3 }} more
+                        @endif
+                    </div>
+                    @endif
+                </div>
+                @endif
+
                 <div class="job-preview">
                     <div class="job-location">
                         <i class="fas fa-map-marker-alt"></i>
@@ -119,12 +138,33 @@
                         <div class="job-skills">
                             @if(!empty($job['skills']))
                                 @foreach($job['skills'] as $skill)
-                                    <span class="skill">{{ $skill }}</span>
+                                    @php
+                                        $isMatching = isset($job['matching_skills']) && $job['matching_skills']->contains(strtolower($skill));
+                                    @endphp
+                                    <span class="skill {{ $isMatching ? 'matching-skill' : '' }}">
+                                        {{ $skill }}
+                                        @if($isMatching)
+                                            <i class="fas fa-check" style="margin-left: 4px;"></i>
+                                        @endif
+                                    </span>
                                 @endforeach
                             @else
                                 <span class="skill">No specific skills listed</span>
                             @endif
                         </div>
+                        @if(isset($job['match_score']) && $job['match_score'] > 0)
+                        <div class="match-details" style="margin-top: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #4CAF50;">
+                            <div style="font-size: 13px; color: #333; margin-bottom: 6px;">
+                                <strong>Why this job matches you:</strong>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">
+                                You have {{ $job['matching_skills']->count() }} out of {{ $job['job_skills']->count() }} required skills
+                                @if($job['matching_skills']->count() > 0)
+                                    ({{ $job['matching_skills']->implode(', ') }})
+                                @endif
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -239,6 +279,23 @@
     padding: 5px 12px;
     border-radius: 15px;
     font-size: 14px;
+}
+
+.skill.matching-skill {
+    background: #4CAF50;
+    position: relative;
+}
+
+.skill.matching-skill::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #FFD700;
+    border-radius: 50%;
+    border: 1px solid #4CAF50;
 }
 
 .job-actions {

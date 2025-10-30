@@ -431,7 +431,7 @@
                         <input type="email" value="{{ Auth::user()->email }}" readonly>
 
                         <label>Date of Birth</label>
-                        <input type="date" name="birthday" value="{{ Auth::user()->birthday ? \Carbon\Carbon::parse(Auth::user()->birthday)->format('Y-m-d') : '' }}">
+                        <input type="date" name="birthday" value="{{ Auth::user()->date_of_birth ? \Carbon\Carbon::parse(Auth::user()->date_of_birth)->format('Y-m-d') : '' }}">
 
                         <label>Phone Number</label>
                         <input type="text" name="phone_number" value="{{ Auth::user()->phone_number }}">

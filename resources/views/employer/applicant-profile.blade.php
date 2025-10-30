@@ -37,7 +37,9 @@
     <div style="display:flex; align-items:center; gap:12px;">
       <span>APPLICANT PROFILE</span>
     </div>
-    @include('partials.notifications')
+    <div style="display:flex; align-items:center; gap:16px;">
+      @include('partials.notifications')
+    </div>
   </div>
 
   <div class="sidebar">
@@ -51,6 +53,14 @@
     <a href="{{ route('employer.employees') }}" class="sidebar-btn"><i class="fa fa-user-check sidebar-btn-icon"></i> Employees</a>
     <a href="{{ route('employer.analytics') }}" class="sidebar-btn"><i class="fa fa-chart-bar sidebar-btn-icon"></i> Analytics</a>
     <a href="{{ route('settings') }}" class="sidebar-btn"><i class="fa fa-cog sidebar-btn-icon"></i> Settings</a>
+    <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;">
+      @csrf
+      <button type="submit" class="sidebar-btn"
+        style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <i class="fas fa-sign-out-alt sidebar-btn-icon"></i>
+        Logout
+      </button>
+    </form>
   </div>
 
   <div class="main">

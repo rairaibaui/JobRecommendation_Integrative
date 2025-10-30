@@ -320,7 +320,8 @@
                 <div class="form-group">
                     <label for="phone_number">Phone Number</label>
                     <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number') }}"
-                        class="@error('phone_number') input-error @enderror" required>
+                        class="@error('phone_number') input-error @enderror" required
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     @error('phone_number') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
                 </div>

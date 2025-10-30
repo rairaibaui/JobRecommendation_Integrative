@@ -513,11 +513,28 @@
   }
 
   .skill {
-    background: #648EB5;
-    color: #FFF;
-    border-radius: 6px;
-    padding: 3px 8px;
-    font-size: 14px;
+      background: #648EB5;
+      color: #FFF;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 14px;
+  }
+  
+  .skill.matching-skill {
+      background: #4CAF50;
+      position: relative;
+  }
+  
+  .skill.matching-skill::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 8px;
+      height: 8px;
+      background: #FFD700;
+      border-radius: 50%;
+      border: 1px solid #4CAF50;
   }
 
   .job-actions {
@@ -698,15 +715,16 @@
 
     <!-- Top Job Recommendations -->
     <div class="card-large">
-      <div class="recommendation-header" style="background: linear-gradient(180deg, #648EB5 0%, #334A5E 100%); color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
+      <div class="recommendation-header" style="background: linear-gradient(180deg, #ffffffff 0%, #ffffffff 100%); color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
         <h3>Top Job Recommendations</h3>
         <p>This is based on the skills that you have</p>
       </div>
       <div style="padding: 20px;">
+        @if(count($recommendedJobs) > 0)
         <p style="font-family: 'Poppins', sans-serif; font-size: 18px; color: #333; margin-bottom: 20px;">
-          Showing {{ count($jobs) }} recommended {{ Str::plural('job', count($jobs)) }}
+          Showing {{ count($recommendedJobs) }} skill-matched {{ Str::plural('job', count($recommendedJobs)) }}
         </p>
-        @foreach($jobs as $job)
+        @foreach($recommendedJobs as $job)
         <div class="job-card" 
              data-job-id="{{ $job['id'] ?? '' }}"
              data-title="{{ $job['title'] }}" 
@@ -716,6 +734,25 @@
              data-description="{{ $job['description'] ?? '' }}" 
              data-skills='@json($job['skills'] ?? [])'>
             <div class="job-title">{{ $job['title'] }}</div>
+
+            <!-- Match Score Display (only for job seekers with skills) -->
+            @if(isset($job['match_score']) && $job['match_score'] > 0)
+            <div class="match-indicator" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <div class="match-score" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-star"></i>
+                    {{ $job['match_score'] }}% Match
+                </div>
+                @if(isset($job['matching_skills']) && $job['matching_skills']->count() > 0)
+                <div class="matching-skills-preview" style="font-size: 12px; color: #666;">
+                    <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+                    Matches: {{ $job['matching_skills']->take(3)->implode(', ') }}
+                    @if($job['matching_skills']->count() > 3)
+                        +{{ $job['matching_skills']->count() - 3 }} more
+                    @endif
+                </div>
+                @endif
+            </div>
+            @endif
 
             <div class="job-preview">
                 <div class="job-location">
@@ -732,6 +769,144 @@
                 </div>
             </div>
             
+            <div class="job-details">
+                <!-- Company & Employer Info Section -->
+                <div class="employer-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #648EB5;">
+                    <h4 style="margin: 0 0 10px 0; color: #648EB5; font-size: 14px; font-weight: 600;">
+                        <i class="fas fa-building"></i> Company & Contact Information
+                    </h4>
+                    <div style="display: grid; gap: 8px; font-size: 14px;">
+                        @if(!empty($job['company']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-briefcase" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Company:</strong> {{ $job['company'] }}
+                            </div>
+                        @endif
+                        @if(!empty($job['employer_name']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-user-tie" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Contact Person:</strong> {{ $job['employer_name'] }}
+                            </div>
+                        @endif
+                        @if(!empty($job['employer_email']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-envelope" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Email:</strong> <a href="mailto:{{ $job['employer_email'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_email'] }}</a>
+                            </div>
+                        @endif
+                        @if(!empty($job['employer_phone']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-phone" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Phone:</strong> <a href="tel:{{ $job['employer_phone'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_phone'] }}</a>
+                            </div>
+                        @endif
+                        @if(!empty($job['posted_date']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-calendar" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Posted:</strong> {{ $job['posted_date'] }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="job-description">
+                    {{ $job['description'] ?? '' }}
+                </div>
+                <div class="skills-section">
+                    <div class="job-skills">
+                        @if(!empty($job['skills']))
+                            @foreach($job['skills'] as $skill)
+                                @php
+                                    $isMatching = isset($job['matching_skills']) && $job['matching_skills']->contains(strtolower($skill));
+                                @endphp
+                                <span class="skill {{ $isMatching ? 'matching-skill' : '' }}">
+                                    {{ $skill }}
+                                    @if($isMatching)
+                                        <i class="fas fa-check" style="margin-left: 4px;"></i>
+                                    @endif
+                                </span>
+                            @endforeach
+                        @else
+                            <span class="skill">No specific skills listed</span>
+                        @endif
+                    </div>
+                    @if(isset($job['match_score']) && $job['match_score'] > 0)
+                    <div class="match-details" style="margin-top: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #4CAF50;">
+                        <div style="font-size: 13px; color: #333; margin-bottom: 6px;">
+                            <strong>Why this job matches you:</strong>
+                        </div>
+                        <div style="font-size: 12px; color: #666;">
+                            You have {{ $job['matching_skills']->count() }} out of {{ $job['job_skills']->count() }} required skills
+                            @if($job['matching_skills']->count() > 0)
+                                ({{ $job['matching_skills']->implode(', ') }})
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="job-actions">
+                <button class="view-details" onclick="toggleDetails(this)" data-job-id="{{ $job['id'] }}">
+                    <i class="fas fa-chevron-down"></i>
+                    View Details
+                </button>
+                <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
+                    <i class="fas fa-paper-plane"></i>
+                    Apply
+                </button>
+        <button class="bookmark-btn" data-job='@json($job)' onclick="toggleBookmark(this)">
+          @php $isBookmarked = isset($bookmarkedTitles) && in_array($job['title'], $bookmarkedTitles); @endphp
+          <i class="{{ $isBookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
+        </button>
+            </div>
+        </div>
+        @endforeach
+        @else
+        <p style="font-family: 'Poppins', sans-serif; font-size: 16px; color: #666; margin-bottom: 20px; font-style: italic;">
+          No skill-matched jobs found. Complete your profile with skills to see personalized recommendations.
+        </p>
+        @endif
+        </div>
+      </div>
+
+      <!-- Other Recent Jobs -->
+      @if(count($otherJobs) > 0)
+      <div class="card-large" style="margin-top: 20px;">
+        <div class="recommendation-header" style="background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%); color: #333; padding: 20px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #dee2e6;">
+          <h3>Other Recent Jobs</h3>
+          <p>More opportunities posted recently</p>
+        </div>
+        <div style="padding: 20px;">
+          <p style="font-family: 'Poppins', sans-serif; font-size: 18px; color: #333; margin-bottom: 20px;">
+            Showing {{ count($otherJobs) }} additional {{ Str::plural('job', count($otherJobs)) }}
+          </p>
+          @foreach($otherJobs as $job)
+          <div class="job-card"
+               data-job-id="{{ $job['id'] ?? '' }}"
+               data-title="{{ $job['title'] }}"
+               data-location="{{ $job['location'] ?? '' }}"
+               data-type="{{ $job['type'] ?? '' }}"
+               data-salary="{{ $job['salary'] ?? '' }}"
+               data-description="{{ $job['description'] ?? '' }}"
+               data-skills='@json($job['skills'] ?? [])'>
+            <div class="job-title">{{ $job['title'] }}</div>
+
+            <div class="job-preview">
+                <div class="job-location">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ $job['location'] ?? 'N/A' }}</span>
+                </div>
+                <div class="job-type">
+                    <i class="fas fa-briefcase"></i>
+                    <span>{{ $job['type'] ?? 'Full-time' }}</span>
+                </div>
+                <div class="job-salary">
+                    <i class="fas fa-money-bill"></i>
+                    <span>{{ $job['salary'] ?? 'Negotiable' }}</span>
+                </div>
+            </div>
+
             <div class="job-details">
                 <!-- Company & Employer Info Section -->
                 <div class="employer-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #648EB5;">
@@ -802,10 +977,11 @@
           <i class="{{ $isBookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
         </button>
             </div>
-        </div>
-        @endforeach
+          </div>
+          @endforeach
         </div>
       </div>
+      @endif
     </div>
 
     </div>
