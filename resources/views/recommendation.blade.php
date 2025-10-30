@@ -2,9 +2,32 @@
 
 @section('content')
 <div class="main">
-    <div class="top-navbar">
-        <i class="fas fa-bars hamburger"></i>
-        Job Portal - Mandaluyong
+    <div class="top-navbar" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <i class="fas fa-bars hamburger"></i>
+            Job Portal - Mandaluyong
+        </div>
+        <div class="notif-wrapper" style="position:relative;">
+            <div class="notification-bell" onclick="toggleNotifDropdown(event)" style="padding:8px; cursor:pointer;">
+                <i class="fas fa-bell"></i>
+                @php $unreadCount = Auth::user()->unreadNotifications()->count(); @endphp
+                @if($unreadCount > 0)
+                    <span class="badge" id="notifCount" style="position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;">{{ $unreadCount }}</span>
+                @endif
+            </div>
+            <div id="notifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:52px; right:0; width:360px; max-height:420px; overflow:auto; background:#fff; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); z-index:1100; font-size:14px; line-height:1.35;" data-loaded="0">
+                <div class="notif-header" style="padding:10px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; font-weight:600;">
+                    <span>Notifications</span>
+                    <button onclick="markAllNotificationsRead(event)" style="background:#eee;color:#333;border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">Mark all as read</button>
+                </div>
+                <ul class="notif-list" id="notifList" style="list-style:none; margin:0; padding:0;">
+                    <li class="notif-empty" style="padding:20px; text-align:center; color:#777;">Loading...</li>
+                </ul>
+                <div class="notif-actions" style="padding:8px 12px; display:flex; justify-content:flex-end;">
+                    <button onclick="refreshNotifications(event)" style="background:#4E8EA2; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px;">Refresh</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Top Job Recommendations -->
@@ -233,6 +256,67 @@
 
 @push('scripts')
 <script>
+// Notifications (shared minimal logic)
+function toggleNotifDropdown(e){
+    e.stopPropagation();
+    const dd = document.getElementById('notifDropdown');
+    const visible = dd.style.display === 'block';
+    if (!visible && dd.dataset.loaded !== '1') { loadNotifications(); }
+    dd.style.display = visible ? 'none' : 'block';
+}
+document.addEventListener('click', function(e){
+    const dd = document.getElementById('notifDropdown');
+    if (!dd) return;
+    if (dd.style.display === 'block' && !dd.contains(e.target)) dd.style.display = 'none';
+});
+function loadNotifications(){
+    const list = document.getElementById('notifList');
+    list.innerHTML = '<li class="notif-empty" style="padding:20px; text-align:center; color:#777;">Loading...</li>';
+    fetch("{{ route('notifications.list') }}")
+        .then(r=>r.json())
+        .then(({success, unread, notifications}) => {
+            if(!success){ list.innerHTML = '<li class="notif-empty" style="padding:20px; text-align:center; color:#777;">Failed to load</li>'; return; }
+            const badge = document.getElementById('notifCount');
+            if (badge) badge.textContent = unread; else if (unread > 0) {
+                const bell = document.querySelector('.notification-bell');
+                const span = document.createElement('span');
+                span.className = 'badge'; span.id = 'notifCount'; span.textContent = unread;
+                span.style.cssText = 'position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;';
+                bell.appendChild(span);
+            }
+            if (!notifications.length){ list.innerHTML = '<li class="notif-empty" style="padding:20px; text-align:center; color:#777;">No notifications yet</li>'; return; }
+            list.innerHTML = notifications.map(n => renderNotifItem(n)).join('');
+            document.getElementById('notifDropdown').dataset.loaded = '1';
+        })
+        .catch(()=> list.innerHTML = '<li class="notif-empty" style="padding:20px; text-align:center; color:#777;">Network error</li>');
+}
+function renderNotifItem(n){
+    const icon = n.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
+    const isUnread = n.read ? '' : 'background:#f7fbff;';
+    const when = new Date(n.created_at).toLocaleString();
+    return `<li class="notif-item" style="padding:12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; ${isUnread}">
+        <i class="fas ${icon}" style="color:#648EB5; margin-top:3px;"></i>
+        <div>
+            <div style="font-weight:600; color:#333;">${escapeHtml(n.title || 'Notification')}</div>
+            <div style="color:#555; font-size:13px;">${escapeHtml(n.message || '')}</div>
+            <div style="font-size:12px; color:#888; margin-top:4px;">${when}</div>
+        </div>
+    </li>`;
+}
+function escapeHtml(str){ return String(str).replace(/[&<>\"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
+function markAllNotificationsRead(e){
+    e.stopPropagation();
+    fetch("{{ route('notifications.markAllRead') }}", { method:'POST', headers:{ 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }})
+      .then(r=>r.json()).then(({success})=>{
+        if(success){
+            const items = document.querySelectorAll('#notifList .notif-item');
+            items.forEach(li => li.style.background = 'transparent');
+            const badge = document.getElementById('notifCount');
+            if (badge) badge.remove();
+        }
+      });
+}
+function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
 function getCsrfToken() { 
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); 
 }

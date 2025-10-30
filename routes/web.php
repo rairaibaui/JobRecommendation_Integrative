@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployerDashboardController;
+use App\Http\Controllers\EmployerApplicantsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MyApplicationsController;
 use App\Http\Controllers\ProfileController;
@@ -51,6 +52,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     // Employer Dashboard
     Route::get('/employer/dashboard', [EmployerDashboardController::class, 'index'])->name('employer.dashboard');
+    // Employer Applicants Management
+    Route::get('/employer/applicants', [EmployerApplicantsController::class, 'index'])->name('employer.applicants');
+    Route::post('/employer/applications/{application}/status', [EmployerApplicantsController::class, 'updateStatus'])->name('employer.applications.updateStatus');
 
     // Recommendation
     Route::get('/recommendation', [RecommendationController::class, 'index'])->name('recommendation');

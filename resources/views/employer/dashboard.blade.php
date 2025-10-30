@@ -438,7 +438,7 @@
       <span>Job Postings</span>
     </a>
 
-    <a href="#" class="sidebar-btn">
+    <a href="{{ route('employer.applicants') }}" class="sidebar-btn">
       <i class="fa fa-users sidebar-btn-icon"></i>
       <span>Applicants</span>
     </a>
