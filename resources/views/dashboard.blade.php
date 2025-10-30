@@ -641,7 +641,7 @@
       </div>
     </div>
 
-    <div class="welcome">Welcome!</div>
+    <div class="welcome">Welcome, {{ Auth::user()->first_name }}! 👋</div>
 
     <!-- Recommended & Bookmarked Jobs -->
     <div class="cards">

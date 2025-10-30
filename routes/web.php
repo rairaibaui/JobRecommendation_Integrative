@@ -10,6 +10,7 @@ use App\Http\Controllers\EmployerDashboardController;
 use App\Http\Controllers\EmployerApplicantsController;
 use App\Http\Controllers\EmployerHistoryController;
 use App\Http\Controllers\EmployerEmployeesController;
+use App\Http\Controllers\EmployerAnalyticsController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MyApplicationsController;
@@ -63,6 +64,8 @@ Route::middleware('auth')->group(function () {
     
     // Employer History (Hired/Rejected Records)
     Route::get('/employer/history', [EmployerHistoryController::class, 'index'])->name('employer.history');
+    // Employer Analytics (Statistics & Insights)
+    Route::get('/employer/analytics', [EmployerAnalyticsController::class, 'index'])->name('employer.analytics');
     // Employer Employees (Accepted/Hired applicants)
     Route::get('/employer/employees', [EmployerEmployeesController::class, 'index'])->name('employer.employees');
     Route::post('/employer/employees/{user}/terminate', [EmployerEmployeesController::class, 'terminate'])->name('employer.employees.terminate');
@@ -71,6 +74,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/employer/jobs', [JobPostingController::class, 'index'])->name('employer.jobs');
     Route::get('/employer/jobs/create', [JobPostingController::class, 'create'])->name('employer.jobs.create');
     Route::post('/employer/jobs', [JobPostingController::class, 'store'])->name('employer.jobs.store');
+    Route::get('/employer/jobs/{jobPosting}/edit', [JobPostingController::class, 'edit'])->name('employer.jobs.edit');
+    Route::put('/employer/jobs/{jobPosting}', [JobPostingController::class, 'update'])->name('employer.jobs.update');
+    Route::patch('/employer/jobs/{jobPosting}/status', [JobPostingController::class, 'updateStatus'])->name('employer.jobs.updateStatus');
     Route::delete('/employer/jobs/{jobPosting}', [JobPostingController::class, 'destroy'])->name('employer.jobs.destroy');
 
     // Recommendation

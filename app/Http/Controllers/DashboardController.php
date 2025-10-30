@@ -84,12 +84,12 @@ class DashboardController extends Controller
 
     public function settings()
     {
-    /** @var \App\Models\User $user */
-    $user = \App\Models\User::find(Auth::id());
+        /** @var \App\Models\User $user */
+        $user = \App\Models\User::find(Auth::id());
         if (($user->user_type ?? null) === 'employer') {
-            return view('employer.settings');
+            return view('employer.settings', compact('user'));
         }
-        return view('settings');
+        return view('settings', compact('user'));
     }
 
     public function changePassword()

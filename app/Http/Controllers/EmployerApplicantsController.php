@@ -56,7 +56,12 @@ class EmployerApplicantsController extends Controller
             'rejected' => (clone $allApplications)->where('status', 'rejected')->count(),
         ];
 
-        return view('employer.applicants', compact('jobPostings', 'stats', 'status'));
+        return view('employer.applicants', [
+            'jobPostings' => $jobPostings,
+            'stats' => $stats,
+            'status' => $status,
+            'user' => $employer
+        ]);
     }
 
     // Update an application's status (reviewing/accepted/rejected)
@@ -163,6 +168,7 @@ class EmployerApplicantsController extends Controller
             'application' => $application,
             'applicant' => $applicant,
             'jobPosting' => $jobPosting,
+            'user' => $employer
         ]);
     }
 }

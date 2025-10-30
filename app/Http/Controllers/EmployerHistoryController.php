@@ -42,7 +42,12 @@ class EmployerHistoryController extends Controller
             'resigned' => ApplicationHistory::where('employer_id', $employer->id)->where('decision', 'resigned')->count(),
         ];
 
-        return view('employer.history', compact('history', 'stats', 'decision'));
+        return view('employer.history', [
+            'history' => $history,
+            'stats' => $stats,
+            'decision' => $decision,
+            'user' => $employer
+        ]);
     }
 }
 

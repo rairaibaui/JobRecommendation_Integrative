@@ -33,7 +33,11 @@ class EmployerEmployeesController extends Controller
             'total' => $employees->count(),
         ];
 
-        return view('employer.employees', compact('employees', 'stats'));
+        return view('employer.employees', [
+            'employees' => $employees,
+            'stats' => $stats,
+            'user' => $employer
+        ]);
     }
 
     public function terminate(Request $request, User $user)

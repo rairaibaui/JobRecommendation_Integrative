@@ -100,4 +100,75 @@ class JobPostingController extends Controller
         $jobPosting->delete();
         return back()->with('success', 'Job posting deleted successfully');
     }
+
+    // Show edit form
+    public function edit(JobPosting $jobPosting)
+    {
+        $user = Auth::user();
+        if ($jobPosting->employer_id !== $user->id) {
+            abort(403);
+        }
+
+        return view('employer.job-edit', compact('jobPosting', 'user'));
+    }
+
+    // Update job posting
+    public function update(Request $request, JobPosting $jobPosting)
+    {
+        $user = Auth::user();
+        if ($jobPosting->employer_id !== $user->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'type' => 'required|string|in:Full-time,Part-time,Contract,Internship,Freelance',
+            'salary' => 'nullable|string|max:255',
+            'description' => 'required|string',
+            'skills' => 'nullable|string', // Comma-separated skills
+            'status' => 'nullable|in:active,draft,closed',
+        ]);
+
+        // Convert comma-separated skills to array
+        $skills = [];
+        if (!empty($validated['skills'])) {
+            $skills = array_map('trim', explode(',', $validated['skills']));
+        }
+
+        $jobPosting->update([
+            'title' => $validated['title'],
+            'location' => $validated['location'] ?? 'Mandaluyong',
+            'type' => $validated['type'],
+            'salary' => $validated['salary'] ?? 'Negotiable',
+            'description' => $validated['description'],
+            'skills' => $skills,
+            'status' => $validated['status'] ?? $jobPosting->status,
+        ]);
+
+        return redirect()->route('employer.jobs')->with('success', 'Job posting updated successfully!');
+    }
+
+    // Update job status (close/reopen job)
+    public function updateStatus(Request $request, JobPosting $jobPosting)
+    {
+        $user = Auth::user();
+        if ($jobPosting->employer_id !== $user->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:active,closed,draft',
+        ]);
+
+        $jobPosting->update(['status' => $validated['status']]);
+
+        $statusMessages = [
+            'closed' => 'Job posting closed - no longer accepting applications',
+            'active' => 'Job posting is now active and accepting applications',
+            'draft' => 'Job posting saved as draft',
+        ];
+
+        return back()->with('success', $statusMessages[$validated['status']] ?? 'Job status updated');
+    }
 }

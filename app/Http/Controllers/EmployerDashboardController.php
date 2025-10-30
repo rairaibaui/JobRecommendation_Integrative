@@ -17,19 +17,7 @@ class EmployerDashboardController extends Controller
         $jobPostings = JobPosting::where('employer_id', $user->id)
             ->withCount('applications')
             ->orderByDesc('created_at')
-            ->get()
-            ->map(function($job) {
-                return [
-                    'id' => $job->id,
-                    'title' => $job->title,
-                    'department' => $job->type,
-                    'type' => $job->type,
-                    'salary' => $job->salary,
-                    'posted_date' => $job->created_at->format('Y-m-d'),
-                    'applications' => $job->applications_count,
-                    'status' => ucfirst($job->status),
-                ];
-            })->toArray();
+            ->get();
 
         // Hires count for dashboard
         $hiredCount = \App\Models\ApplicationHistory::where('employer_id', $user->id)

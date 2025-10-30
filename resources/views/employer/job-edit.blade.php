@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Post New Job - Employer | Job Portal Mandaluyong</title>
+<title>Edit Job - Employer | Job Portal Mandaluyong</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
@@ -42,7 +42,7 @@
   <div class="top-navbar">
     <div style="display:flex; align-items:center; gap:12px;">
       <i class="fas fa-bars hamburger"></i>
-      <span>POST NEW JOB</span>
+      <span>EDIT JOB</span>
     </div>
     <form method="POST" action="{{ route('logout') }}" style="margin:0;">
       @csrf
@@ -65,7 +65,7 @@
 
   <div class="main">
     <div class="card">
-      <h2 style="margin-bottom:24px; color:#334A5E; font-family:'Poppins', sans-serif;">Post a New Job</h2>
+      <h2 style="margin-bottom:24px; color:#334A5E; font-family:'Poppins', sans-serif;">Edit Job Posting</h2>
 
       @if($errors->any())
         <div style="background:#f8d7da; color:#721c24; padding:12px; border-radius:6px; margin-bottom:20px; border:1px solid #f5c6cb;">
@@ -78,48 +78,49 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('employer.jobs.store') }}">
+      <form method="POST" action="{{ route('employer.jobs.update', $jobPosting) }}">
         @csrf
+        @method('PUT')
 
         <div class="form-group">
           <label for="title">Job Title <span style="color:red;">*</span></label>
-          <input type="text" id="title" name="title" value="{{ old('title') }}" required placeholder="e.g. Senior Web Developer">
+          <input type="text" id="title" name="title" value="{{ old('title', $jobPosting->title) }}" required placeholder="e.g. Senior Web Developer">
           @error('title')<span class="error">{{ $message }}</span>@enderror
         </div>
 
         <div class="form-group">
           <label for="location">Location</label>
-          <input type="text" id="location" name="location" value="{{ old('location', 'Mandaluyong') }}" placeholder="e.g. Mandaluyong, Manila">
+          <input type="text" id="location" name="location" value="{{ old('location', $jobPosting->location) }}" placeholder="e.g. Mandaluyong, Manila">
           @error('location')<span class="error">{{ $message }}</span>@enderror
         </div>
 
         <div class="form-group">
           <label for="type">Job Type <span style="color:red;">*</span></label>
           <select id="type" name="type" required>
-            <option value="Full-time" {{ old('type') == 'Full-time' ? 'selected' : '' }}>Full-time</option>
-            <option value="Part-time" {{ old('type') == 'Part-time' ? 'selected' : '' }}>Part-time</option>
-            <option value="Contract" {{ old('type') == 'Contract' ? 'selected' : '' }}>Contract</option>
-            <option value="Internship" {{ old('type') == 'Internship' ? 'selected' : '' }}>Internship</option>
-            <option value="Freelance" {{ old('type') == 'Freelance' ? 'selected' : '' }}>Freelance</option>
+            <option value="Full-time" {{ old('type', $jobPosting->type) == 'Full-time' ? 'selected' : '' }}>Full-time</option>
+            <option value="Part-time" {{ old('type', $jobPosting->type) == 'Part-time' ? 'selected' : '' }}>Part-time</option>
+            <option value="Contract" {{ old('type', $jobPosting->type) == 'Contract' ? 'selected' : '' }}>Contract</option>
+            <option value="Internship" {{ old('type', $jobPosting->type) == 'Internship' ? 'selected' : '' }}>Internship</option>
+            <option value="Freelance" {{ old('type', $jobPosting->type) == 'Freelance' ? 'selected' : '' }}>Freelance</option>
           </select>
           @error('type')<span class="error">{{ $message }}</span>@enderror
         </div>
 
         <div class="form-group">
           <label for="salary">Salary Range</label>
-          <input type="text" id="salary" name="salary" value="{{ old('salary') }}" placeholder="e.g. PHP 30,000 - 50,000/month or Negotiable">
+          <input type="text" id="salary" name="salary" value="{{ old('salary', $jobPosting->salary) }}" placeholder="e.g. PHP 30,000 - 50,000/month or Negotiable">
           @error('salary')<span class="error">{{ $message }}</span>@enderror
         </div>
 
         <div class="form-group">
           <label for="description">Job Description <span style="color:red;">*</span></label>
-          <textarea id="description" name="description" required placeholder="Describe the role, responsibilities, and requirements...">{{ old('description') }}</textarea>
+          <textarea id="description" name="description" required placeholder="Describe the role, responsibilities, and requirements...">{{ old('description', $jobPosting->description) }}</textarea>
           @error('description')<span class="error">{{ $message }}</span>@enderror
         </div>
 
         <div class="form-group">
           <label for="skills">Required Skills</label>
-          <input type="text" id="skills" name="skills" value="{{ old('skills') }}" placeholder="e.g. PHP, Laravel, JavaScript, React (comma-separated)">
+          <input type="text" id="skills" name="skills" value="{{ old('skills', is_array($jobPosting->skills) ? implode(', ', $jobPosting->skills) : '') }}" placeholder="e.g. PHP, Laravel, JavaScript, React (comma-separated)">
           <small>Enter skills separated by commas</small>
           @error('skills')<span class="error">{{ $message }}</span>@enderror
         </div>
@@ -127,17 +128,19 @@
         <div class="form-group">
           <label for="status">Status</label>
           <select id="status" name="status">
-            <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active (Visible to job seekers)</option>
-            <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft (Not visible yet)</option>
+            <option value="active" {{ old('status', $jobPosting->status) == 'active' ? 'selected' : '' }}>Active (Accepting applications)</option>
+            <option value="closed" {{ old('status', $jobPosting->status) == 'closed' ? 'selected' : '' }}>Closed (Position filled / No longer hiring)</option>
+            <option value="draft" {{ old('status', $jobPosting->status) == 'draft' ? 'selected' : '' }}>Draft (Not visible to job seekers)</option>
           </select>
+          <small>Set to "Closed" when position is filled or no more applicants needed</small>
           @error('status')<span class="error">{{ $message }}</span>@enderror
         </div>
 
         <div style="margin-top:30px;">
           <button type="submit" class="btn-primary">
-            <i class="fas fa-check"></i> Post Job
+            <i class="fas fa-save"></i> Save Changes
           </button>
-          <a href="{{ route('employer.dashboard') }}" class="btn-secondary">Cancel</a>
+          <a href="{{ route('employer.jobs') }}" class="btn-secondary">Cancel</a>
         </div>
       </form>
     </div>

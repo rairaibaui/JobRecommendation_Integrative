@@ -73,16 +73,25 @@
   }
 
   .profile-icon {
-    width: 40px;
-    height: 45px;
+    width: 62px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
   }
 
   .profile-icon i {
     font-size: 30px;
     color: #FFF;
+  }
+
+  .profile-icon img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
   }
 
   .sidebar-btn {
@@ -422,41 +431,23 @@
   <div class="sidebar">
     <div class="profile-ellipse">
       <div class="profile-icon">
-        <i class="fa fa-building"></i>
+        @if($user->profile_picture)
+          <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="Profile Picture">
+        @else
+          <i class="fa fa-building"></i>
+        @endif
       </div>
     </div>
     <div class="profile-name">{{ $user->first_name }} {{ $user->last_name }}</div>
     <div class="company-name">{{ $user->company_name ?? 'Company Name' }}</div>
 
-    <a href="{{ route('employer.dashboard') }}" class="sidebar-btn active">
-      <i class="fa fa-home sidebar-btn-icon"></i>
-      <span>Dashboard</span>
-    </a>
-
-    <a href="{{ route('employer.jobs') }}" class="sidebar-btn">
-      <i class="fa fa-briefcase sidebar-btn-icon"></i>
-      <span>Job Postings</span>
-    </a>
-
-    <a href="{{ route('employer.applicants') }}" class="sidebar-btn">
-      <i class="fa fa-users sidebar-btn-icon"></i>
-      <span>Applicants</span>
-    </a>
-
-    <a href="{{ route('employer.history') }}" class="sidebar-btn">
-      <i class="fa fa-history sidebar-btn-icon"></i>
-      <span>History</span>
-    </a>
-
-    <a href="{{ route('employer.employees') }}" class="sidebar-btn">
-      <i class="fa fa-user-check sidebar-btn-icon"></i>
-      <span>Employees</span>
-    </a>
-
-    <a href="{{ route('settings') }}" class="sidebar-btn">
-      <i class="fa fa-cog sidebar-btn-icon"></i>
-      <span>Settings</span>
-    </a>
+    <a href="{{ route('employer.dashboard') }}" class="sidebar-btn active"><i class="fa fa-home sidebar-btn-icon"></i> Dashboard</a>
+    <a href="{{ route('employer.jobs') }}" class="sidebar-btn"><i class="fa fa-briefcase sidebar-btn-icon"></i> Job Postings</a>
+    <a href="{{ route('employer.applicants') }}" class="sidebar-btn"><i class="fa fa-users sidebar-btn-icon"></i> Applicants</a>
+    <a href="{{ route('employer.history') }}" class="sidebar-btn"><i class="fa fa-history sidebar-btn-icon"></i> History</a>
+    <a href="{{ route('employer.employees') }}" class="sidebar-btn"><i class="fa fa-user-check sidebar-btn-icon"></i> Employees</a>
+    <a href="{{ route('employer.analytics') }}" class="sidebar-btn"><i class="fa fa-chart-bar sidebar-btn-icon"></i> Analytics</a>
+    <a href="{{ route('settings') }}" class="sidebar-btn"><i class="fa fa-cog sidebar-btn-icon"></i> Settings</a>
   </div>
 
   <!-- Main Content -->
@@ -486,7 +477,7 @@
           <i class="fas fa-file-alt"></i>
         </div>
         <div class="stat-content">
-          <h3>{{ array_sum(array_column($jobPostings, 'applications')) }}</h3>
+          <h3>{{ $jobPostings->sum('applications_count') }}</h3>
           <p>Total Applications</p>
         </div>
       </div>
@@ -516,44 +507,66 @@
         <div class="job-card">
           <div class="job-header">
             <div>
-              <h3 class="job-title">{{ $job['title'] }}</h3>
-              <p class="job-department">{{ $job['department'] }}</p>
+              <h3 class="job-title">{{ $job->title }}</h3>
+              <p class="job-department">{{ $job->type }}</p>
             </div>
-            <span class="job-status status-{{ strtolower($job['status']) }}">
-              {{ $job['status'] }}
+            <span class="job-status status-{{ strtolower($job->status) }}">
+              {{ ucfirst($job->status) }}
             </span>
           </div>
 
           <div class="job-details">
             <div class="job-detail-item">
               <i class="fas fa-clock"></i>
-              <span>{{ $job['type'] }}</span>
+              <span>{{ $job->type }}</span>
             </div>
             <div class="job-detail-item">
               <i class="fas fa-money-bill-wave"></i>
-              <span>{{ $job['salary'] }}</span>
+              <span>{{ $job->salary }}</span>
             </div>
             <div class="job-detail-item">
               <i class="fas fa-calendar"></i>
-              <span>Posted: {{ \Carbon\Carbon::parse($job['posted_date'])->format('M d, Y') }}</span>
+              <span>Posted: {{ $job->created_at->format('M d, Y') }}</span>
             </div>
           </div>
 
           <div class="job-footer">
             <div class="applications-count">
               <i class="fas fa-users"></i>
-              <span>{{ $job['applications'] }} Applications</span>
+              <span>{{ $job->applications_count }} Applications</span>
             </div>
             <div class="job-actions">
-              <button class="btn-icon" title="View Details">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button class="btn-icon" title="Edit">
+              <a href="{{ route('employer.jobs.edit', $job) }}" class="btn-icon" title="Edit Job">
                 <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn-icon" title="Delete">
-                <i class="fas fa-trash"></i>
-              </button>
+              </a>
+              
+              @if($job->status === 'active')
+                <form method="POST" action="{{ route('employer.jobs.updateStatus', $job) }}" style="display:inline; margin:0;">
+                  @csrf
+                  @method('PATCH')
+                  <input type="hidden" name="status" value="closed">
+                  <button type="submit" class="btn-icon" title="Close Job (Position Filled)" style="background:#ffc107; color:#000;">
+                    <i class="fas fa-lock"></i>
+                  </button>
+                </form>
+              @elseif($job->status === 'closed')
+                <form method="POST" action="{{ route('employer.jobs.updateStatus', $job) }}" style="display:inline; margin:0;">
+                  @csrf
+                  @method('PATCH')
+                  <input type="hidden" name="status" value="active">
+                  <button type="submit" class="btn-icon" title="Reopen Job" style="background:#28a745;">
+                    <i class="fas fa-unlock"></i>
+                  </button>
+                </form>
+              @endif
+              
+              <form method="POST" action="{{ route('employer.jobs.destroy', $job) }}" onsubmit="return confirm('Are you sure you want to delete this job posting? This action cannot be undone.');" style="display:inline; margin:0;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn-icon" title="Delete Job" style="background:#dc3545;">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
             </div>
           </div>
         </div>
