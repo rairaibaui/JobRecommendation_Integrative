@@ -169,6 +169,58 @@
             font-weight: bold;
             text-decoration: none;
         }
+
+        /* Custom upload UI */
+        .upload-zone {
+            border: 2px dashed #648EB5;
+            background: #f9fbff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            user-select: none;
+        }
+        .upload-zone:hover {
+            background: #f3f8ff;
+        }
+        .upload-zone.dragover {
+            border-color: #334A5E;
+            background: #eef4fb;
+        }
+        .upload-icon {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8f0f9;
+            color: #334A5E;
+            border-radius: 10px;
+            flex: 0 0 38px;
+        }
+        .upload-text {
+            font-size: 13px;
+            line-height: 1.3;
+            color: #333;
+        }
+        .upload-text small {
+            color: #666;
+        }
+        .file-name {
+            margin-left: auto;
+            font-size: 12px;
+            color: #334A5E;
+            background: #eef4fb;
+            padding: 6px 10px;
+            border-radius: 8px;
+            max-width: 45%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 
@@ -223,8 +275,24 @@
                 </div>
                 <div class="form-group">
                     <label for="business_permit">Company/Business Verification Document (Business Permit)</label>
-                    <input type="file" name="business_permit" id="business_permit" accept=".pdf,.jpg,.jpeg,.png" class="@error('business_permit') input-error @enderror">
+                    <div id="permit-drop" class="upload-zone" onclick="document.getElementById('business_permit').click()"
+                         ondragover="handlePermitDrag(event,true)" ondragleave="handlePermitDrag(event,false)" ondrop="handlePermitDrop(event)">
+                        <div class="upload-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 16V4" stroke="#334A5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M7 9l5-5 5 5" stroke="#334A5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3" stroke="#334A5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="upload-text">
+                            <strong>Click to upload</strong> or drag & drop<br>
+                            <small>PDF, JPG, PNG (max 5 MB)</small>
+                        </div>
+                        <div id="permit-file-name" class="file-name">No file chosen</div>
+                    </div>
+                    <input type="file" name="business_permit" id="business_permit" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handlePermitChange(event)" class="@error('business_permit') input-error @enderror">
                     @error('business_permit') <span class="error-text">{{ $message }}</span> @enderror
+                    <span id="permit-error" class="error-text" style="display:none"></span>
                 </div>
             </div>
 
@@ -371,6 +439,57 @@
             const initial = '{{ old('user_type','job_seeker') }}';
             selectType(initial);
         })();
+
+        // Custom upload handlers
+        function handlePermitChange(e) {
+            const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+            const nameEl = document.getElementById('permit-file-name');
+            const errEl = document.getElementById('permit-error');
+            errEl.style.display = 'none';
+            errEl.textContent = '';
+            if (!file) {
+                nameEl.textContent = 'No file chosen';
+                return;
+            }
+            // Client-side checks (types and size)
+            const allowed = ['application/pdf','image/jpeg','image/png'];
+            if (!allowed.includes(file.type)) {
+                errEl.textContent = 'Invalid file type. Please upload a PDF, JPG, or PNG.';
+                errEl.style.display = 'block';
+                e.target.value = '';
+                nameEl.textContent = 'No file chosen';
+                return;
+            }
+            const max = 5 * 1024 * 1024; // 5MB
+            if (file.size > max) {
+                errEl.textContent = 'File is too large. Maximum size is 5 MB.';
+                errEl.style.display = 'block';
+                e.target.value = '';
+                nameEl.textContent = 'No file chosen';
+                return;
+            }
+            nameEl.textContent = file.name;
+        }
+
+        function handlePermitDrag(ev, isOver) {
+            ev.preventDefault();
+            const drop = document.getElementById('permit-drop');
+            if (isOver) drop.classList.add('dragover'); else drop.classList.remove('dragover');
+        }
+
+        function handlePermitDrop(ev) {
+            ev.preventDefault();
+            const drop = document.getElementById('permit-drop');
+            drop.classList.remove('dragover');
+            const files = ev.dataTransfer.files;
+            if (files && files.length > 0) {
+                const input = document.getElementById('business_permit');
+                input.files = files;
+                // Trigger change for validation + filename update
+                const event = new Event('change');
+                input.dispatchEvent(event);
+            }
+        }
     </script>
 </body>
 
