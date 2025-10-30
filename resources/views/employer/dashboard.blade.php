@@ -433,7 +433,7 @@
       <span>Dashboard</span>
     </a>
 
-    <a href="#" class="sidebar-btn">
+    <a href="{{ route('employer.jobs') }}" class="sidebar-btn">
       <i class="fa fa-briefcase sidebar-btn-icon"></i>
       <span>Job Postings</span>
     </a>
@@ -443,12 +443,17 @@
       <span>Applicants</span>
     </a>
 
-    <a href="#" class="sidebar-btn">
-      <i class="fa fa-chart-bar sidebar-btn-icon"></i>
-      <span>Analytics</span>
+    <a href="{{ route('employer.history') }}" class="sidebar-btn">
+      <i class="fa fa-history sidebar-btn-icon"></i>
+      <span>History</span>
     </a>
 
-    <a href="#" class="sidebar-btn">
+    <a href="{{ route('employer.employees') }}" class="sidebar-btn">
+      <i class="fa fa-user-check sidebar-btn-icon"></i>
+      <span>Employees</span>
+    </a>
+
+    <a href="{{ route('settings') }}" class="sidebar-btn">
       <i class="fa fa-cog sidebar-btn-icon"></i>
       <span>Settings</span>
     </a>
@@ -491,7 +496,7 @@
           <i class="fas fa-user-check"></i>
         </div>
         <div class="stat-content">
-          <h3>0</h3>
+          <h3>{{ $hiredCount ?? 0 }}</h3>
           <p>Candidates Hired</p>
         </div>
       </div>
@@ -500,10 +505,10 @@
     <!-- Job Postings Section -->
     <div class="section-header">
       <h2 class="section-title">Your Job Postings</h2>
-      <button class="btn-primary">
+      <a href="{{ route('employer.jobs.create') }}" class="btn-primary" style="text-decoration:none;">
         <i class="fas fa-plus"></i>
         Post New Job
-      </button>
+      </a>
     </div>
 
     <div class="jobs-container">

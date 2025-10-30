@@ -8,6 +8,9 @@ use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployerDashboardController;
 use App\Http\Controllers\EmployerApplicantsController;
+use App\Http\Controllers\EmployerHistoryController;
+use App\Http\Controllers\EmployerEmployeesController;
+use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MyApplicationsController;
 use App\Http\Controllers\ProfileController;
@@ -55,12 +58,25 @@ Route::middleware('auth')->group(function () {
     // Employer Applicants Management
     Route::get('/employer/applicants', [EmployerApplicantsController::class, 'index'])->name('employer.applicants');
     Route::post('/employer/applications/{application}/status', [EmployerApplicantsController::class, 'updateStatus'])->name('employer.applications.updateStatus');
+    Route::delete('/employer/applications/{application}', [EmployerApplicantsController::class, 'destroy'])->name('employer.applications.destroy');
+    
+    // Employer History (Hired/Rejected Records)
+    Route::get('/employer/history', [EmployerHistoryController::class, 'index'])->name('employer.history');
+    // Employer Employees (Accepted/Hired applicants)
+    Route::get('/employer/employees', [EmployerEmployeesController::class, 'index'])->name('employer.employees');
+    
+    // Employer Job Postings
+    Route::get('/employer/jobs', [JobPostingController::class, 'index'])->name('employer.jobs');
+    Route::get('/employer/jobs/create', [JobPostingController::class, 'create'])->name('employer.jobs.create');
+    Route::post('/employer/jobs', [JobPostingController::class, 'store'])->name('employer.jobs.store');
+    Route::delete('/employer/jobs/{jobPosting}', [JobPostingController::class, 'destroy'])->name('employer.jobs.destroy');
 
     // Recommendation
     Route::get('/recommendation', [RecommendationController::class, 'index'])->name('recommendation');
 
     // My Applications
     Route::get('/my-applications', [MyApplicationsController::class, 'index'])->name('my-applications');
+    Route::delete('/my-applications/{application}', [MyApplicationsController::class, 'destroy'])->name('my-applications.destroy');
 
     // Bookmarks
     Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks');

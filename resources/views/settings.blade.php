@@ -369,6 +369,45 @@
                 <div class="card-large profile-card"
                     style="display:none; background:#fff; color:#000; border-radius:10px; padding:25px;">
                     <h2 style="color:#1E3A5F;">Profile Settings</h2>
+
+                    @if(Auth::user()->user_type === 'job_seeker')
+                        <!-- Employment Status Display (Read-only, updated automatically when hired) -->
+                        <div style="background:#e8f0f7; border-left:4px solid #648EB5; padding:15px; margin-bottom:20px; border-radius:6px;">
+                            <h3 style="margin:0 0 10px 0; color:#334A5E; font-size:16px;">
+                                <i class="fas fa-briefcase"></i> Employment Status
+                            </h3>
+                            @if(Auth::user()->employment_status === 'employed')
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                    <span style="background:#28a745; color:#fff; padding:6px 12px; border-radius:12px; font-size:14px; font-weight:600;">
+                                        <i class="fas fa-check-circle"></i> Currently Employed
+                                    </span>
+                                </div>
+                                @if(Auth::user()->hired_by_company)
+                                    <p style="margin:8px 0 0 0; color:#555; font-size:14px;">
+                                        <i class="fas fa-building"></i> <strong>Company:</strong> {{ Auth::user()->hired_by_company }}
+                                    </p>
+                                @endif
+                                @if(Auth::user()->hired_date)
+                                    <p style="margin:4px 0 0 0; color:#555; font-size:13px;">
+                                        <i class="fas fa-calendar-alt"></i> <strong>Since:</strong> {{ Auth::user()->hired_date->format('M d, Y') }}
+                                    </p>
+                                @endif
+                                <p style="margin:12px 0 0 0; color:#856404; font-size:12px; font-style:italic;">
+                                    <i class="fas fa-info-circle"></i> You cannot apply for other jobs while employed. Your status will be updated automatically.
+                                </p>
+                            @else
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span style="background:#17a2b8; color:#fff; padding:6px 12px; border-radius:12px; font-size:14px; font-weight:600;">
+                                        <i class="fas fa-search"></i> Actively Seeking Employment
+                                    </span>
+                                </div>
+                                <p style="margin:8px 0 0 0; color:#555; font-size:13px;">
+                                    You can apply for job opportunities. Good luck! 🍀
+                                </p>
+                            @endif
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
                         @csrf
                         <label>First Name</label>
@@ -381,7 +420,7 @@
                         <input type="email" value="{{ Auth::user()->email }}" readonly>
 
                         <label>Date of Birth</label>
-                        <input type="date" name="birthday" value="{{ Auth::user()->birthday }}">
+                        <input type="date" name="birthday" value="{{ Auth::user()->birthday ? Auth::user()->birthday->format('Y-m-d') : '' }}">
 
                         <label>Phone Number</label>
                         <input type="text" name="phone_number" value="{{ Auth::user()->phone_number }}">

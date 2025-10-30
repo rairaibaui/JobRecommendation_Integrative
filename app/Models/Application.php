@@ -8,6 +8,7 @@ class Application extends Model
 {
     protected $fillable = [
         'user_id',
+        'job_posting_id',
         'employer_id',
         'job_title',
         'company_name',
@@ -15,18 +16,27 @@ class Application extends Model
         'updated_by',
         'status_updated_at',
         'job_data',
-        'resume_snapshot'
+            'resume_snapshot',
+            'interview_date',
+            'interview_notes',
+            'interview_location'
     ];
 
     protected $casts = [
         'job_data' => 'array',
         'resume_snapshot' => 'array',
         'status_updated_at' => 'datetime',
+            'interview_date' => 'datetime',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function jobPosting()
+    {
+        return $this->belongsTo(JobPosting::class);
     }
 
     public function employer()
@@ -59,6 +69,8 @@ class Application extends Model
     {
         $statusMessages = [
             'reviewing' => 'Your application is now under review!',
+                'for_interview' => '📋 You have been shortlisted for an interview!',
+                'interviewed' => 'Thank you for attending the interview. We will get back to you soon.',
             'accepted' => '🎉 Congratulations! Your application has been accepted!',
             'rejected' => 'Unfortunately, your application was not successful this time.',
         ];

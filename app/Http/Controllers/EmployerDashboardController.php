@@ -4,47 +4,38 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\JobPosting;
+use App\Models\Application;
 
 class EmployerDashboardController extends Controller
 {
     public function index()
     {
-        // Placeholder data for employer dashboard - can be replaced with actual job postings from database
-        $jobPostings = [
-            [
-                'id' => 1,
-                'title' => 'Senior Developer',
-                'department' => 'Engineering',
-                'type' => 'Full-Time',
-                'salary' => 'PHP 80,000/month',
-                'posted_date' => '2025-10-15',
-                'applications' => 12,
-                'status' => 'Active'
-            ],
-            [
-                'id' => 2,
-                'title' => 'Marketing Manager',
-                'department' => 'Marketing',
-                'type' => 'Full-Time',
-                'salary' => 'PHP 60,000/month',
-                'posted_date' => '2025-10-20',
-                'applications' => 8,
-                'status' => 'Active'
-            ],
-            [
-                'id' => 3,
-                'title' => 'Sales Representative',
-                'department' => 'Sales',
-                'type' => 'Part-Time',
-                'salary' => 'PHP 25,000/month',
-                'posted_date' => '2025-10-25',
-                'applications' => 5,
-                'status' => 'Active'
-            ],
-        ];
-
         $user = Auth::user();
         
-        return view('employer.dashboard', compact('jobPostings', 'user'));
+        // Get employer's job postings with application counts
+        $jobPostings = JobPosting::where('employer_id', $user->id)
+            ->withCount('applications')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function($job) {
+                return [
+                    'id' => $job->id,
+                    'title' => $job->title,
+                    'department' => $job->type,
+                    'type' => $job->type,
+                    'salary' => $job->salary,
+                    'posted_date' => $job->created_at->format('Y-m-d'),
+                    'applications' => $job->applications_count,
+                    'status' => ucfirst($job->status),
+                ];
+            })->toArray();
+
+        // Hires count for dashboard
+        $hiredCount = \App\Models\ApplicationHistory::where('employer_id', $user->id)
+            ->where('decision', 'hired')
+            ->count();
+
+        return view('employer.dashboard', compact('jobPostings', 'user', 'hiredCount'));
     }
 }

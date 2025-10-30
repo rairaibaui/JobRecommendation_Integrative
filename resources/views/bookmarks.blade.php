@@ -368,6 +368,29 @@ function markAllNotificationsRead(e){
       });
 }
 function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
+
+    // Load expanded state from localStorage on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const expandedJobs = JSON.parse(localStorage.getItem('expandedBookmarkJobs') || '[]');
+      
+      document.querySelectorAll('.job-card').forEach((card, index) => {
+        if (expandedJobs.includes(index)) {
+          const details = card.querySelector('.job-details');
+          const button = card.querySelector('.btn-details');
+          const icon = button ? button.querySelector('i') : null;
+          
+          if (details) {
+            details.classList.add('expanded');
+            if (button && icon) {
+              icon.classList.remove('fa-chevron-down');
+              icon.classList.add('fa-chevron-up');
+              button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
+            }
+          }
+        }
+      });
+    });
+
     function toggleJobDetails(button) {
         const jobCard = button.closest('.job-card');
         const details = jobCard.querySelector('.job-details');
@@ -384,6 +407,17 @@ function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
             icon.classList.add('fa-chevron-up');
             button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
         }
+        
+        // Save expanded state to localStorage
+        const cards = Array.from(document.querySelectorAll('.job-card'));
+        const expandedJobs = [];
+        cards.forEach((card, index) => {
+          const cardDetails = card.querySelector('.job-details');
+          if (cardDetails && cardDetails.classList.contains('expanded')) {
+            expandedJobs.push(index);
+          }
+        });
+        localStorage.setItem('expandedBookmarkJobs', JSON.stringify(expandedJobs));
     }
 
 function showMessage(message, type) {

@@ -674,6 +674,7 @@
         </p>
         @foreach($jobs as $job)
         <div class="job-card" 
+             data-job-id="{{ $job['id'] ?? '' }}"
              data-title="{{ $job['title'] }}" 
              data-location="{{ $job['location'] ?? '' }}" 
              data-type="{{ $job['type'] ?? '' }}" 
@@ -698,6 +699,45 @@
             </div>
             
             <div class="job-details">
+                <!-- Company & Employer Info Section -->
+                <div class="employer-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #648EB5;">
+                    <h4 style="margin: 0 0 10px 0; color: #648EB5; font-size: 14px; font-weight: 600;">
+                        <i class="fas fa-building"></i> Company & Contact Information
+                    </h4>
+                    <div style="display: grid; gap: 8px; font-size: 14px;">
+                        @if(!empty($job['company']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-briefcase" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Company:</strong> {{ $job['company'] }}
+                            </div>
+                        @endif
+                        @if(!empty($job['employer_name']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-user-tie" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Contact Person:</strong> {{ $job['employer_name'] }}
+                            </div>
+                        @endif
+                        @if(!empty($job['employer_email']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-envelope" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Email:</strong> <a href="mailto:{{ $job['employer_email'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_email'] }}</a>
+                            </div>
+                        @endif
+                        @if(!empty($job['employer_phone']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-phone" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Phone:</strong> <a href="tel:{{ $job['employer_phone'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_phone'] }}</a>
+                            </div>
+                        @endif
+                        @if(!empty($job['posted_date']))
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-calendar" style="color: #648EB5; width: 16px;"></i>
+                                <strong>Posted:</strong> {{ $job['posted_date'] }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 <div class="job-description">
                     {{ $job['description'] ?? '' }}
                 </div>
@@ -904,6 +944,7 @@
     function openApplyModal(button) {
       const card = button.closest('.job-card');
       currentJobData = {
+        id: card.dataset.jobId || null,
         title: card.dataset.title || '',
         location: card.dataset.location || '',
         type: card.dataset.type || '',
@@ -1037,6 +1078,7 @@
       
       const payload = {
         job_title: currentJobData.title,
+        job_posting_id: currentJobData.id || null,
         job_data: currentJobData,
         resume_snapshot: currentResumeSnapshot || {}
       };
@@ -1098,6 +1140,27 @@
       setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2700);
     }
 
+    // Load expanded state from localStorage on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const expandedJobs = JSON.parse(localStorage.getItem('expandedDashboardJobs') || '[]');
+      
+      document.querySelectorAll('.job-card').forEach((card, index) => {
+        if (expandedJobs.includes(index)) {
+          const details = card.querySelector('.job-details');
+          const button = card.querySelector('.btn-details');
+          const icon = button ? button.querySelector('i') : null;
+          
+          if (details) {
+            details.classList.add('expanded');
+            if (icon) {
+              icon.classList.remove('fa-chevron-down');
+              icon.classList.add('fa-chevron-up');
+            }
+          }
+        }
+      });
+    });
+
     function toggleDetails(button) {
         const jobCard = button.closest('.job-card');
         const details = jobCard.querySelector('.job-details');
@@ -1112,6 +1175,17 @@
             icon.classList.remove('fa-chevron-down');
             icon.classList.add('fa-chevron-up');
         }
+        
+        // Save expanded state to localStorage
+        const cards = Array.from(document.querySelectorAll('.job-card'));
+        const expandedJobs = [];
+        cards.forEach((card, index) => {
+          const cardDetails = card.querySelector('.job-details');
+          if (cardDetails && cardDetails.classList.contains('expanded')) {
+            expandedJobs.push(index);
+          }
+        });
+        localStorage.setItem('expandedDashboardJobs', JSON.stringify(expandedJobs));
     }
 
   function toggleBookmark(button) {

@@ -14,8 +14,17 @@ class ApplicationController extends Controller
     {
         $user = Auth::user();
 
+        // Check if job seeker is already employed
+        if ($user->user_type === 'job_seeker' && $user->employment_status === 'employed') {
+            return response()->json([
+                'success' => false, 
+                'message' => 'You are currently employed by ' . ($user->hired_by_company ?? 'a company') . '. You cannot apply for other jobs while employed.',
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'job_title' => 'required|string|max:255',
+            'job_posting_id' => 'nullable|exists:job_postings,id',
             'job_data' => 'nullable|array',
             'resume_snapshot' => 'nullable|array',
         ]);
@@ -32,6 +41,7 @@ class ApplicationController extends Controller
             $app = new Application();
             $app->user_id = $user->id;
             $app->job_title = $request->job_title;
+            $app->job_posting_id = $request->job_posting_id; // Link to job posting if provided
             $app->job_data = $request->job_data;
             $app->resume_snapshot = $request->resume_snapshot;
             // Set optional company_name if available in job_data

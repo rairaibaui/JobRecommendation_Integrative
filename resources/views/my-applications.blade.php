@@ -32,6 +32,12 @@
 
     <!-- My Applications -->
     <div class="card-large" style="background: #FFF;">
+        @if(session('success'))
+            <div style="background:#d4edda; color:#155724; padding:12px 20px; border-radius:8px; margin-bottom:20px; border:1px solid #c3e6cb;">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+        @endif
+
         <div class="recommendation-header">
             <h3>My Applications</h3>
             <p>Track your job applications and their status</p>
@@ -51,6 +57,14 @@
                 <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">{{ $stats['reviewing'] }}</div>
                 <div style="font-size: 13px; opacity: 0.9;">Reviewing</div>
             </div>
+            <div style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); padding: 20px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">{{ $stats['for_interview'] }}</div>
+                <div style="font-size: 13px; opacity: 0.9;">For Interview</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); padding: 20px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">{{ $stats['interviewed'] }}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Interviewed</div>
+            </div>
             <div style="background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%); padding: 20px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">{{ $stats['accepted'] }}</div>
                 <div style="font-size: 13px; opacity: 0.9;">Accepted</div>
@@ -66,6 +80,8 @@
             <button class="filter-btn active" onclick="filterApplications('all')" style="padding: 8px 16px; border: 2px solid #648EB5; background: #648EB5; color: white; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">All</button>
             <button class="filter-btn" onclick="filterApplications('pending')" style="padding: 8px 16px; border: 2px solid #FFA726; background: white; color: #FFA726; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">Pending</button>
             <button class="filter-btn" onclick="filterApplications('reviewing')" style="padding: 8px 16px; border: 2px solid #42A5F5; background: white; color: #42A5F5; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">Reviewing</button>
+            <button class="filter-btn" onclick="filterApplications('for_interview')" style="padding: 8px 16px; border: 2px solid #17a2b8; background: white; color: #17a2b8; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">For Interview</button>
+            <button class="filter-btn" onclick="filterApplications('interviewed')" style="padding: 8px 16px; border: 2px solid #ffc107; background: white; color: #ffc107; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">Interviewed</button>
             <button class="filter-btn" onclick="filterApplications('accepted')" style="padding: 8px 16px; border: 2px solid #66BB6A; background: white; color: #66BB6A; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">Accepted</button>
             <button class="filter-btn" onclick="filterApplications('rejected')" style="padding: 8px 16px; border: 2px solid #EF5350; background: white; color: #EF5350; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 14px; font-weight: 500;">Rejected</button>
         </div>
@@ -99,21 +115,66 @@
                                         </div>
                                     @endif
                                 </div>
+
+                                <!-- Employer Contact Information -->
+                                @if($application->jobPosting && $application->jobPosting->employer)
+                                    <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; border-left: 3px solid #648EB5;">
+                                        <div style="font-weight: 600; color: #648EB5; margin-bottom: 6px;">
+                                            <i class="fas fa-info-circle"></i> Employer Contact
+                                        </div>
+                                        <div style="display: grid; gap: 4px; color: #555;">
+                                            @if($application->jobPosting->employer->first_name)
+                                                <div><i class="fas fa-user-tie" style="width: 16px; color: #648EB5;"></i> <strong>Contact:</strong> {{ $application->jobPosting->employer->first_name }} {{ $application->jobPosting->employer->last_name }}</div>
+                                            @endif
+                                            @if($application->jobPosting->employer->email)
+                                                <div><i class="fas fa-envelope" style="width: 16px; color: #648EB5;"></i> <strong>Email:</strong> <a href="mailto:{{ $application->jobPosting->employer->email }}" style="color: #648EB5; text-decoration: none;">{{ $application->jobPosting->employer->email }}</a></div>
+                                            @endif
+                                            @if($application->jobPosting->employer->phone_number)
+                                                <div><i class="fas fa-phone" style="width: 16px; color: #648EB5;"></i> <strong>Phone:</strong> <a href="tel:{{ $application->jobPosting->employer->phone_number }}" style="color: #648EB5; text-decoration: none;">{{ $application->jobPosting->employer->phone_number }}</a></div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                             
-                            <div>
-                                @php
-                                    $statusColors = [
-                                        'pending' => ['bg' => '#fff3cd', 'text' => '#856404'],
-                                        'reviewing' => ['bg' => '#cfe2ff', 'text' => '#084298'],
-                                        'accepted' => ['bg' => '#d1e7dd', 'text' => '#0f5132'],
-                                        'rejected' => ['bg' => '#f8d7da', 'text' => '#842029']
-                                    ];
-                                    $color = $statusColors[$application->status] ?? ['bg' => '#e0e0e0', 'text' => '#666'];
-                                @endphp
+                            <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+                                                                @php
+                                                                        $statusColors = [
+                                                                                'pending' => ['bg' => '#fff3cd', 'text' => '#856404'],
+                                                                                'reviewing' => ['bg' => '#cfe2ff', 'text' => '#084298'],
+                                                                                'for_interview' => ['bg' => '#d1ecf1', 'text' => '#0c5460'],
+                                                                                'interviewed' => ['bg' => '#fff3cd', 'text' => '#856404'],
+                                                                                'accepted' => ['bg' => '#d1e7dd', 'text' => '#0f5132'],
+                                                                                'rejected' => ['bg' => '#f8d7da', 'text' => '#842029']
+                                                                        ];
+                                                                        $color = $statusColors[$application->status] ?? ['bg' => '#e0e0e0', 'text' => '#666'];
+                                                                @endphp
                                 <span style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: capitalize; display: inline-block; background: {{ $color['bg'] }}; color: {{ $color['text'] }};">
-                                    {{ ucfirst($application->status) }}
+                                                                        {{ $application->status === 'for_interview' ? 'For Interview' : ucfirst($application->status) }}
                                 </span>
+
+                                                                @if(in_array($application->status, ['for_interview','interviewed']) && ($application->interview_date || $application->interview_location || $application->interview_notes))
+                                                                    <div style="margin-top:8px; font-size:12px; color:#555; text-align:right;">
+                                                                        @if($application->interview_date)
+                                                                            <div><i class="fas fa-calendar-alt" style="color:#17a2b8;"></i> {{ \Carbon\Carbon::parse($application->interview_date)->format('M d, Y h:i A') }}</div>
+                                                                        @endif
+                                                                        @if($application->interview_location)
+                                                                            <div><i class="fas fa-map-marker-alt" style="color:#17a2b8;"></i> {{ $application->interview_location }}</div>
+                                                                        @endif
+                                                                        @if($application->interview_notes)
+                                                                            <div style="color:#666;"><i class="fas fa-sticky-note" style="color:#17a2b8;"></i> {{ $application->interview_notes }}</div>
+                                                                        @endif
+                                                                    </div>
+                                                                @endif
+                                
+                                <!-- Withdraw/Delete button -->
+                                <form method="POST" action="{{ route('my-applications.destroy', $application) }}" onsubmit="return confirm('Are you sure you want to withdraw this application? This action cannot be undone.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+                                        <i class="fas fa-trash"></i> Withdraw
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>

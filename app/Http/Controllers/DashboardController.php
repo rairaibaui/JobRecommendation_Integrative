@@ -5,46 +5,37 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use App\Models\JobPosting;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $jobs = [
-            [
-                'id' => 1,
-                'title' => 'Frontend Developer',
-                'company' => 'Tech Innovations Inc.',
-                'location' => 'Mandaluyong City',
-                'type' => 'Full-Time',
-                'salary' => 'PHP 2,500/day',
-                'description' => 'Work with a talented team to build responsive web apps.',
-                'skills' => ['HTML', 'CSS', 'JavaScript', 'Vue.js'],
-                'apply_url' => '#'
-            ],
-            [
-                'id' => 2,
-                'title' => 'Backend Developer',
-                'company' => 'NextGen Solutions',
-                'location' => 'Makati City',
-                'type' => 'Full-Time',
-                'salary' => 'PHP 3,000/day',
-                'description' => 'Develop and maintain APIs using Laravel framework.',
-                'skills' => ['PHP', 'Laravel', 'MySQL'],
-                'apply_url' => '#'
-            ],
-            [
-                'id' => 3,
-                'title' => 'UI/UX Designer',
-                'company' => 'Creative Minds Studio',
-                'location' => 'Quezon City',
-                'type' => 'Part-Time',
-                'salary' => 'PHP 1,800/day',
-                'description' => 'Design beautiful user interfaces and improve user experience.',
-                'skills' => ['Figma', 'Adobe XD', 'Wireframing'],
-                'apply_url' => '#'
-            ],
-        ];
+        // Get active job postings from database with employer information
+        $jobs = JobPosting::active()
+            ->with('employer') // Load employer relationship
+            ->orderByDesc('created_at')
+            ->limit(10) // Show latest 10 jobs on dashboard
+            ->get()
+            ->map(function($job) {
+                return [
+                    'id' => $job->id,
+                    'title' => $job->title,
+                    'company' => $job->company_name ?? 'Company',
+                    'location' => $job->location ?? 'Mandaluyong City',
+                    'type' => $job->type ?? 'Full-Time',
+                    'salary' => $job->salary ?? 'Negotiable',
+                    'description' => $job->description ?? '',
+                    'skills' => $job->skills ?? [],
+                    'apply_url' => '#',
+                    // Employer contact information
+                    'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                    'employer_email' => $job->employer->email ?? '',
+                    'employer_phone' => $job->employer->phone_number ?? '',
+                    'posted_date' => $job->created_at->format('M d, Y'),
+                ];
+            })
+            ->toArray();
 
         // determine which jobs are bookmarked by current user
         $bookmarkedTitles = [];

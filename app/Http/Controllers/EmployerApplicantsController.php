@@ -20,30 +20,43 @@ class EmployerApplicantsController extends Controller
     // Show list of applications for employers to manage
     public function index(Request $request)
     {
-        $this->ensureEmployer();
+        $employer = $this->ensureEmployer();
 
         $status = $request->query('status');
 
-        $query = Application::query()->orderByDesc('created_at');
+        // Get employer's job postings with their applications
+        $jobPostingsQuery = \App\Models\JobPosting::where('employer_id', $employer->id)
+            ->withCount(['applications' => function($query) use ($status) {
+                if ($status && in_array($status, ['pending','reviewing','for_interview','interviewed','accepted','rejected'])) {
+                    $query->where('status', $status);
+                }
+            }])
+            ->with(['applications' => function($query) use ($status) {
+                $query->orderByDesc('created_at');
+                if ($status && in_array($status, ['pending','reviewing','for_interview','interviewed','accepted','rejected'])) {
+                    $query->where('status', $status);
+                }
+            }])
+            ->orderByDesc('created_at');
 
-        // Optional: filter by status
-        if ($status && in_array($status, ['pending','reviewing','accepted','rejected'])) {
-            $query->where('status', $status);
-        }
+        $jobPostings = $jobPostingsQuery->get();
 
-        // Show all for now since job postings aren't linked; in the future, filter by employer_id/company
-        $applications = $query->paginate(10);
+        // Calculate stats across all applications for this employer's jobs
+        $allApplications = Application::whereIn('job_posting_id', 
+            \App\Models\JobPosting::where('employer_id', $employer->id)->pluck('id')
+        );
 
-        // Stats
         $stats = [
-            'total' => Application::count(),
-            'pending' => Application::where('status', 'pending')->count(),
-            'reviewing' => Application::where('status', 'reviewing')->count(),
-            'accepted' => Application::where('status', 'accepted')->count(),
-            'rejected' => Application::where('status', 'rejected')->count(),
+            'total' => $allApplications->count(),
+            'pending' => (clone $allApplications)->where('status', 'pending')->count(),
+            'reviewing' => (clone $allApplications)->where('status', 'reviewing')->count(),
+                'for_interview' => (clone $allApplications)->where('status', 'for_interview')->count(),
+                'interviewed' => (clone $allApplications)->where('status', 'interviewed')->count(),
+            'accepted' => (clone $allApplications)->where('status', 'accepted')->count(),
+            'rejected' => (clone $allApplications)->where('status', 'rejected')->count(),
         ];
 
-        return view('employer.applicants', compact('applications', 'stats', 'status'));
+        return view('employer.applicants', compact('jobPostings', 'stats', 'status'));
     }
 
     // Update an application's status (reviewing/accepted/rejected)
@@ -52,7 +65,11 @@ class EmployerApplicantsController extends Controller
         $employer = $this->ensureEmployer();
 
         $request->validate([
-            'status' => 'required|in:reviewing,accepted,rejected',
+                'status' => 'required|in:reviewing,for_interview,interviewed,accepted,rejected',
+            'rejection_reason' => 'nullable|string|max:500',
+                'interview_date' => 'nullable|date',
+                'interview_location' => 'nullable|string|max:255',
+                'interview_notes' => 'nullable|string|max:1000',
         ]);
 
         // Optionally claim the application to this employer if not yet set
@@ -61,12 +78,71 @@ class EmployerApplicantsController extends Controller
             $application->save();
         }
 
-        $application->updateStatus($request->input('status'), $employer->id);
+        $newStatus = $request->input('status');
+        $rejectionReason = $request->input('rejection_reason');
+
+            // If setting interview, save interview details
+            if ($newStatus === 'for_interview' || $newStatus === 'interviewed') {
+                if ($request->has('interview_date')) {
+                    $application->interview_date = $request->input('interview_date');
+                }
+                if ($request->has('interview_location')) {
+                    $application->interview_location = $request->input('interview_location');
+                }
+                if ($request->has('interview_notes')) {
+                    $application->interview_notes = $request->input('interview_notes');
+                }
+                $application->save();
+            }
+
+        // If hiring (accepting) the applicant, update their employment status
+        if ($newStatus === 'accepted') {
+            $jobSeeker = \App\Models\User::find($application->user_id);
+            if ($jobSeeker && $jobSeeker->user_type === 'job_seeker') {
+                $jobSeeker->employment_status = 'employed';
+                $jobSeeker->hired_by_company = $employer->company_name ?? $employer->first_name . ' ' . $employer->last_name;
+                $jobSeeker->hired_date = now();
+                $jobSeeker->save();
+            }
+        }
+
+        // Create history record for hired or rejected applicants
+        if (in_array($newStatus, ['accepted', 'rejected'])) {
+            \App\Models\ApplicationHistory::create([
+                'application_id' => $application->id,
+                'employer_id' => $employer->id,
+                'job_seeker_id' => $application->user_id,
+                'job_posting_id' => $application->job_posting_id,
+                'job_title' => $application->job_title,
+                'company_name' => $application->company_name,
+                'decision' => $newStatus === 'accepted' ? 'hired' : 'rejected',
+                'rejection_reason' => $newStatus === 'rejected' ? $rejectionReason : null,
+                'applicant_snapshot' => $application->resume_snapshot,
+                'job_snapshot' => $application->job_data,
+                'decision_date' => now(),
+            ]);
+        }
+
+        $application->updateStatus($newStatus, $employer->id);
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true]);
         }
 
         return back()->with('success', 'Application status updated.');
+    }
+
+    // Delete an application
+    public function destroy(Application $application)
+    {
+        $this->ensureEmployer();
+
+        $application->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Application deleted successfully']);
+        }
+
+        return back()->with('success', 'Application deleted successfully');
     }
 }

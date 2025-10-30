@@ -555,6 +555,7 @@
   function openApplyModal(button) {
     const card = button.closest('.job-card');
     currentJobData = {
+      id: card.dataset.jobId || null,
       title: card.dataset.title || '',
       location: card.dataset.location || '',
       type: card.dataset.type || '',
@@ -595,6 +596,19 @@
         html.push(`<div class="info-row"><span class="info-label">Birthday:</span><span class="info-value">${birthday}</span></div>`);
       }
       if (profile.location) html.push(`<div class="info-row"><span class="info-label">Location:</span><span class="info-value">${profile.location}</span></div>`);
+      
+      // Employment Status
+      if (profile.employment_status === 'employed') {
+        html.push('<div style="background:#fff3cd; border-left:3px solid #ffc107; padding:10px; margin-top:10px; border-radius:6px;">');
+        html.push('<strong style="color:#856404;"><i class="fas fa-exclamation-triangle"></i> Employment Status:</strong> ');
+        html.push('<span style="color:#856404;">Currently Employed</span>');
+        if (profile.hired_by_company) {
+          html.push(`<br><small style="color:#856404;">Company: ${profile.hired_by_company}</small>`);
+        }
+        html.push('</div>');
+      } else {
+        html.push('<div class="info-row"><span class="info-label">Status:</span><span class="info-value" style="color:#28a745;"><i class="fas fa-search"></i> Seeking Employment</span></div>');
+      }
       html.push('</div>');
 
       // Professional Summary
@@ -662,6 +676,20 @@
       }
 
       document.getElementById('resumePreview').innerHTML = html.join('\n');
+      
+      // Disable apply button if user is employed
+      const applyBtn = document.getElementById('confirmApplyBtn');
+      if (profile.employment_status === 'employed') {
+        applyBtn.disabled = true;
+        applyBtn.style.background = '#6c757d';
+        applyBtn.style.cursor = 'not-allowed';
+        applyBtn.innerHTML = '<i class="fas fa-ban"></i><span>Cannot Apply - Currently Employed</span>';
+      } else {
+        applyBtn.disabled = false;
+        applyBtn.style.background = '#648EB5';
+        applyBtn.style.cursor = 'pointer';
+        applyBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Submit Application</span>';
+      }
     })
     .catch(() => { 
       document.getElementById('resumePreview').innerHTML = '<div style="text-align:center; padding:40px;"><i class="fas fa-exclamation-circle" style="font-size:48px; color:#f44336; margin-bottom:15px;"></i><p style="color:#c00; font-size:16px; margin:0;">Failed to load profile.</p><p style="color:#666; font-size:14px; margin-top:8px;">Please update your profile in Settings before applying.</p></div>'; 
@@ -688,6 +716,7 @@
     
     const payload = {
       job_title: currentJobData.title,
+      job_posting_id: currentJobData.id || null,
       job_data: currentJobData,
       resume_snapshot: currentResumeSnapshot || {}
     };

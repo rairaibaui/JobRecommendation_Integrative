@@ -42,6 +42,9 @@ class User extends Authenticatable
         'user_type',
         'password',
         'profile_picture',
+        'employment_status',
+        'hired_by_company',
+        'hired_date',
     ];
 
     /**
@@ -66,6 +69,7 @@ class User extends Authenticatable
         'education' => 'array',
         'experiences' => 'array',
         'years_of_experience' => 'integer',
+        'hired_date' => 'datetime',
     ];
 
     public function bookmarks()

@@ -2,29 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\JobPosting;
+
 class RecommendationController extends Controller
 {
     public function index()
     {
-        // Halimbawa data, pwedeng palitan galing sa DB
-        $jobs = [
-            [
-                'title' => 'Frontend Developer',
-                'location' => 'Mandaluyong',
-                'type' => 'Full-time',
-                'salary' => 'Php 30,000',
-                'description' => 'Develop web front-end applications.',
-                'skills' => ['HTML', 'CSS', 'JavaScript', 'React'],
-            ],
-            [
-                'title' => 'Backend Developer',
-                'location' => 'Makati',
-                'type' => 'Full-time',
-                'salary' => 'Php 35,000',
-                'description' => 'Build API endpoints and manage database.',
-                'skills' => ['PHP', 'Laravel', 'MySQL'],
-            ],
-        ];
+        // Get active job postings from database with employer information
+        $jobs = JobPosting::active()
+            ->with('employer') // Load employer relationship
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function($job) {
+                return [
+                    'id' => $job->id,
+                    'title' => $job->title,
+                    'location' => $job->location ?? 'Mandaluyong',
+                    'type' => $job->type ?? 'Full-time',
+                    'salary' => $job->salary ?? 'Negotiable',
+                    'description' => $job->description ?? '',
+                    'skills' => $job->skills ?? [],
+                    'company' => $job->company_name ?? '',
+                    // Employer contact information
+                    'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                    'employer_email' => $job->employer->email ?? '',
+                    'employer_phone' => $job->employer->phone_number ?? '',
+                    'posted_date' => $job->created_at->format('M d, Y'),
+                ];
+            })
+            ->toArray();
 
         // Determine which jobs are bookmarked by current user (by title)
         $bookmarkedTitles = [];

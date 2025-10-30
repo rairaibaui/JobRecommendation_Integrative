@@ -65,6 +65,13 @@ class ProfileController extends Controller
             'address'
         ]);
         
+        // Debug: Log the birthday value
+        Log::info('Profile Update - Birthday from request:', [
+            'birthday_in_data' => $data['birthday'] ?? 'not set',
+            'birthday_from_request' => $request->birthday ?? 'not set',
+            'all_request_data' => $request->all()
+        ]);
+        
         // Handle education array
         if ($request->has('education')) {
             $education = collect($request->education)->map(function ($item) {
@@ -87,6 +94,12 @@ class ProfileController extends Controller
         $user->years_of_experience = $request->years_of_experience;
         $user->location = $request->location;
         $user->address = $request->address;
+        
+        // Explicitly set birthday to ensure it's saved
+        if ($request->has('birthday') && $request->birthday) {
+            $user->birthday = $request->birthday;
+            Log::info('Birthday explicitly set:', ['birthday' => $user->birthday]);
+        }
 
         // Always mark as updated since we're handling arrays
         $detailsUpdated = true;
@@ -180,6 +193,9 @@ class ProfileController extends Controller
             'portfolio_links' => $user->portfolio_links,
             'availability' => $user->availability,
             'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
+            'employment_status' => $user->employment_status ?? 'unemployed',
+            'hired_by_company' => $user->hired_by_company,
+            'hired_date' => $user->hired_date ? $user->hired_date->format('Y-m-d') : null,
         ]);
     }
 
