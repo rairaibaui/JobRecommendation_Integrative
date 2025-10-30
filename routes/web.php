@@ -46,6 +46,8 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name(
 Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Employer Dashboard (placeholder - can be pointed to a dedicated controller later)
+    Route::get('/employer/dashboard', [DashboardController::class, 'index'])->name('employer.dashboard');
 
     // Recommendation
     Route::get('/recommendation', [RecommendationController::class, 'index'])->name('recommendation');

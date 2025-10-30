@@ -23,17 +23,17 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        // Determine account type first
-        $request->validate([
-            'user_type' => 'required|in:job_seeker,employer',
-        ]);
+        // Derive user type based on email domain: Gmail => job_seeker, otherwise employer
+        $email = (string) $request->input('email', '');
+        $isGmail = preg_match('/@gmail\.com$/i', $email) === 1;
+        $derivedType = $isGmail ? 'job_seeker' : 'employer';
 
-        if ($request->user_type === 'employer') {
+        if ($derivedType === 'employer') {
             // Employer-specific validation
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email',
+                'email' => ['required','string','email','max:255','unique:users,email','not_regex:/@gmail\.com$/i'],
                 'company_name' => 'required|string|max:255',
                 'job_title' => 'nullable|string|max:255',
                 'business_permit' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -81,7 +81,7 @@ class RegisterController extends Controller
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email',
+                'email' => ['required','string','email','max:255','unique:users,email','regex:/@gmail\.com$/i'],
                 'birthday' => 'nullable|date',
                 'phone_number' => 'required|digits:11|numeric|unique:users,phone_number',
                 'education_level' => 'nullable|string|max:255',
@@ -120,10 +120,9 @@ class RegisterController extends Controller
                     ->with('error', 'Registration failed. Please check your inputs and try again.');
             }
         }
-
-        // 3. Redirection to login with credentials
+        // Redirect to login for both employer and job seeker; require manual sign-in
         return redirect()->route('login')
-            ->with('success', 'Account created successfully! Please login to continue.')
+            ->with('success', 'Account created successfully! Please sign in to continue.')
             ->with('email', $request->email)
             ->with('registered', true);
     }

@@ -22,7 +22,11 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('dashboard');
+            $user = Auth::user();
+            if ($user && $user->user_type === 'employer') {
+                return redirect()->route('employer.dashboard');
+            }
+            return redirect()->route('dashboard');
         }
 
         return back()->withErrors([
