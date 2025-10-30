@@ -6,6 +6,9 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployerDashboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\MyApplicationsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecommendationController;
 use Illuminate\Support\Facades\Route;
@@ -46,11 +49,14 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name(
 Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    // Employer Dashboard (placeholder - can be pointed to a dedicated controller later)
-    Route::get('/employer/dashboard', [DashboardController::class, 'index'])->name('employer.dashboard');
+    // Employer Dashboard
+    Route::get('/employer/dashboard', [EmployerDashboardController::class, 'index'])->name('employer.dashboard');
 
     // Recommendation
     Route::get('/recommendation', [RecommendationController::class, 'index'])->name('recommendation');
+
+    // My Applications
+    Route::get('/my-applications', [MyApplicationsController::class, 'index'])->name('my-applications');
 
     // Bookmarks
     Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks');
@@ -86,4 +92,10 @@ Route::middleware('auth')->group(function () {
 
     // Job application
     Route::post('/job/apply', [App\Http\Controllers\ApplicationController::class, 'store'])->name('job.apply');
+
+    // Notifications API
+    Route::get('/notifications/json', [NotificationController::class, 'list'])->name('notifications.list');
+    Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.markRead');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
 });

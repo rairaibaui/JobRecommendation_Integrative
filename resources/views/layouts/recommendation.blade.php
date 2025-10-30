@@ -364,6 +364,11 @@
       <i class="fas fa-suitcase sidebar-btn-icon"></i>
       Recommendation
     </a>
+    <a href="{{ route('my-applications') }}"
+      class="sidebar-btn {{ request()->routeIs('my-applications') ? 'active' : '' }}">
+      <i class="fas fa-file-alt sidebar-btn-icon"></i>
+      My Applications
+    </a>
     <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}">
       <i class="fas fa-bookmark sidebar-btn-icon"></i>
       Bookmarks

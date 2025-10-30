@@ -119,6 +119,7 @@
     border-radius: 0;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 20px;
     color: #FFF;
     font-family: 'Poppins', sans-serif;
@@ -126,6 +127,69 @@
     font-weight: 800;
     z-index: 1000;
   }
+
+  .notification-bell {
+    position: relative;
+    cursor: pointer;
+    padding: 10px;
+    margin-right: 20px;
+  }
+
+  .notification-bell i {
+    font-size: 24px;
+    color: #FFF;
+    transition: all 0.3s;
+  }
+
+  .notification-bell:hover i {
+    transform: scale(1.1);
+    color: #FFD700;
+  }
+
+  .notification-bell .badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ff4757;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Notification dropdown */
+  .notif-wrapper { position: relative; }
+  .notif-dropdown {
+    position: absolute;
+    top: 54px;
+    right: 0;
+    width: 360px;
+    max-height: 420px;
+    overflow-y: auto;
+    background: #fff;
+    color: #333;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+    padding: 10px 0;
+    z-index: 1100;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .notif-header { padding: 10px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; font-weight:600; }
+  .notif-list { list-style: none; margin: 0; padding: 0; }
+  .notif-item { padding: 12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; }
+  .notif-item.unread { background:#f7fbff; }
+  .notif-item i { color:#648EB5; margin-top:3px; }
+  .notif-item .meta { font-size:12px; color:#888; margin-top:4px; }
+  .notif-empty { padding: 20px; text-align:center; color:#777; }
+  .notif-actions { padding: 8px 12px; display:flex; justify-content:flex-end; }
+  .notif-actions button { background:#648EB5; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; }
 
   .hamburger {
     margin-right: 20px;
@@ -522,6 +586,11 @@
     <i class="fas fa-suitcase sidebar-btn-icon"></i>
     Recommendation
   </a>
+  <a href="{{ route('my-applications') }}" class="sidebar-btn {{ request()->routeIs('my-applications') ? 'active' : '' }}"
+    style="text-decoration: none;">
+    <i class="fas fa-file-alt sidebar-btn-icon"></i>
+    My Applications
+  </a>
   <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}"
     style="text-decoration: none;">
     <i class="fas fa-bookmark sidebar-btn-icon"></i>
@@ -546,7 +615,30 @@
   <!-- Main Content -->
   <div class="main">
     <div class="top-navbar">
-      Job Portal - Mandaluyong
+      <div style="display: flex; align-items: center;">
+        Job Portal - Mandaluyong
+      </div>
+      <div style="display: flex; align-items: center;" class="notif-wrapper">
+        <div class="notification-bell" onclick="toggleNotifDropdown(event)">
+          <i class="fas fa-bell"></i>
+          @php $unreadCount = Auth::user()->unreadNotifications()->count(); @endphp
+          @if($unreadCount > 0)
+            <span class="badge" id="notifCount">{{ $unreadCount }}</span>
+          @endif
+        </div>
+        <div id="notifDropdown" class="notif-dropdown" style="display:none;" data-loaded="0">
+          <div class="notif-header">
+            <span>Notifications</span>
+            <button onclick="markAllNotificationsRead(event)" style="background:#eee;color:#333;border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">Mark all as read</button>
+          </div>
+          <ul class="notif-list" id="notifList">
+            <li class="notif-empty">Loading...</li>
+          </ul>
+          <div class="notif-actions">
+            <button onclick="refreshNotifications(event)" style="background:#4E8EA2">Refresh</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="welcome">Welcome!</div>
@@ -1065,6 +1157,82 @@
     })
     .finally(() => { button.disabled = false; });
   }
+
+  // Notifications logic
+  function toggleNotifDropdown(e){
+    e.stopPropagation();
+    const dd = document.getElementById('notifDropdown');
+    const visible = dd.style.display === 'block';
+    if (!visible && dd.dataset.loaded !== '1') {
+      loadNotifications();
+    }
+    dd.style.display = visible ? 'none' : 'block';
+  }
+
+  document.addEventListener('click', function(e){
+    const dd = document.getElementById('notifDropdown');
+    if(!dd) return;
+    if (dd.style.display === 'block' && !dd.contains(e.target)) {
+      dd.style.display = 'none';
+    }
+  });
+
+  function loadNotifications(){
+    const list = document.getElementById('notifList');
+    list.innerHTML = '<li class="notif-empty">Loading...</li>';
+    fetch("{{ route('notifications.list') }}")
+      .then(r => r.json())
+      .then(({success, unread, notifications}) => {
+        if(!success){ list.innerHTML = '<li class="notif-empty">Failed to load</li>'; return; }
+        // update badge
+        const badge = document.getElementById('notifCount');
+        if (badge) badge.textContent = unread; else if (unread > 0) {
+          const bell = document.querySelector('.notification-bell');
+          const span = document.createElement('span');
+          span.className = 'badge'; span.id = 'notifCount'; span.textContent = unread;
+          bell.appendChild(span);
+        }
+        if(!notifications.length){ list.innerHTML = '<li class="notif-empty">No notifications yet</li>'; return; }
+        list.innerHTML = notifications.map(n => renderNotifItem(n)).join('');
+        document.getElementById('notifDropdown').dataset.loaded = '1';
+      })
+      .catch(() => list.innerHTML = '<li class="notif-empty">Network error</li>');
+  }
+
+  function renderNotifItem(n){
+    const icon = n.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
+    const isUnread = n.read ? '' : 'unread';
+    const when = new Date(n.created_at).toLocaleString();
+    return `<li class="notif-item ${isUnread}">
+      <i class="fas ${icon}"></i>
+      <div>
+        <div style=\"font-weight:600; color:#333;\">${escapeHtml(n.title || 'Notification')}</div>
+        <div style=\"color:#555; font-size:13px;\">${escapeHtml(n.message || '')}</div>
+        <div class="meta">${when}</div>
+      </div>
+    </li>`;
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+  }
+
+  function markAllNotificationsRead(e){
+    e.stopPropagation();
+    fetch("{{ route('notifications.markAllRead') }}", {
+      method:'POST',
+      headers:{ 'X-CSRF-TOKEN': getCsrfToken() }
+    }).then(r=>r.json()).then(({success})=>{
+      if(success){
+        const items = document.querySelectorAll('.notif-item');
+        items.forEach(li => li.classList.remove('unread'));
+        const badge = document.getElementById('notifCount');
+        if (badge) badge.remove();
+      }
+    });
+  }
+
+  function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
   </script>
 
   </body>
