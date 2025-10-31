@@ -355,15 +355,37 @@
     <div class="profile-ellipse">
       <div class="profile-icon">
         @if(Auth::user()->profile_picture)
-          <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture">
+          <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture" style="cursor:pointer;" onclick="showProfilePictureModal()">
         @else
-          <i class="fas fa-user"></i>
+          <i class="fas fa-user" style="cursor:pointer;" onclick="showProfilePictureModal()"></i>
         @endif
       </div>
     </div>
   
     <!-- Dynamic User Name -->
     <div class="profile-name">{{ Auth::user()->first_name }} {{ Auth::user()->last_name }}</div>
+    
+    <script>
+    function showProfilePictureModal() {
+      const oldModal = document.getElementById('profilePicModal');
+      if (oldModal) oldModal.remove();
+      const picUrl = @json(Auth::user()->profile_picture ? asset('storage/' . Auth::user()->profile_picture) : null);
+      const name = @json(Auth::user()->first_name . ' ' . Auth::user()->last_name);
+      const modal = document.createElement('div');
+      modal.id = 'profilePicModal';
+      modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; display:flex; align-items:center; justify-content:center;';
+      modal.innerHTML = `
+        <div style="background:white; border-radius:16px; padding:30px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; align-items:center; max-width:350px; width:90%; position:relative;">
+          <button onclick="document.getElementById('profilePicModal').remove();" style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:#333;">&times;</button>
+          <h3 style="margin-bottom:18px; color:#648EB5; font-size:20px; font-weight:600;">Profile Picture</h3>
+          ${picUrl ? `<img src='${picUrl}' alt='Profile Picture' style='width:120px; height:120px; object-fit:cover; border-radius:50%; border:4px solid #648EB5; margin-bottom:12px;'>` : `<div style='width:120px; height:120px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:48px; color:#aaa; margin-bottom:12px;'><i class='fas fa-user'></i></div>`}
+          <div style="font-size:16px; color:#333; font-weight:500;">${name}</div>
+          <button onclick="document.getElementById('profilePicModal').remove();" style="margin-top:22px; background:#6c757d; color:white; border:none; padding:8px 22px; border-radius:8px; cursor:pointer; font-size:14px;">Close</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+    </script>
   
     <a href="{{ route('dashboard') }}" class="sidebar-btn {{ request()->routeIs('dashboard') ? 'active' : '' }}">
       <i class="fas fa-home sidebar-btn-icon"></i>
@@ -781,7 +803,7 @@
     }
     document.body.appendChild(messageDiv);
     setTimeout(() => { messageDiv.style.transform = 'translateY(0)'; messageDiv.style.opacity = '1'; }, 10);
-    setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2700);
+    setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2000);
   }
   </script>
   @stack('scripts')

@@ -11,31 +11,105 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Get active job postings from database with employer information
-        $jobs = JobPosting::active()
-            ->with('employer') // Load employer relationship
-            ->orderByDesc('created_at')
-            ->limit(10) // Show latest 10 jobs on dashboard
-            ->get()
-            ->map(function($job) {
-                return [
-                    'id' => $job->id,
-                    'title' => $job->title,
-                    'company' => $job->company_name ?? 'Company',
-                    'location' => $job->location ?? 'Mandaluyong City',
-                    'type' => $job->type ?? 'Full-Time',
-                    'salary' => $job->salary ?? 'Negotiable',
-                    'description' => $job->description ?? '',
-                    'skills' => $job->skills ?? [],
-                    'apply_url' => '#',
-                    // Employer contact information
-                    'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
-                    'employer_email' => $job->employer->email ?? '',
-                    'employer_phone' => $job->employer->phone_number ?? '',
-                    'posted_date' => $job->created_at->format('M d, Y'),
-                ];
-            })
-            ->toArray();
+        $user = Auth::user();
+
+        // If job seeker, show only skill-matched jobs in dashboard
+        if ($user && ($user->user_type ?? null) === 'job_seeker') {
+            $userSkills = $this->parseSkills($user->skills ?? '');
+
+            if ($userSkills->isNotEmpty()) {
+                $jobs = JobPosting::active()
+                    ->with('employer')
+                    ->get()
+                    ->map(function($job) use ($userSkills) {
+                        $jobSkills = $this->parseSkills($job->skills ?? '');
+                        $matchingSkills = $jobSkills->intersect($userSkills);
+                        $matchScore = $jobSkills->count() > 0
+                            ? ($matchingSkills->count() / $jobSkills->count()) * 100
+                            : 0;
+
+                        return [
+                            'id' => $job->id,
+                            'title' => $job->title,
+                            'company' => $job->company_name ?? 'Company',
+                            'location' => $job->location ?? 'Mandaluyong City',
+                            'type' => $job->type ?? 'Full-Time',
+                            'salary' => $job->salary ?? 'Negotiable',
+                            'description' => $job->description ?? '',
+                            'skills' => $job->skills ?? [],
+                            'apply_url' => '#',
+                            'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                            'employer_email' => $job->employer->email ?? '',
+                            'employer_phone' => $job->employer->phone_number ?? '',
+                            'posted_date' => $job->created_at->format('M d, Y'),
+                            'match_score' => round($matchScore, 1),
+                            'matching_skills' => $matchingSkills,
+                            'job_skills' => $jobSkills,
+                        ];
+                    })
+                    ->filter(function($job){ return $job['match_score'] > 0; })
+                    ->sortByDesc('match_score')
+                    ->take(10)
+                    ->values()
+                    ->toArray();
+            } else {
+                // No skills in profile: return recent jobs (fallback), without match info
+                $jobs = JobPosting::active()
+                    ->with('employer')
+                    ->orderByDesc('created_at')
+                    ->limit(10)
+                    ->get()
+                    ->map(function($job) {
+                        return [
+                            'id' => $job->id,
+                            'title' => $job->title,
+                            'company' => $job->company_name ?? 'Company',
+                            'location' => $job->location ?? 'Mandaluyong City',
+                            'type' => $job->type ?? 'Full-Time',
+                            'salary' => $job->salary ?? 'Negotiable',
+                            'description' => $job->description ?? '',
+                            'skills' => $job->skills ?? [],
+                            'apply_url' => '#',
+                            'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                            'employer_email' => $job->employer->email ?? '',
+                            'employer_phone' => $job->employer->phone_number ?? '',
+                            'posted_date' => $job->created_at->format('M d, Y'),
+                            'match_score' => 0,
+                            'matching_skills' => collect(),
+                            'job_skills' => collect(),
+                        ];
+                    })
+                    ->toArray();
+            }
+        } else {
+            // Non job seekers: recent jobs
+            $jobs = JobPosting::active()
+                ->with('employer')
+                ->orderByDesc('created_at')
+                ->limit(10)
+                ->get()
+                ->map(function($job) {
+                    return [
+                        'id' => $job->id,
+                        'title' => $job->title,
+                        'company' => $job->company_name ?? 'Company',
+                        'location' => $job->location ?? 'Mandaluyong City',
+                        'type' => $job->type ?? 'Full-Time',
+                        'salary' => $job->salary ?? 'Negotiable',
+                        'description' => $job->description ?? '',
+                        'skills' => $job->skills ?? [],
+                        'apply_url' => '#',
+                        'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                        'employer_email' => $job->employer->email ?? '',
+                        'employer_phone' => $job->employer->phone_number ?? '',
+                        'posted_date' => $job->created_at->format('M d, Y'),
+                        'match_score' => 0,
+                        'matching_skills' => collect(),
+                        'job_skills' => collect(),
+                    ];
+                })
+                ->toArray();
+        }
 
         // determine which jobs are bookmarked by current user
         $bookmarkedTitles = [];
@@ -47,6 +121,26 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', compact('jobs', 'bookmarkedTitles'));
+    }
+
+    /**
+     * Parse skills from JSON array or comma-separated string into a normalized collection
+     */
+    private function parseSkills($skillsInput)
+    {
+        if (is_array($skillsInput)) {
+            return collect($skillsInput)
+                ->map(function($skill){ return trim(strtolower($skill)); })
+                ->filter(fn($s) => !empty($s))
+                ->unique();
+        }
+        if (empty($skillsInput) || !is_string($skillsInput)) {
+            return collect();
+        }
+        return collect(explode(',', $skillsInput))
+            ->map(function($skill){ return trim(strtolower($skill)); })
+            ->filter(fn($s) => !empty($s))
+            ->unique();
     }
 
     public function recommendation()

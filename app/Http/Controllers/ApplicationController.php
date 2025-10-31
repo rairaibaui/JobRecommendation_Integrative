@@ -44,10 +44,25 @@ class ApplicationController extends Controller
             $app->job_posting_id = $request->job_posting_id; // Link to job posting if provided
             $app->job_data = $request->job_data;
             $app->resume_snapshot = $request->resume_snapshot;
-            // Set optional company_name if available in job_data
-            if (is_array($request->job_data)) {
+            
+            // Set employer_id and company_name from job posting if available
+            if ($request->job_posting_id) {
+                $jobPosting = \App\Models\JobPosting::find($request->job_posting_id);
+                if ($jobPosting) {
+                    $app->employer_id = $jobPosting->employer_id;
+                    // Get company name from employer
+                    if ($jobPosting->employer) {
+                        $app->company_name = $jobPosting->employer->company_name ?? 
+                                           trim($jobPosting->employer->first_name . ' ' . $jobPosting->employer->last_name);
+                    }
+                }
+            }
+            
+            // Fallback: Set company_name from job_data if not already set
+            if (!$app->company_name && is_array($request->job_data)) {
                 $app->company_name = $request->job_data['company_name'] ?? ($request->job_data['company'] ?? null);
             }
+            
             // Status defaults to 'pending' via migration default; set timestamp for clarity
             $app->status_updated_at = now();
             $app->save();
@@ -72,7 +87,7 @@ class ApplicationController extends Controller
                 if ($jobPosting && $jobPosting->employer_id) {
                     $applicantName = trim($user->first_name.' '.$user->last_name) ?: $user->email;
 
-                    Notification::create([
+                    Notification::create([ 
                         'user_id' => $jobPosting->employer_id,
                         'type' => 'new_application',
                         'title' => 'New Application Received',

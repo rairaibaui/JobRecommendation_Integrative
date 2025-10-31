@@ -14,6 +14,11 @@ class Bookmark extends Model
         'salary',
         'description',
         'skills',
+        'company',
+        'employer_name',
+        'employer_email',
+        'employer_phone',
+        'posted_date',
     ];
 
     protected $casts = [

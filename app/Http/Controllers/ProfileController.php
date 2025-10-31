@@ -280,6 +280,25 @@ class ProfileController extends Controller
             }
         }
 
+        // Also notify the job seeker (self) that the resignation was recorded
+        try {
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'type' => 'resignation_recorded',
+                'title' => 'Resignation Submitted',
+                'message' => $companyNameBefore
+                    ? "Your resignation from {$companyNameBefore} has been recorded. You are now set to Seeking Employment."
+                    : 'Your resignation has been recorded. You are now set to Seeking Employment.',
+                'data' => [
+                    'company_name' => $companyNameBefore,
+                    'reason' => $request->input('reason')
+                ],
+                'read' => false,
+            ]);
+        } catch (\Throwable $e) {
+            // best effort; do not fail flow
+        }
+
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'You have resigned. Your status is now set to actively seeking.']);
         }

@@ -22,7 +22,12 @@ class BookmarkController extends Controller
             'job.type' => 'nullable|string',
             'job.salary' => 'nullable|string',
             'job.description' => 'nullable|string',
-            'job.skills' => 'nullable|array'
+            'job.skills' => 'nullable|array',
+            'job.company' => 'nullable|string',
+            'job.employer_name' => 'nullable|string',
+            'job.employer_email' => 'nullable|string',
+            'job.employer_phone' => 'nullable|string',
+            'job.posted_date' => 'nullable|string'
         ]);
 
         $existing = Auth::user()->bookmarks()->where('title', $data['job']['title'])->first();
@@ -36,7 +41,12 @@ class BookmarkController extends Controller
             'type' => $data['job']['type'] ?? null,
             'salary' => $data['job']['salary'] ?? null,
             'description' => $data['job']['description'] ?? null,
-            'skills' => $data['job']['skills'] ?? []
+            'skills' => $data['job']['skills'] ?? [],
+            'company' => $data['job']['company'] ?? null,
+            'employer_name' => $data['job']['employer_name'] ?? null,
+            'employer_email' => $data['job']['employer_email'] ?? null,
+            'employer_phone' => $data['job']['employer_phone'] ?? null,
+            'posted_date' => $data['job']['posted_date'] ?? null
         ]);
 
         return response()->json(['success' => true, 'bookmark' => $bookmark]);

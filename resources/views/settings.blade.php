@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
             default: messageDiv.style.backgroundColor = '#2196F3';
         }
         document.body.appendChild(messageDiv);
-        setTimeout(() => { messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 400); }, 3000);
+        setTimeout(() => { messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 400); }, 2000);
     }
 
     // ===== Ajax submit for profile form =====

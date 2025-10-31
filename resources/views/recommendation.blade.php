@@ -29,20 +29,19 @@
         </div>
     </div>
 
-    <!-- Top Job Recommendations -->
-    <div class="card-large" style="background: #FFF;">
+    
+
+    <!-- All Job Recommendations (unfiltered) -->
+    <div class="card-large" style="background:#FFF; margin-top: 20px;">
         <div class="recommendation-header">
             <h3>Job Recommendations</h3>
-            <p>Jobs matched to your skills and preferences.</p>
+            <p>All available job postings</p>
         </div>
-
         <p style="font-family: 'Roboto', sans-serif; font-size: 20px; color: #333; margin-bottom: 10px;">
-            Showing {{ count($jobs) }} {{ Str::plural('job', count($jobs)) }}
+            Showing {{ count($allJobs ?? []) }} {{ Str::plural('job', count($allJobs ?? [])) }}
         </p>
-
-        <!-- Job list (stacked like dashboard) -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            @foreach($jobs as $job)
+        <div style="display:flex; flex-direction: column; gap: 20px;">
+            @foreach(($allJobs ?? []) as $job)
             <div class="job-card" 
                  data-job-id="{{ $job['id'] ?? '' }}"
                  data-title="{{ $job['title'] }}" 
@@ -50,28 +49,13 @@
                  data-type="{{ $job['type'] ?? '' }}" 
                  data-salary="{{ $job['salary'] ?? '' }}" 
                  data-description="{{ $job['description'] ?? '' }}" 
-                 data-skills='@json($job['skills'] ?? [])'>
-                
+                 data-skills='@json($job['skills'] ?? [])'
+                 data-company="{{ $job['company'] ?? '' }}"
+                 data-employer-name="{{ $job['employer_name'] ?? '' }}"
+                 data-employer-email="{{ $job['employer_email'] ?? '' }}"
+                 data-employer-phone="{{ $job['employer_phone'] ?? '' }}"
+                 data-posted-date="{{ $job['posted_date'] ?? '' }}">
                 <div class="job-title">{{ $job['title'] }}</div>
-
-                <!-- Match Score Display (only for job seekers with skills) -->
-                @if(isset($job['match_score']) && $job['match_score'] > 0)
-                <div class="match-indicator" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <div class="match-score" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-star"></i>
-                        {{ $job['match_score'] }}% Match
-                    </div>
-                    @if(isset($job['matching_skills']) && $job['matching_skills']->count() > 0)
-                    <div class="matching-skills-preview" style="font-size: 12px; color: #666;">
-                        <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
-                        Matches: {{ $job['matching_skills']->take(3)->implode(', ') }}
-                        @if($job['matching_skills']->count() > 3)
-                            +{{ $job['matching_skills']->count() - 3 }} more
-                        @endif
-                    </div>
-                    @endif
-                </div>
-                @endif
 
                 <div class="job-preview">
                     <div class="job-location">
@@ -138,38 +122,17 @@
                         <div class="job-skills">
                             @if(!empty($job['skills']))
                                 @foreach($job['skills'] as $skill)
-                                    @php
-                                        $isMatching = isset($job['matching_skills']) && $job['matching_skills']->contains(strtolower($skill));
-                                    @endphp
-                                    <span class="skill {{ $isMatching ? 'matching-skill' : '' }}">
-                                        {{ $skill }}
-                                        @if($isMatching)
-                                            <i class="fas fa-check" style="margin-left: 4px;"></i>
-                                        @endif
-                                    </span>
+                                    <span class="skill">{{ $skill }}</span>
                                 @endforeach
                             @else
                                 <span class="skill">No specific skills listed</span>
                             @endif
                         </div>
-                        @if(isset($job['match_score']) && $job['match_score'] > 0)
-                        <div class="match-details" style="margin-top: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #4CAF50;">
-                            <div style="font-size: 13px; color: #333; margin-bottom: 6px;">
-                                <strong>Why this job matches you:</strong>
-                            </div>
-                            <div style="font-size: 12px; color: #666;">
-                                You have {{ $job['matching_skills']->count() }} out of {{ $job['job_skills']->count() }} required skills
-                                @if($job['matching_skills']->count() > 0)
-                                    ({{ $job['matching_skills']->implode(', ') }})
-                                @endif
-                            </div>
-                        </div>
-                        @endif
                     </div>
                 </div>
 
                 <div class="job-actions">
-                    <button class="view-details" onclick="toggleDetails(this)">
+                    <button class="view-details btn-details" onclick="toggleDetails(this)">
                         <i class="fas fa-chevron-down"></i>
                         View Details
                     </button>
@@ -390,13 +353,14 @@ function renderNotifItem(n){
     const icon = n.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
     const isUnread = n.read ? '' : 'background:#f7fbff;';
     const when = new Date(n.created_at).toLocaleString();
-    return `<li class="notif-item" style="padding:12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; ${isUnread}">
+    return `<li class="notif-item" onclick="showNotificationDetail(${n.id})" style="cursor:pointer; padding:12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; ${isUnread}" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='${n.read ? '' : '#f7fbff'}'">
         <i class="fas ${icon}" style="color:#648EB5; margin-top:3px;"></i>
-        <div>
+        <div style="flex:1;">
             <div style="font-weight:600; color:#333;">${escapeHtml(n.title || 'Notification')}</div>
-            <div style="color:#555; font-size:13px;">${escapeHtml(n.message || '')}</div>
+            <div style="color:#555; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(n.message || '')}</div>
             <div style="font-size:12px; color:#888; margin-top:4px;">${when}</div>
         </div>
+        <i class="fas fa-chevron-right" style="color:#ccc; font-size:12px; align-self:center;"></i>
     </li>`;
 }
 function escapeHtml(str){ return String(str).replace(/[&<>\"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
@@ -416,6 +380,160 @@ function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
 function getCsrfToken() { 
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); 
 }
+
+// Click to open notification detail (modal)
+function showNotificationDetail(notifId){
+        fetch("{{ route('notifications.list') }}")
+            .then(r => r.json())
+            .then(({notifications}) => {
+                const notif = notifications.find(n => n.id === notifId);
+                if (!notif) return;
+        
+                const icon = notif.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
+                const createdAt = notif.created_at ? new Date(notif.created_at).toLocaleString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                }) : '';
+        
+                let additionalInfo = '';
+                if (notif.data) {
+                    try {
+                        const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data;
+                        additionalInfo = '<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">';
+                        additionalInfo += '<h4 style="margin:0 0 10px 0; color:#648EB5; font-size:14px;">Additional Details</h4>';
+                        for (const [key, value] of Object.entries(data)) {
+                            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            additionalInfo += `<div style="margin-bottom:8px;"><strong>${label}:</strong> ${escapeHtml(String(value))}</div>`;
+                        }
+                        additionalInfo += '</div>';
+                    } catch(e) {}
+                }
+        
+                const modal = document.createElement('div');
+                modal.id = 'notifDetailModal';
+                modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
+                modal.innerHTML = `
+                    <div style="background:white; border-radius:16px; width:90%; max-width:600px; max-height:85vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modalSlideIn 0.3s ease;">
+                        <div style="background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); padding:25px; color:white; position:relative;">
+                            <button onclick="closeNotifModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">&times;</button>
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <div style="width:50px; height:50px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                    <i class="fas ${icon}" style="font-size:24px;"></i>
+                                </div>
+                                <div>
+                                    <h3 style="margin:0; font-size:20px; font-weight:600;">Notification Details</h3>
+                                    <p style="margin:5px 0 0 0; opacity:0.9; font-size:13px;">${createdAt}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="padding:25px; max-height:calc(85vh - 150px); overflow-y:auto;">
+                            <h4 style="margin:0 0 10px 0; color:#333; font-size:18px;">${escapeHtml(notif.title || 'Notification')}</h4>
+                            <p style="color:#555; line-height:1.6; margin:0;">${escapeHtml(notif.message || '')}</p>
+                            ${additionalInfo}
+                        </div>
+                        <div style="padding:20px 25px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+                            <button onclick="closeNotifModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Close</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                document.body.style.overflow = 'hidden';
+        
+                // Mark this specific notification as read and update count immediately
+                if (!notif.read) {
+                    fetch("{{ url('/notifications') }}/" + notifId + "/read", {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': getCsrfToken() }
+                    }).then(r => r.json()).then(({success, unreadCount}) => {
+                        if (success) {
+                            // Update badge count immediately
+                            const badge = document.getElementById('notifCount');
+                            if (unreadCount > 0) {
+                                if (badge) {
+                                    badge.textContent = unreadCount;
+                                } else {
+                                    const bell = document.querySelector('.notification-bell');
+                                    if (bell) {
+                                        const span = document.createElement('span');
+                                        span.className = 'badge';
+                                        span.id = 'notifCount';
+                                        span.textContent = unreadCount;
+                                        span.style.cssText = 'position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;';
+                                        bell.appendChild(span);
+                                    }
+                                }
+                            } else {
+                                if (badge) badge.remove();
+                            }
+                            // Refresh the notification list to show updated read status
+                            loadNotifications();
+                        }
+                    });
+                }
+            });
+}
+
+function closeNotifModal(){
+        const modal = document.getElementById('notifDetailModal');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }
+}
+
+// Auto-refresh notifications every 30 seconds
+(function(){
+    let lastUnreadCount = 0;
+
+    function checkForNewNotifications(){
+        fetch("{{ route('notifications.list') }}")
+            .then(r => r.json())
+            .then(({success, unread, notifications}) => {
+                if(!success) return;
+                
+                // Update badge
+                const badge = document.getElementById('notifCount');
+                if (unread > 0) {
+                    if (badge) {
+                        badge.textContent = unread;
+                    } else {
+                        const bell = document.querySelector('.notification-bell');
+                        if (bell) {
+                            const span = document.createElement('span');
+                            span.className = 'badge';
+                            span.id = 'notifCount';
+                            span.textContent = unread;
+                            span.style.cssText = 'position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;';
+                            bell.appendChild(span);
+                        }
+                    }
+                } else {
+                    if (badge) badge.remove();
+                }
+
+                // Show visual indicator for new notifications
+                if (unread > lastUnreadCount && lastUnreadCount !== 0) {
+                    const bell = document.querySelector('.notification-bell i');
+                    if (bell) {
+                        bell.style.animation = 'bellRing 0.5s ease';
+                        setTimeout(() => { bell.style.animation = ''; }, 500);
+                    }
+                }
+
+                lastUnreadCount = unread;
+
+                // If dropdown is open, refresh the list
+                const dd = document.getElementById('notifDropdown');
+                if (dd && dd.style.display === 'block') {
+                    loadNotifications();
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Check every 3 seconds for near real-time notifications
+    setInterval(checkForNewNotifications, 3000);
+})();
 
 // Load expanded state from localStorage on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -476,7 +594,12 @@ function toggleBookmark(button) {
         type: card.dataset.type || '',
         salary: card.dataset.salary || '',
         description: card.dataset.description || '',
-        skills: card.dataset.skills ? JSON.parse(card.dataset.skills) : []
+        skills: card.dataset.skills ? JSON.parse(card.dataset.skills) : [],
+        company: card.dataset.company || '',
+        employer_name: card.dataset.employerName || '',
+        employer_email: card.dataset.employerEmail || '',
+        employer_phone: card.dataset.employerPhone || '',
+        posted_date: card.dataset.postedDate || ''
     };
     const icon = button.querySelector('i');
     const isBookmarked = icon.classList.contains('fas');
@@ -538,7 +661,15 @@ function showMessage(message, type) {
     }
     document.body.appendChild(messageDiv);
     setTimeout(() => { messageDiv.style.transform = 'translateY(0)'; messageDiv.style.opacity = '1'; }, 10);
-    setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2700);
+    setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2000);
 }
 </script>
+
+<style>
+    @keyframes bellRing {
+        0%, 100% { transform: rotate(0deg); }
+        10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+        20%, 40%, 60%, 80% { transform: rotate(10deg); }
+    }
+</style>
 @endpush

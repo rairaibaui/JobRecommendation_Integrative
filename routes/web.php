@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\ContactSupportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployerDashboardController;
 use App\Http\Controllers\EmployerApplicantsController;
@@ -50,6 +51,10 @@ Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkReques
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+
+// Contact Support
+Route::get('/contact-support', [ContactSupportController::class, 'show'])->name('contact.support');
+Route::post('/contact-support', [ContactSupportController::class, 'submit'])->name('contact.submit');
 
 // 🔹 Routes that require authentication
 Route::middleware('auth')->group(function () {

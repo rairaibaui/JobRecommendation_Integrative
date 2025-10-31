@@ -101,7 +101,17 @@
                                 <div class="job-preview" style="margin-bottom: 10px;">
                                     <div class="job-location">
                                         <i class="fas fa-building"></i>
-                                        <span>{{ $application->company_name ?? 'Company Name' }}</span>
+                                        <span>
+                                            @if($application->company_name)
+                                                {{ $application->company_name }}
+                                            @elseif($application->employer)
+                                                {{ $application->employer->company_name ?? trim($application->employer->first_name . ' ' . $application->employer->last_name) }}
+                                            @elseif($application->jobPosting && $application->jobPosting->employer)
+                                                {{ $application->jobPosting->employer->company_name ?? trim($application->jobPosting->employer->first_name . ' ' . $application->jobPosting->employer->last_name) }}
+                                            @else
+                                                Company Name Not Available
+                                            @endif
+                                        </span>
                                     </div>
                                     <div class="job-type">
                                         <i class="fas fa-calendar"></i>
@@ -116,20 +126,32 @@
                                 </div>
 
                                 <!-- Employer Contact Information -->
-                                @if($application->jobPosting && $application->jobPosting->employer)
+                                @php
+                                    $employerInfo = null;
+                                    if ($application->employer) {
+                                        $employerInfo = $application->employer;
+                                    } elseif ($application->jobPosting && $application->jobPosting->employer) {
+                                        $employerInfo = $application->jobPosting->employer;
+                                    }
+                                @endphp
+                                
+                                @if($employerInfo)
                                     <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; border-left: 3px solid #648EB5;">
                                         <div style="font-weight: 600; color: #648EB5; margin-bottom: 6px;">
                                             <i class="fas fa-info-circle"></i> Employer Contact
                                         </div>
                                         <div style="display: grid; gap: 4px; color: #555;">
-                                            @if($application->jobPosting->employer->first_name)
-                                                <div><i class="fas fa-user-tie" style="width: 16px; color: #648EB5;"></i> <strong>Contact:</strong> {{ $application->jobPosting->employer->first_name }} {{ $application->jobPosting->employer->last_name }}</div>
+                                            @if($employerInfo->company_name)
+                                                <div><i class="fas fa-building" style="width: 16px; color: #648EB5;"></i> <strong>Company:</strong> {{ $employerInfo->company_name }}</div>
                                             @endif
-                                            @if($application->jobPosting->employer->email)
-                                                <div><i class="fas fa-envelope" style="width: 16px; color: #648EB5;"></i> <strong>Email:</strong> <a href="mailto:{{ $application->jobPosting->employer->email }}" style="color: #648EB5; text-decoration: none;">{{ $application->jobPosting->employer->email }}</a></div>
+                                            @if($employerInfo->first_name)
+                                                <div><i class="fas fa-user-tie" style="width: 16px; color: #648EB5;"></i> <strong>Contact:</strong> {{ $employerInfo->first_name }} {{ $employerInfo->last_name }}</div>
                                             @endif
-                                            @if($application->jobPosting->employer->phone_number)
-                                                <div><i class="fas fa-phone" style="width: 16px; color: #648EB5;"></i> <strong>Phone:</strong> <a href="tel:{{ $application->jobPosting->employer->phone_number }}" style="color: #648EB5; text-decoration: none;">{{ $application->jobPosting->employer->phone_number }}</a></div>
+                                            @if($employerInfo->email)
+                                                <div><i class="fas fa-envelope" style="width: 16px; color: #648EB5;"></i> <strong>Email:</strong> <a href="mailto:{{ $employerInfo->email }}" style="color: #648EB5; text-decoration: none;">{{ $employerInfo->email }}</a></div>
+                                            @endif
+                                            @if($employerInfo->phone_number)
+                                                <div><i class="fas fa-phone" style="width: 16px; color: #648EB5;"></i> <strong>Phone:</strong> <a href="tel:{{ $employerInfo->phone_number }}" style="color: #648EB5; text-decoration: none;">{{ $employerInfo->phone_number }}</a></div>
                                             @endif
                                         </div>
                                     </div>
@@ -151,6 +173,43 @@
                                 <span style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: capitalize; display: inline-block; background: {{ $color['bg'] }}; color: {{ $color['text'] }};">
                                                                         {{ $application->status === 'for_interview' ? 'For Interview' : ucfirst($application->status) }}
                                 </span>
+
+                                <!-- Employment Status for Accepted Applications -->
+                                @if($application->status === 'accepted' && isset($application->employment_status))
+                                    <div style="margin-top: 8px; padding: 10px 12px; border-radius: 8px; font-size: 12px; text-align: right; 
+                                        @if($application->employment_status === 'currently_working')
+                                            background: #e7f5ff; border: 1px solid #1971c2; color: #1971c2;
+                                        @elseif($application->employment_status === 'terminated')
+                                            background: #fff3cd; border: 1px solid #856404; color: #856404;
+                                        @else
+                                            background: #f8f9fa; border: 1px solid #6c757d; color: #6c757d;
+                                        @endif
+                                    ">
+                                        <div style="font-weight: 600; margin-bottom: 4px;">
+                                            @if($application->employment_status === 'currently_working')
+                                                <i class="fas fa-briefcase"></i> Currently Working
+                                            @elseif($application->employment_status === 'terminated')
+                                                <i class="fas fa-user-times"></i> Terminated
+                                            @else
+                                                <i class="fas fa-sign-out-alt"></i> Resigned
+                                            @endif
+                                        </div>
+                                        @if($application->employment_status === 'terminated' && isset($application->termination_date))
+                                            <div style="font-size: 11px; opacity: 0.9;">
+                                                {{ $application->termination_date->format('M d, Y') }}
+                                            </div>
+                                            @if(isset($application->termination_reason))
+                                                <div style="font-size: 11px; margin-top: 4px; opacity: 0.9;">
+                                                    Reason: {{ $application->termination_reason }}
+                                                </div>
+                                            @endif
+                                        @elseif($application->employment_status === 'currently_working')
+                                            <div style="font-size: 11px; opacity: 0.9;">
+                                                Since {{ \Carbon\Carbon::parse($application->updated_at)->format('M d, Y') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
 
                                                                 @if(in_array($application->status, ['for_interview','interviewed']) && ($application->interview_date || $application->interview_location || $application->interview_notes))
                                                                     <div style="margin-top:8px; font-size:12px; color:#555; text-align:right;">
@@ -253,13 +312,14 @@
         const icon = n.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
         const isUnread = n.read ? '' : 'background:#f7fbff;';
         const when = new Date(n.created_at).toLocaleString();
-        return `<li class="notif-item" style="padding:12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; ${isUnread}">
+        return `<li class="notif-item" onclick="showNotificationDetail(${n.id})" style="cursor:pointer; padding:12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; ${isUnread}" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='${n.read ? '' : '#f7fbff'}'">
             <i class="fas ${icon}" style="color:#648EB5; margin-top:3px;"></i>
-            <div>
+            <div style="flex:1;">
                 <div style="font-weight:600; color:#333;">${escapeHtml(n.title || 'Notification')}</div>
-                <div style="color:#555; font-size:13px;">${escapeHtml(n.message || '')}</div>
+                <div style="color:#555; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(n.message || '')}</div>
                 <div style="font-size:12px; color:#888; margin-top:4px;">${when}</div>
             </div>
+            <i class="fas fa-chevron-right" style="color:#ccc; font-size:12px; align-self:center;"></i>
         </li>`;
     }
     function escapeHtml(str){ return String(str).replace(/[&<>\"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
@@ -275,7 +335,177 @@
             }
           });
     }
-    function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
+        function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
+
+        // Click to open notification detail (modal)
+        function showNotificationDetail(notifId){
+                // Remove any existing modal
+                const oldModal = document.getElementById('notifDetailModal');
+                if (oldModal) oldModal.remove();
+                
+                // Mark notification as read before showing details
+                fetch(`{{ url('/notifications') }}/${notifId}/read`, { method:'POST', headers:{ 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } })
+                    .then(() => {
+                        // Fetch notification details
+                        fetch("{{ route('notifications.list') }}")
+                            .then(r => r.json())
+                            .then(({notifications}) => {
+                                const notif = notifications.find(n => n.id === notifId);
+                                if (!notif) return;
+                                
+                                const icon = notif.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
+                                const createdAt = notif.created_at ? new Date(notif.created_at).toLocaleString('en-US', {
+                                    year: 'numeric', month: 'long', day: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                }) : '';
+                                
+                                let additionalInfo = '';
+                                if (notif.data) {
+                                    try {
+                                        const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data;
+                                        additionalInfo = '<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">';
+                                        additionalInfo += '<h4 style="margin:0 0 10px 0; color:#648EB5; font-size:14px;">Additional Details</h4>';
+                                        for (const [key, value] of Object.entries(data)) {
+                                            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                            let displayValue = String(value);
+                                            // Format Interview Date if present
+                                            if (label === 'Interview Date' && value) {
+                                                try {
+                                                    displayValue = new Date(value).toLocaleString('en-US', {
+                                                        year: 'numeric', month: 'long', day: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    });
+                                                } catch(e) {}
+                                            }
+                                            additionalInfo += `<div style="margin-bottom:8px;"><strong>${label}:</strong> ${escapeHtml(displayValue)}</div>`;
+                                        }
+                                        additionalInfo += '</div>';
+                                    } catch(e) {}
+                                }
+                                
+                                const modal = document.createElement('div');
+                                modal.id = 'notifDetailModal';
+                                modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
+                                modal.innerHTML = `
+                                    <div style="background:white; border-radius:16px; width:90%; max-width:600px; max-height:85vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modalSlideIn 0.3s ease;">
+                                        <div style="background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); padding:25px; color:white; position:relative;">
+                                            <button onclick="closeNotifModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">&times;</button>
+                                            <div style="display:flex; align-items:center; gap:15px;">
+                                                <div style="width:50px; height:50px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                                    <i class="fas ${icon}" style="font-size:24px;"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 style="margin:0; font-size:20px; font-weight:600;">Notification Details</h3>
+                                                    <p style="margin:5px 0 0 0; opacity:0.9; font-size:13px;">${createdAt}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style="padding:25px; max-height:calc(85vh - 150px); overflow-y:auto;">
+                                            <h4 style="margin:0 0 10px 0; color:#333; font-size:18px;">${escapeHtml(notif.title || 'Notification')}</h4>
+                                            <p style="color:#555; line-height:1.6; margin:0;">${escapeHtml(notif.message || '')}</p>
+                                            ${additionalInfo}
+                                        </div>
+                                        <div style="padding:20px 25px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+                                            <button onclick="closeNotifModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Close</button>
+                                        </div>
+                                    </div>
+                                `;
+                                document.body.appendChild(modal);
+                                document.body.style.overflow = 'hidden';
+                                
+                                // Update badge count
+                                if (!notif.read) {
+                                    fetch("{{ route('notifications.list') }}")
+                                        .then(r => r.json())
+                                        .then(({unread}) => {
+                                            const badge = document.getElementById('notifCount');
+                                            if (unread > 0) {
+                                                if (badge) {
+                                                    badge.textContent = unread;
+                                                } else {
+                                                    const bell = document.querySelector('.notification-bell');
+                                                    if (bell) {
+                                                        const span = document.createElement('span');
+                                                        span.className = 'badge';
+                                                        span.id = 'notifCount';
+                                                        span.textContent = unread;
+                                                        span.style.cssText = 'position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;';
+                                                        bell.appendChild(span);
+                                                    }
+                                                }
+                                            } else {
+                                                if (badge) badge.remove();
+                                            }
+                                            // Refresh the notification list to show updated read status
+                                            loadNotifications();
+                                        });
+                                }
+                            });
+                    });
+        }
+
+        function closeNotifModal(){
+                const modal = document.getElementById('notifDetailModal');
+                if (modal) {
+                    modal.remove();
+                    document.body.style.overflow = 'auto';
+                }
+        }
+
+        // Auto-refresh notifications every 30 seconds
+    (function(){
+        let lastUnreadCount = 0;
+
+        function checkForNewNotifications(){
+            fetch("{{ route('notifications.list') }}")
+                .then(r => r.json())
+                .then(({success, unread, notifications}) => {
+                    if(!success) return;
+                    
+                    // Update badge
+                    const badge = document.getElementById('notifCount');
+                    if (unread > 0) {
+                        if (badge) {
+                            badge.textContent = unread;
+                        } else {
+                            const bell = document.querySelector('.notification-bell');
+                            if (bell) {
+                                const span = document.createElement('span');
+                                span.className = 'badge';
+                                span.id = 'notifCount';
+                                span.textContent = unread;
+                                span.style.cssText = 'position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;';
+                                bell.appendChild(span);
+                            }
+                        }
+                    } else {
+                        if (badge) badge.remove();
+                    }
+
+                    // Show visual indicator for new notifications
+                    if (unread > lastUnreadCount && lastUnreadCount !== 0) {
+                        const bell = document.querySelector('.notification-bell i');
+                        if (bell) {
+                            bell.style.animation = 'bellRing 0.5s ease';
+                            setTimeout(() => { bell.style.animation = ''; }, 500);
+                        }
+                    }
+
+                    lastUnreadCount = unread;
+
+                    // If dropdown is open, refresh the list
+                    const dd = document.getElementById('notifDropdown');
+                    if (dd && dd.style.display === 'block') {
+                        loadNotifications();
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Check every 3 seconds for near real-time notifications
+        setInterval(checkForNewNotifications, 3000);
+    })();
+
     function filterApplications(status) {
         const cards = document.querySelectorAll('.application-card');
         const buttons = document.querySelectorAll('.filter-btn');
@@ -294,4 +524,22 @@
         });
     }
 </script>
+
+<style>
+    @keyframes bellRing {
+        0%, 100% { transform: rotate(0deg); }
+        10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+        20%, 40%, 60%, 80% { transform: rotate(10deg); }
+    }
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
 @endsection

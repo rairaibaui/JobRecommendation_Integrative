@@ -144,21 +144,21 @@
             <!-- Current Password -->
             <div style="margin-bottom: 15px;">
                 <label for="current_password" style="display: block; font-weight: 600; margin-bottom: 5px;">Current Password</label>
-                <input type="password" id="current_password" name="current_password" required
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password" required
                        style="width: 100%; padding: 10px; border: 1px solid #B0B8C2; border-radius: 5px; font-size: 14px;">
             </div>
 
             <!-- New Password -->
             <div style="margin-bottom: 15px;">
                 <label for="password" style="display: block; font-weight: 600; margin-bottom: 5px;">New Password</label>
-                <input type="password" id="password" name="password" required
+                <input type="password" id="password" name="password" autocomplete="new-password" required
                        style="width: 100%; padding: 10px; border: 1px solid #B0B8C2; border-radius: 5px; font-size: 14px;">
             </div>
 
             <!-- Confirm New Password -->
             <div style="margin-bottom: 20px;">
                 <label for="password_confirmation" style="display: block; font-weight: 600; margin-bottom: 5px;">Confirm New Password</label>
-                <input type="password" id="password_confirmation" name="password_confirmation" required
+                <input type="password" id="password_confirmation" name="password_confirmation" autocomplete="new-password" required
                        style="width: 100%; padding: 10px; border: 1px solid #B0B8C2; border-radius: 5px; font-size: 14px;">
             </div>
 

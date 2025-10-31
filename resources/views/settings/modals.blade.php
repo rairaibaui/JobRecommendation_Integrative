@@ -19,13 +19,13 @@
         <form method="POST" action="{{ route('change.password.submit') }}">
             @csrf
             <label for="current_password">Current Password</label>
-            <input type="password" id="current_password" name="current_password" required>
+            <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
 
             <label for="password">New Password</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password" id="password" name="password" autocomplete="new-password" required>
 
             <label for="password_confirmation">Confirm New Password</label>
-            <input type="password" id="password_confirmation" name="password_confirmation" required>
+            <input type="password" id="password_confirmation" name="password_confirmation" autocomplete="new-password" required>
 
             <div class="button-group">
                 <button type="button" onclick="closeChangePasswordModal()" class="btn-cancel">Cancel</button>

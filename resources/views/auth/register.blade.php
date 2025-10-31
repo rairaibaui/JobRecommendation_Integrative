@@ -5,21 +5,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <style>
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 40px 0;
-            box-sizing: border-box;
+        :root { --brand-1:#334A5E; --brand-2:#648EB5; }
+                body {
+                        margin: 0;
+                        font-family: 'Inter', sans-serif;
+                        background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%);
+                        min-height: 100vh;
+                        display: grid;
+                        place-items: center;
+                        padding: 36px 16px;
+                        box-sizing: border-box;
+                }
+
+        .auth-grid { width:100%; max-width: 1200px; display:grid; grid-template-columns: 0.7fr 1.3fr; gap: 32px; align-items: start; }
+        .hero { 
+            background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); 
+            border-radius: 16px; 
+            color:#fff; 
+            padding: 32px 28px; 
+            box-shadow: 0 15px 40px rgba(51,74,94,.3); 
+            display:flex; 
+            flex-direction:column; 
+            justify-content:center; 
+            min-height: 400px;
+            animation: slideInLeft 0.6s ease-out;
+            position: relative;
+            overflow: hidden;
         }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+        }
+        .hero h1 { margin:0 0 6px; font-size: 22px; font-weight: 700; position: relative; z-index: 1; }
+        .hero p { margin:0 0 14px; opacity:.95; font-size:13px; line-height:1.4; position: relative; z-index: 1; }
+        .hero .bullets { display:grid; gap:8px; margin-top:4px; padding-left:0; position: relative; z-index: 1; }
+        .hero .bullets li { list-style:none; display:flex; align-items:flex-start; gap:8px; font-size:12px; animation: fadeInUp 0.6s ease-out backwards; }
+        .hero .bullets li:nth-child(1) { animation-delay: 0.2s; }
+        .hero .bullets li:nth-child(2) { animation-delay: 0.3s; }
+        .hero .bullets li:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .hero .bullets i { color:#ffe082; font-size:13px; flex-shrink:0; margin-top:1px; }
+        .hero .bullets span { flex:1; }
 
         .form-container {
-            width: 700px;
+            width: 100%;
             background: #fff;
             border: 1px solid #9A8D8D;
             border-radius: 27px;
@@ -225,7 +292,22 @@
 </head>
 
 <body>
-    <div class="form-container">
+    <div class="auth-grid">
+        <div class="hero">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:700; letter-spacing:.2px; margin-bottom:10px; font-size:18px; position:relative; z-index:1; animation: fadeInUp 0.6s ease-out 0.1s backwards;">
+                <i class="fas fa-briefcase" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,.18); border-radius:7px; font-size:14px;"></i>
+                JobMatcher
+            </div>
+            <h1 style="line-height:1.2; animation: fadeInUp 0.6s ease-out 0.15s backwards;">Create your account</h1>
+            <p style="font-size:13px; line-height:1.4; animation: fadeInUp 0.6s ease-out 0.2s backwards;">Find jobs that match your skills or post roles and start hiring — all in one place.</p>
+            <ul class="bullets">
+                <li><i class="fas fa-check-circle"></i> <span>Fast, simple onboarding</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>Built for Mandaluyong residents and employers</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>Secure document upload for businesses</span></li>
+            </ul>
+        </div>
+        <div>
+            <div class="form-container">
         <div class="header">
             <h2>CREATE ACCOUNT</h2>
             <!-- Account type switch in the upper right -->
@@ -251,30 +333,8 @@
                 </div>
             @endif
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input type="text" name="first_name" id="first_name" value="{{ old('first_name') }}"
-                        class="@error('first_name') input-error @enderror" required>
-                    @error('first_name') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" name="last_name" id="last_name" value="{{ old('last_name') }}"
-                        class="@error('last_name') input-error @enderror" required>
-                    @error('last_name') <span class="error-text">{{ $message }}</span> @enderror
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="email"><span id="email-label-text">Email Address</span></label>
-                <input type="email" name="email" id="email" value="{{ old('email') }}"
-                    class="@error('email') input-error @enderror" required>
-                @error('email') <span class="error-text">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- Employer-only fields -->
-            <div id="employer-fields" style="display:none;">
+            <!-- Employer-only fields (placed first for employer flow) -->
+            <div id="employer-fields" style="display:none; margin-top:6px;">
                 <div class="form-group">
                     <label for="company_name">Company/Business Name</label>
                     <input type="text" name="company_name" id="company_name" value="{{ old('company_name') }}" class="@error('company_name') input-error @enderror">
@@ -308,6 +368,28 @@
                 </div>
             </div>
 
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" name="first_name" id="first_name" value="{{ old('first_name') }}" autocomplete="given-name"
+                        class="@error('first_name') input-error @enderror" required>
+                    @error('first_name') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" name="last_name" id="last_name" value="{{ old('last_name') }}" autocomplete="family-name"
+                        class="@error('last_name') input-error @enderror" required>
+                    @error('last_name') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email"><span id="email-label-text">Email Address</span></label>
+                <input type="email" name="email" id="email" value="{{ old('email') }}" autocomplete="email"
+                    class="@error('email') input-error @enderror" required>
+                @error('email') <span class="error-text">{{ $message }}</span> @enderror
+            </div>
+
             <!-- Job-seeker-only fields -->
             <div id="jobseeker-fields">
                 <div class="form-row">
@@ -319,7 +401,7 @@
                 </div>
                 <div class="form-group">
                     <label for="phone_number">Phone Number</label>
-                    <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number') }}"
+                    <input type="text" name="phone_number" id="phone_number" value="{{ old('phone_number') }}" autocomplete="tel"
                         class="@error('phone_number') input-error @enderror" required
                         oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     @error('phone_number') <span class="error-text">{{ $message }}</span> @enderror
@@ -400,14 +482,14 @@
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password" class="@error('password') input-error @enderror"
-                    required>
+                    autocomplete="new-password" required>
                 @error('password') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 
             <div class="form-group">
                 <label for="password_confirmation">Confirm Password</label>
                 <input type="password" name="password_confirmation" id="password_confirmation"
-                    class="@error('password_confirmation') input-error @enderror" required>
+                    class="@error('password_confirmation') input-error @enderror" autocomplete="new-password" required>
                 @error('password_confirmation') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 
@@ -423,7 +505,10 @@
                 <p>Already have an Account?</p>
                 <a href="{{ route('login') }}">Sign In to Existing Account</a>
             </div>
-        </form>
+                </form>
+            </div>
+            <div style="text-align:center; margin-top:14px; font-size:12px; color:#6b7a8b;">By creating an account, you agree to our Terms and acknowledge our Privacy Policy.</div>
+        </div>
     </div>
     <script>
         function selectType(type) {
@@ -446,6 +531,8 @@
                 empFields.style.display = 'block';
                 const el = document.getElementById('email-label-text');
                 if (el) el.textContent = 'Work Email';
+                // Focus company name first for employer flow
+                if (companyInput) { setTimeout(() => companyInput.focus(), 0); }
 
                 // Disable job-seeker required fields so browser doesn't block submit
                 if (phoneInput) { phoneInput.required = false; phoneInput.disabled = true; }

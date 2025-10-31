@@ -215,10 +215,10 @@
             <input type="email" name="email" id="email" value="{{ $email ?? old('email') }}" required readonly>
 
             <label for="password"><i class="fas fa-lock" style="margin-right:6px;"></i>New Password</label>
-            <input type="password" name="password" id="password" placeholder="Enter new password (min. 8 characters)" required autofocus>
+            <input type="password" name="password" id="password" placeholder="Enter new password (min. 8 characters)" autocomplete="new-password" required autofocus>
 
             <label for="password_confirmation"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Confirm New Password</label>
-            <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Confirm new password" required>
+            <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Confirm new password" autocomplete="new-password" required>
 
             <button type="submit" class="btn-submit">
                 <i class="fas fa-save" style="margin-right:8px;"></i>Reset Password

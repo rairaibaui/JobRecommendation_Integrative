@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class MyApplicationsController extends Controller
@@ -11,11 +10,43 @@ class MyApplicationsController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         $applications = $user->applications()
             ->with(['employer', 'jobPosting.employer'])
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($application) use ($user) {
+                // For accepted applications, check employment status
+                if ($application->status === 'accepted') {
+                    // Check if there's a termination record for this application
+                    $terminationRecord = \App\Models\ApplicationHistory::where('job_seeker_id', $user->id)
+                        ->where('application_id', $application->id)
+                        ->where('decision', 'terminated')
+                        ->first();
+                    
+                    if ($terminationRecord) {
+                        $application->employment_status = 'terminated';
+                        $application->termination_date = $terminationRecord->decision_date;
+                        $application->termination_reason = $terminationRecord->rejection_reason;
+                    } else {
+                        // Check current employment status
+                        $employerName = $application->employer 
+                            ? ($application->employer->company_name ?? trim($application->employer->first_name . ' ' . $application->employer->last_name))
+                            : $application->company_name;
+                        
+                        if ($user->employment_status === 'employed' && 
+                            $user->hired_by_company && 
+                            $employerName && 
+                            strcasecmp($user->hired_by_company, $employerName) === 0) {
+                            $application->employment_status = 'currently_working';
+                        } else {
+                            $application->employment_status = 'resigned';
+                        }
+                    }
+                }
+                
+                return $application;
+            });
 
         $stats = [
             'total' => $applications->count(),

@@ -51,8 +51,28 @@
     align-self: center;
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
-    font-weight: 400;
-    color: #666;
+    font-weight: 600;
+    color: #506B81;
+    background: #eaf2fb;
+    border: 1px solid #cddff2;
+    border-radius: 999px;
+    padding: 5px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+
+  .company-badge {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #2B4053;
     margin-bottom: 20px;
   }
 
@@ -431,14 +451,36 @@
     <div class="profile-ellipse">
       <div class="profile-icon">
         @if($user->profile_picture)
-          <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="Profile Picture">
+          <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="Profile Picture" style="cursor:pointer;" onclick="showEmpProfilePictureModal()">
         @else
-          <i class="fa fa-building"></i>
+          <i class="fa fa-building" style="cursor:pointer;" onclick="showEmpProfilePictureModal()"></i>
         @endif
       </div>
     </div>
-    <div class="profile-name">{{ $user->first_name }} {{ $user->last_name }}</div>
-    <div class="company-name">{{ $user->company_name ?? 'Company Name' }}</div>
+  <div class="company-name" title="{{ $user->company_name }}"><i class="fas fa-building"></i> {{ $user->company_name ?? 'Company Name' }}</div>
+  <div class="company-badge">Company</div>
+  
+  <script>
+  function showEmpProfilePictureModal() {
+    const oldModal = document.getElementById('empProfilePicModal');
+    if (oldModal) oldModal.remove();
+    const picUrl = @json($user->profile_picture ? asset('storage/' . $user->profile_picture) : null);
+    const name = @json($user->company_name ?? 'Company');
+    const modal = document.createElement('div');
+    modal.id = 'empProfilePicModal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; display:flex; align-items:center; justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:white; border-radius:16px; padding:30px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; align-items:center; max-width:350px; width:90%; position:relative;">
+        <button onclick="document.getElementById('empProfilePicModal').remove();" style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:#333;">&times;</button>
+        <h3 style="margin-bottom:18px; color:#648EB5; font-size:20px; font-weight:600;">Company Profile</h3>
+        ${picUrl ? `<img src='${picUrl}' alt='Profile Picture' style='width:120px; height:120px; object-fit:cover; border-radius:50%; border:4px solid #648EB5; margin-bottom:12px;'>` : `<div style='width:120px; height:120px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:48px; color:#aaa; margin-bottom:12px;'><i class='fas fa-building'></i></div>`}
+        <div style="font-size:16px; color:#333; font-weight:500;">${name}</div>
+        <button onclick="document.getElementById('empProfilePicModal').remove();" style="margin-top:22px; background:#6c757d; color:white; border:none; padding:8px 22px; border-radius:8px; cursor:pointer; font-size:14px;">Close</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  </script>
 
     <a href="{{ route('employer.dashboard') }}" class="sidebar-btn active"><i class="fa fa-home sidebar-btn-icon"></i> Dashboard</a>
     <a href="{{ route('employer.jobs') }}" class="sidebar-btn"><i class="fa fa-briefcase sidebar-btn-icon"></i> Job Postings</a>
@@ -462,7 +504,7 @@
     <div class="welcome">Welcome, {{ $user->company_name ?? $user->first_name }}! 👋</div>
 
     @if(session('success'))
-      <div style="background: #d4edda; color: #155724; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
+      <div class="flash-message" style="background: #d4edda; color: #155724; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb; transition: opacity 0.3s ease;">
         <i class="fas fa-check-circle"></i> {{ session('success') }}
       </div>
     @endif
@@ -585,5 +627,18 @@
       @endforelse
     </div>
   </div>
+
+  <script>
+    // Auto-hide flash messages after 2 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+      const flashMessage = document.querySelector('.flash-message');
+      if (flashMessage) {
+        setTimeout(() => {
+          flashMessage.style.opacity = '0';
+          setTimeout(() => flashMessage.remove(), 300);
+        }, 2000);
+      }
+    });
+  </script>
 </body>
 </html>
