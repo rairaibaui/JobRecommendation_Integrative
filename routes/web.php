@@ -30,8 +30,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Redirect root to login
-Route::get('/', fn () => redirect()->route('login'));
+// Landing Page
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
 
 // 🔹 Authentication Routes
 
