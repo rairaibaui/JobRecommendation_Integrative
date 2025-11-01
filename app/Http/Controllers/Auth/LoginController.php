@@ -23,10 +23,12 @@ class LoginController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
-            if ($user && $user->user_type === 'employer') {
-                return redirect()->route('employer.dashboard');
-            }
-            return redirect()->route('dashboard');
+            // Decide destination based on role, but show a smooth loader first
+            return response()->view('auth.post-login', [
+                'target' => $user && $user->user_type === 'employer'
+                    ? route('employer.dashboard')
+                    : route('dashboard'),
+            ]);
         }
 
         return back()->withErrors([

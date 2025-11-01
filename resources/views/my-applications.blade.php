@@ -42,6 +42,44 @@
             <p>Track your job applications and their status</p>
         </div>
 
+        <!-- Current Work Summary (Job Seeker) -->
+        @if(($user->user_type ?? null) === 'job_seeker')
+            <div style="background:#e8f0f7; border-left:4px solid #648EB5; padding:16px; border-radius:8px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:240px;">
+                        <div style="font-weight:700; color:#334A5E; font-size:16px; margin-bottom:6px;">
+                            <i class="fas fa-briefcase"></i>
+                            @if(($user->employment_status ?? 'unemployed') === 'employed')
+                                Currently Working
+                            @else
+                                Not Currently Employed
+                            @endif
+                        </div>
+                        @if(($user->employment_status ?? 'unemployed') === 'employed')
+                            <div style="color:#1E3A5F; font-size:14px;">
+                                <div style="margin-bottom:4px;">
+                                    <strong>Company:</strong>
+                                    {{ $user->hired_by_company ?? ($currentHire->company_name ?? '—') }}
+                                </div>
+                                <div style="margin-bottom:4px;">
+                                    <strong>Role:</strong>
+                                    {{ optional($currentHire)->job_title ?? '—' }}
+                                </div>
+                                @if(!empty($user->hired_date))
+                                    <div style="margin-bottom:4px;">
+                                        <strong>Since:</strong>
+                                        {{ optional($user->hired_date)->format('M d, Y') ?? \Carbon\Carbon::parse($user->hired_date)->format('M d, Y') }}
+                                    </div>
+                                @endif
+                            </div>
+                        @else
+                            <div style="color:#555; font-size:14px;">You're free to apply for new opportunities.</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Stats Grid -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -226,7 +264,7 @@
                                                                 @endif
                                 
                                 <!-- Withdraw/Delete button -->
-                                <form method="POST" action="{{ route('my-applications.destroy', $application) }}" onsubmit="return confirm('Are you sure you want to withdraw this application? This action cannot be undone.');">
+                                <form method="POST" action="{{ route('my-applications.destroy', $application) }}" onsubmit="return handleWithdrawApplication(event, this);">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
@@ -523,7 +561,26 @@
             }
         });
     }
+
+    // Handle withdraw application
+    async function handleWithdrawApplication(event, form) {
+        event.preventDefault();
+        
+        const confirmed = await customConfirm(
+            'Are you sure you want to withdraw this application? This action cannot be undone.',
+            'Withdraw Application',
+            'Yes, Withdraw'
+        );
+        
+        if (confirmed) {
+            form.submit();
+        }
+        
+        return false;
+    }
 </script>
+
+@include('partials.custom-modals')
 
 <style>
     @keyframes bellRing {

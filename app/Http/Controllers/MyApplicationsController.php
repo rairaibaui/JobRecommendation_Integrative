@@ -58,7 +58,21 @@ class MyApplicationsController extends Controller
             'rejected' => $applications->where('status', 'rejected')->count(),
         ];
 
-        return view('my-applications', compact('applications', 'stats', 'user'));
+        // Employment history and current hire context for job seekers
+        $employmentHistory = collect();
+        $currentHire = null;
+        if (($user->user_type ?? null) === 'job_seeker') {
+            $employmentHistory = \App\Models\ApplicationHistory::where('job_seeker_id', $user->id)
+                ->orderByDesc('decision_date')
+                ->get();
+
+            $currentHire = \App\Models\ApplicationHistory::where('job_seeker_id', $user->id)
+                ->where('decision', 'hired')
+                ->orderByDesc('decision_date')
+                ->first();
+        }
+
+        return view('my-applications', compact('applications', 'stats', 'user', 'employmentHistory', 'currentHire'));
     }
 
     // Job seeker can withdraw/delete their own application

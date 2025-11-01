@@ -619,6 +619,13 @@
     <i class="fas fa-file-alt sidebar-btn-icon"></i>
     My Applications
   </a>
+  @if(Auth::user()->user_type === 'job_seeker')
+  <a href="{{ route('work-history') }}" class="sidebar-btn {{ request()->routeIs('work-history') ? 'active' : '' }}"
+    style="text-decoration: none;">
+    <i class="fas fa-clock-rotate-left sidebar-btn-icon"></i>
+    Work History
+  </a>
+  @endif
   <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}"
     style="text-decoration: none;">
     <i class="fas fa-bookmark sidebar-btn-icon"></i>
@@ -629,17 +636,17 @@
     <i class="fas fa-cog sidebar-btn-icon"></i>
     Settings
   </a>
-  <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;">
-    @csrf
-    <button type="submit" class="sidebar-btn"
-      style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-      <i class="fas fa-sign-out-alt sidebar-btn-icon"></i>
-      Logout
-    </button>
-  </form>
-</div>
+  <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;" onsubmit="return showLogoutModal(this);">
+      @csrf
+      <button type="submit" class="sidebar-btn"
+        style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <i class="fas fa-sign-out-alt sidebar-btn-icon"></i>
+        Logout
+      </button>
+    </form>
+  </div>
 
-
+  @include('partials.logout-confirm')
   <!-- Main Content -->
   <div class="main">
     <div class="top-navbar">

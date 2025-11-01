@@ -394,14 +394,13 @@
                                     </p>
                                 @endif
                                 <div style="display:flex; gap:10px; margin-top:12px;">
-                                    <form method="POST" action="{{ route('profile.resign') }}" onsubmit="return confirm('Are you sure you want to resign? This will set your status to actively seeking.')">
+                                    <form method="POST" action="{{ route('profile.resign') }}" onsubmit="return handleResignSubmit(event, this)">
                                         @csrf
                                         <input type="hidden" name="reason" id="resignReasonInput">
                                         <button type="submit" class="edit-btn" style="background:#dc3545;color:#fff;border:none;">
                                             <i class="fas fa-door-open"></i> Resign
                                         </button>
                                     </form>
-                                    <button class="edit-btn" onclick="openResignModal()" style="background:#ffc107;color:#000; border:none;">Add Reason</button>
                                 </div>
                                 <p style="margin:12px 0 0 0; color:#856404; font-size:12px; font-style:italic;">
                                     <i class="fas fa-info-circle"></i> You cannot apply for other jobs while employed. After resigning, you can apply again.
@@ -671,17 +670,45 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openDeleteAccountModal = () => { deleteAccountModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
     window.closeDeleteAccountModal = () => { deleteAccountModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
 
-    // Resign modal small helper
-    window.openResignModal = () => {
-        const reason = prompt('Optional: Enter a reason for your resignation');
-        if (reason !== null) {
-            const input = document.getElementById('resignReasonInput');
-            if (input) input.value = reason;
-            // Submit the form
-            const form = document.querySelector('form[action="{{ route('profile.resign') }}"]');
-            if (form) form.submit();
+    // Handle resign form submit (exposed globally for inline onsubmit)
+    window.handleResignSubmit = async function(event, form) {
+        event.preventDefault();
+        
+        const confirmed = await customConfirm(
+            'Are you sure you want to resign? This will set your status to actively seeking.',
+            'Confirm Resignation',
+            'Yes, Resign'
+        );
+        
+        if (confirmed) {
+            // Get optional reason
+            const reason = await customPrompt(
+                'Optional: Enter a reason for your resignation',
+                'Resignation Reason',
+                'Enter your reason (optional)'
+            );
+            
+            // Add reason as hidden input if provided
+            if (reason) {
+                // Prefer existing hidden input if present
+                const reasonInputExisting = form.querySelector('#resignReasonInput');
+                if (reasonInputExisting) {
+                    reasonInputExisting.value = reason;
+                } else {
+                    const reasonInput = document.createElement('input');
+                    reasonInput.type = 'hidden';
+                    reasonInput.name = 'reason';
+                    reasonInput.value = reason;
+                    form.appendChild(reasonInput);
+                }
+            }
+            form.submit();
         }
+        
+        return false;
     }
+
+    // Note: Reason is only prompted after the user confirms resignation
 
     // ===== Flash Messages Auto-hide =====
     const successMsg = document.querySelector('.success-message');
@@ -852,5 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+
+@include('partials.custom-modals')
 
 @endsection

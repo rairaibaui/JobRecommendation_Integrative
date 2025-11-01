@@ -161,7 +161,7 @@
     <a href="{{ route('employer.employees') }}" class="sidebar-btn"><i class="fa fa-user-check sidebar-btn-icon"></i> Employees</a>
     <a href="{{ route('employer.analytics') }}" class="sidebar-btn"><i class="fa fa-chart-bar sidebar-btn-icon"></i> Analytics</a>
     <a href="{{ route('settings') }}" class="sidebar-btn"><i class="fa fa-cog sidebar-btn-icon"></i> Settings</a>
-    <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;">
+  <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;" onsubmit="return showLogoutModal(this);">
       @csrf
       <button type="submit" class="sidebar-btn"
         style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
@@ -170,6 +170,8 @@
       </button>
     </form>
   </div>
+
+  @include('partials.logout-confirm')
 
   <div class="main">
     @if(session('success'))
@@ -187,7 +189,7 @@
           <a class="filter-btn {{ $status==='reviewing' ? 'active' : '' }}" href="{{ route('employer.applicants', ['status'=>'reviewing']) }}">Reviewing</a>
             <a class="filter-btn {{ $status==='for_interview' ? 'active' : '' }}" href="{{ route('employer.applicants', ['status'=>'for_interview']) }}">For Interview</a>
             <a class="filter-btn {{ $status==='interviewed' ? 'active' : '' }}" href="{{ route('employer.applicants', ['status'=>'interviewed']) }}">Interviewed</a>
-          <a class="filter-btn {{ $status==='accepted' ? 'active' : '' }}" href="{{ route('employer.applicants', ['status'=>'accepted']) }}">Accepted</a>
+          
           <a class="filter-btn {{ $status==='rejected' ? 'active' : '' }}" href="{{ route('employer.applicants', ['status'=>'rejected']) }}">Rejected</a>
         </div>
       </div>
@@ -470,10 +472,10 @@
                           <form method="POST" action="{{ route('employer.applications.updateStatus', $app) }}">
                             @csrf
                             <input type="hidden" name="status" value="accepted">
-                            <button type="submit" class="accept" title="Accept (Hire)" onclick="return confirm('Are you sure you want to hire this applicant? This will be recorded in your hiring history.')"><i class="fas fa-check"></i></button>
+                            <button type="submit" class="accept" title="Accept (Hire)" onclick="return handleHireApplicant(event, this)"><i class="fas fa-check"></i></button>
                           </form>
                           <button type="button" class="reject" title="Reject" onclick="openRejectModal({{ $app->id }}, '{{ $app->resume_snapshot['first_name'] ?? '' }} {{ $app->resume_snapshot['last_name'] ?? '' }}')"><i class="fas fa-times"></i></button>
-                          <form method="POST" action="{{ route('employer.applications.destroy', $app) }}" onsubmit="return confirm('Are you sure you want to delete this application? This action cannot be undone.');">
+                          <form method="POST" action="{{ route('employer.applications.destroy', $app) }}" onsubmit="return handleDeleteApplication(event, this);">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn-delete" title="Delete Application" style="background:#6c757d; color:#fff; border:none; padding:8px 10px; border-radius:6px; font-size:12px; cursor:pointer;"><i class="fas fa-trash"></i></button>
@@ -576,7 +578,10 @@
       const date = document.getElementById('interviewDate').value;
       const location = document.getElementById('interviewLocation').value;
       const notes = document.getElementById('interviewNotes').value;
-      if (!date) { alert('Please choose an interview date.'); return; }
+      if (!date) { 
+        customAlert('Please choose an interview date.', 'Interview Date Required');
+        return; 
+      }
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = `/employer/applications/${currentInterviewAppId}/status`;
@@ -612,7 +617,7 @@
       
       const reason = document.getElementById('rejectionReason').value.trim();
       if (!reason) {
-        alert('Please provide a reason for rejection.');
+        customAlert('Please provide a reason for rejection.', 'Rejection Reason Required');
         return;
       }
 
@@ -700,6 +705,42 @@
         }, 2000);
       }
     });
+
+    // Handle hire applicant
+    async function handleHireApplicant(event, button) {
+      event.preventDefault();
+      
+      const confirmed = await customConfirm(
+        'Are you sure you want to hire this applicant? This will be recorded in your hiring history.',
+        'Confirm Hiring',
+        'Yes, Hire'
+      );
+      
+      if (confirmed) {
+        button.closest('form').submit();
+      }
+      
+      return false;
+    }
+
+    // Handle delete application
+    async function handleDeleteApplication(event, form) {
+      event.preventDefault();
+      
+      const confirmed = await customConfirm(
+        'Are you sure you want to delete this application? This action cannot be undone.',
+        'Delete Application',
+        'Yes, Delete'
+      );
+      
+      if (confirmed) {
+        form.submit();
+      }
+      
+      return false;
+    }
   </script>
+
+  @include('partials.custom-modals')
 </body>
 </html>

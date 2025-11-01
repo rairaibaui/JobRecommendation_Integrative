@@ -27,11 +27,15 @@ class EmployerApplicantsController extends Controller
         // Get employer's job postings with their applications
         $jobPostingsQuery = \App\Models\JobPosting::where('employer_id', $employer->id)
             ->withCount(['applications' => function($query) use ($status) {
+                // Exclude hired/accepted applications from Applicants page
+                $query->where('status', '!=', 'accepted');
                 if ($status && in_array($status, ['pending','reviewing','for_interview','interviewed','accepted','rejected'])) {
                     $query->where('status', $status);
                 }
             }])
             ->with(['applications' => function($query) use ($status) {
+                // Exclude hired/accepted applications from Applicants page
+                $query->where('status', '!=', 'accepted');
                 $query->orderByDesc('created_at');
                 if ($status && in_array($status, ['pending','reviewing','for_interview','interviewed','accepted','rejected'])) {
                     $query->where('status', $status);

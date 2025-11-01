@@ -139,6 +139,26 @@
 </div>
 
 
+<!-- Delete Account Modal -->
+<div id="deleteAccountModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+        <h2>Delete Account</h2>
+        <button onclick="closeDeleteAccountModal()" class="close-btn">&times;</button>
+        <p style="color:#666; margin:15px 0; line-height:1.5;">
+            This will permanently delete your account and remove your data. This action cannot be undone.
+        </p>
+        <form method="POST" action="{{ route('profile.delete') }}">
+            @csrf
+            @method('DELETE')
+            <div class="button-group">
+                <button type="button" onclick="closeDeleteAccountModal()" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-danger">Delete</button>
+            </div>
+        </form>
+    </div>
+    </div>
+
+
 
 <div id="deactivateModal" class="modal">
     <div class="modal-content" style="max-width:500px;">
@@ -547,7 +567,7 @@ function closeDeactivateModal() { hideModal('deactivateModal'); }
 
 // Close modal when clicking overlay
 document.getElementById('settingsOverlay').addEventListener('click', function () {
-    ['changePasswordModal','changeEmailModal','changePhoneModal','clearBookmarksModal','deactivateModal'].forEach(id => {
+    ['changePasswordModal','changeEmailModal','changePhoneModal','clearBookmarksModal','deactivateModal','deleteAccountModal'].forEach(id => {
         if(document.getElementById(id).style.display === 'flex') hideModal(id);
     });
 });

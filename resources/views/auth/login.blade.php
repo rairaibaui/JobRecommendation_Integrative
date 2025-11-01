@@ -167,6 +167,11 @@
       .footer-links { margin-top: 16px; text-align:center; font-size: 12px; color:#8a97a6; }
       .footer-links a { color: var(--brand-1); text-decoration:none; }
       .footer-links a:hover { text-decoration: underline; }
+        /* Submit overlay */
+        .submit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 9999; }
+        .submit-box { background: #fff; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.15); color: var(--ink); font-weight: 600; }
+        .spinner { width: 20px; height: 20px; border: 3px solid #e5ecf2; border-top-color: var(--brand-2); border-radius: 50%; animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 980px) { 
         .auth-inner { 
             grid-template-columns: 1fr; 
@@ -214,7 +219,7 @@
                     <div style="background:#ffe8e8; color:#9b2121; border:1px solid #ffd2d2; padding:10px 12px; border-radius:10px; margin-bottom:12px;">{{ $errors->first('password') }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('login.submit') }}">
+                <form id="loginForm" method="POST" action="{{ route('login.submit') }}">
                     @csrf
                       <label for="email">Email</label>
                       <input type="email" name="email" id="email" placeholder="you@example.com" value="{{ session('email') ?? old('email') }}" autocomplete="email" required autofocus>
@@ -226,7 +231,7 @@
                         </label>
                         <a href="{{ route('password.request') }}">Forgot password?</a>
                     </div>
-                    <button type="submit" class="btn">Sign in</button>
+                    <button type="submit" class="btn" id="loginSubmitBtn">Sign in</button>
                 </form>
 
                 <div class="or">OR</div>
@@ -239,5 +244,26 @@
         </div>
         </div>
     </div>
+        <div id="submitOverlay" class="submit-overlay" aria-hidden="true" role="alert" aria-live="assertive">
+            <div class="submit-box">
+                <div class="spinner" aria-hidden="true"></div>
+                <div>Signing you in…</div>
+            </div>
+        </div>
+        <script>
+            (function() {
+                const form = document.getElementById('loginForm');
+                const overlay = document.getElementById('submitOverlay');
+                const submitBtn = document.getElementById('loginSubmitBtn');
+                if (form && overlay && submitBtn) {
+                    form.addEventListener('submit', function() {
+                        overlay.style.display = 'flex';
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.7';
+                        submitBtn.textContent = 'Signing in…';
+                    });
+                }
+            })();
+        </script>
 </body>
 </html>

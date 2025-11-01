@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -375,5 +376,74 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('settings')->with('success', 'Employer profile updated successfully.');
+    }
+
+    /**
+     * Permanently delete the authenticated user's account and related data.
+     * After deletion, logs out and redirects to login so a new account can be created.
+     */
+    public function destroyAccount(Request $request)
+    {
+        /** @var User $user */
+        $user = User::find(Auth::id());
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        try {
+            DB::transaction(function () use ($user) {
+                // If employer, delete their job postings and related applications/history
+                if (($user->user_type ?? null) === 'employer') {
+                    $jobIds = \App\Models\JobPosting::where('employer_id', $user->id)->pluck('id');
+
+                    if ($jobIds->isNotEmpty()) {
+                        \App\Models\Application::whereIn('job_posting_id', $jobIds)->delete();
+                        \App\Models\ApplicationHistory::whereIn('job_posting_id', $jobIds)->delete();
+                        \App\Models\JobPosting::whereIn('id', $jobIds)->delete();
+                    }
+
+                    // Applications referencing this employer directly
+                    \App\Models\Application::where('employer_id', $user->id)->delete();
+                    \App\Models\ApplicationHistory::where('employer_id', $user->id)->delete();
+                } else {
+                    // Job seeker: delete their applications and history
+                    \App\Models\Application::where('user_id', $user->id)->delete();
+                    \App\Models\ApplicationHistory::where('job_seeker_id', $user->id)->delete();
+                }
+
+                // Common: bookmarks, notifications, audit logs
+                \App\Models\Bookmark::where('user_id', $user->id)->delete();
+                \App\Models\Notification::where('user_id', $user->id)->delete();
+                \App\Models\AuditLog::where('user_id', $user->id)->orWhere('actor_id', $user->id)->delete();
+
+                // Remove stored files
+                try {
+                    if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                        Storage::disk('public')->delete($user->profile_picture);
+                    }
+                    if ($user->resume_file && Storage::disk('public')->exists($user->resume_file)) {
+                        Storage::disk('public')->delete($user->resume_file);
+                    }
+                    if ($user->business_permit_path && Storage::disk('public')->exists($user->business_permit_path)) {
+                        Storage::disk('public')->delete($user->business_permit_path);
+                    }
+                } catch (\Throwable $e) {
+                    // Best effort file cleanup
+                }
+
+                // Finally, delete the user
+                $user->delete();
+            });
+        } catch (\Throwable $e) {
+            Log::error('Account deletion failed: '.$e->getMessage());
+            return redirect()->back()->withErrors(['delete' => 'Failed to delete account. Please try again.']);
+        }
+
+        // Logout and invalidate session
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('success', 'Your account has been deleted.');
     }
 }

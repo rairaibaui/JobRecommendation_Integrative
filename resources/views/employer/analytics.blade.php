@@ -119,7 +119,7 @@
     <a href="{{ route('employer.employees') }}" class="sidebar-btn"><i class="fa fa-user-check sidebar-btn-icon"></i> Employees</a>
     <a href="{{ route('employer.analytics') }}" class="sidebar-btn active"><i class="fa fa-chart-bar sidebar-btn-icon"></i> Analytics</a>
     <a href="{{ route('settings') }}" class="sidebar-btn"><i class="fa fa-cog sidebar-btn-icon"></i> Settings</a>
-    <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;">
+  <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;" onsubmit="return showLogoutModal(this);">
       @csrf
       <button type="submit" class="sidebar-btn"
         style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
@@ -128,6 +128,8 @@
       </button>
     </form>
   </div>
+
+  @include('partials.logout-confirm')
 
   <div class="main">
     <!-- Overview Statistics -->

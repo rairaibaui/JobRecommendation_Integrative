@@ -18,6 +18,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MyApplicationsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\WorkHistoryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -99,6 +100,9 @@ Route::middleware('auth')->group(function () {
     // Bookmarks
     Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks');
 
+    // Work History (Job Seeker)
+    Route::get('/work-history', [WorkHistoryController::class, 'index'])->name('work-history');
+
     // Settings
     Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
 
@@ -120,6 +124,9 @@ Route::middleware('auth')->group(function () {
 
         // Employment actions (job seeker resign)
         Route::post('/resign', [ProfileController::class, 'resign'])->name('profile.resign');
+
+    // Permanently delete account
+    Route::delete('/delete', [ProfileController::class, 'destroyAccount'])->name('profile.delete');
 
         // Profile picture upload
         Route::post('/profile/upload-photo', [ProfileController::class, 'uploadPhoto'])->name('profile.uploadPhoto')->middleware('auth');

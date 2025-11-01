@@ -176,23 +176,7 @@
             No worries! Enter your email address and we'll send you a link to reset your password.
         </p>
 
-        @if(session('success'))
-            <div class="success-message">
-                <i class="fas fa-check-circle"></i>
-                <div>
-                    <div style="font-weight: 600; margin-bottom: 5px;">{{ session('success') }}</div>
-                    <div style="font-size: 13px; opacity: 0.95;">Please check your email inbox (and spam folder).</div>
-                </div>
-            </div>
-        @endif
-
-        @if($errors->any())
-            <div class="error-message">
-                @foreach($errors->all() as $error)
-                    {{ $error }}
-                @endforeach
-            </div>
-        @endif
+        @include('partials.flash')
 
         <form method="POST" action="{{ route('password.email') }}">
             @csrf
