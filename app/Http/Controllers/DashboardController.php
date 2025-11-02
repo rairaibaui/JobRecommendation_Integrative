@@ -12,6 +12,46 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        // Compute profile completeness for job seekers
+        $profileMissing = [];
+        $profileCompletePercent = 100;
+        $needsProfileReminder = false;
+
+        if ($user && ($user->user_type ?? null) === 'job_seeker') {
+            // Determine missing fields critical for better matches and applications
+            $skillsCollection = $this->parseSkills($user->skills ?? '');
+            if ($skillsCollection->isEmpty()) {
+                $profileMissing[] = 'Skills';
+            }
+            if (empty($user->summary)) {
+                $profileMissing[] = 'Professional Summary';
+            }
+            if (empty($user->location)) {
+                $profileMissing[] = 'Location';
+            }
+            if (empty($user->phone_number)) {
+                $profileMissing[] = 'Phone Number';
+            }
+            $education = is_array($user->education ?? null) ? $user->education : [];
+            if (empty($education)) {
+                $profileMissing[] = 'Education';
+            }
+            $experiences = is_array($user->experiences ?? null) ? $user->experiences : [];
+            if (empty($experiences)) {
+                $profileMissing[] = 'Work Experience';
+            }
+            if (empty($user->resume_file)) {
+                $profileMissing[] = 'Resume';
+            }
+            if (empty($user->profile_picture)) {
+                $profileMissing[] = 'Profile Picture';
+            }
+
+            $totalFields = 8; // Keep in sync with checks above
+            $missingCount = count($profileMissing);
+            $profileCompletePercent = max(0, min(100, round((($totalFields - $missingCount) / $totalFields) * 100)));
+            $needsProfileReminder = $missingCount > 0;
+        }
 
         // If job seeker, show only skill-matched jobs in dashboard
         if ($user && ($user->user_type ?? null) === 'job_seeker') {
@@ -120,7 +160,7 @@ class DashboardController extends Controller
             }
         }
 
-        return view('dashboard', compact('jobs', 'bookmarkedTitles'));
+        return view('dashboard', compact('jobs', 'bookmarkedTitles', 'profileMissing', 'profileCompletePercent', 'needsProfileReminder'));
     }
 
     /**

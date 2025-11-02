@@ -702,6 +702,61 @@
     <div class="welcome">Welcome, {{ Auth::user()->first_name }}! 👋</div>
 
     @if(Auth::user()->user_type === 'job_seeker')
+      @if(($needsProfileReminder ?? false) && !empty($profileMissing))
+        <!-- Profile completion reminder -->
+        <div style="background:#fff; border-left:5px solid #ff9800; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.08); padding:16px 18px; margin:8px 0 14px 0;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+              <div style="width:40px; height:40px; border-radius:8px; background:#ff9800; display:flex; align-items:center; justify-content:center; color:#fff;">
+                <i class="fas fa-user-edit"></i>
+              </div>
+              <div>
+                <div style="font-family:'Poppins', sans-serif; font-size:16px; font-weight:600; color:#263238;">Complete your profile to get better job matches</div>
+                <div style="font-size:13px; color:#455a64; margin-top:4px;">Missing: {{ implode(', ', $profileMissing) }}</div>
+                <div style="margin-top:10px; background:#f1f5f9; border-radius:8px; overflow:hidden; width:100%; max-width:420px;">
+                  <div style="height:8px; background:#e2e8f0; width:100%; position:relative;">
+                    <div style="height:8px; width: {{ $profileCompletePercent }}%; background:linear-gradient(90deg,#4CAF50,#81C784);"></div>
+                  </div>
+                  <div style="font-size:12px; color:#64748b; margin-top:6px;">Profile {{ $profileCompletePercent }}% complete</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <a href="{{ route('settings') }}" style="background:#ff9800; color:#fff; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">Complete Profile</a>
+              <a href="{{ route('recommendation') }}" style="background:#fff; border:1px solid #ffcc80; color:#7a4b00; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">See Matches</a>
+            </div>
+          </div>
+        </div>
+      @endif
+      <!-- Job Seeker Getting Started Guide -->
+      <div id="jobSeekerGuide" style="display:none; background:#ffffff; border-radius:12px; border-left:5px solid #648EB5; box-shadow:0 8px 20px rgba(0,0,0,0.08); padding:18px 18px 14px 18px; margin:8px 0 14px 0; position:relative;">
+        <button type="button" aria-label="Dismiss guide" onclick="dismissJobSeekerGuide()" title="Hide"
+          style="position:absolute; top:10px; right:10px; background:#eef2f7; border:1px solid #d9e2ec; color:#5b6b7a; width:28px; height:28px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+        >&times;</button>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div style="width:40px; height:40px; border-radius:8px; background:#648EB5; display:flex; align-items:center; justify-content:center; color:#fff;">
+            <i class="fas fa-hands-helping"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Poppins', sans-serif; font-size:18px; font-weight:600; color:#263238; margin-bottom:6px;">Welcome to Job Portal — Getting Started</div>
+            <ul style="margin-left:18px; color:#455a64; line-height:1.5; font-size:14px;">
+              <li><strong>Complete your profile</strong> in <a href="{{ route('settings') }}" style="color:#648EB5; text-decoration:none;">Settings</a> — add your skills, experience, and location for better matches.</li>
+              <li>Check <a href="{{ route('recommendation') }}" style="color:#648EB5; text-decoration:none;">Recommendations</a> — jobs are ranked by how your skills match.</li>
+              <li><strong>Bookmark</strong> interesting jobs to save them for later and view them in <a href="{{ route('bookmarks') }}" style="color:#648EB5; text-decoration:none;">Bookmarks</a>.</li>
+              <li>Use <strong>Apply</strong> to submit using your profile snapshot; you can preview details before sending.</li>
+              <li>Track progress in <a href="{{ route('my-applications') }}" style="color:#648EB5; text-decoration:none;">My Applications</a> and watch the bell icon for <strong>Notifications</strong>.</li>
+              <li>Forgot your password? Use <em>Forgot Password</em> on the login page — we’ll email you a reset link.</li>
+            </ul>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              <a href="{{ route('settings') }}" style="background:#648EB5; color:#fff; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">Open Settings</a>
+              <a href="{{ route('recommendation') }}" style="background:#e3f2fd; color:#1565c0; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">See Recommendations</a>
+              <a href="{{ route('bookmarks') }}" style="background:#fff3cd; color:#7a5a00; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px; border:1px solid #ffe69c;">View Bookmarks</a>
+              <a href="{{ route('my-applications') }}" style="background:#d1e7dd; color:#0f5132; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">My Applications</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       @if(Auth::user()->employment_status === 'employed')
         <div style="display:flex; align-items:center; gap:10px; margin:6px 0 10px 0;">
           <span style="background:#d1e7dd; color:#0f5132; padding:6px 12px; border-radius:16px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
@@ -1720,6 +1775,23 @@
     // Check every 3 seconds for near real-time notifications
     setInterval(checkForNewNotifications, 3000);
   })();
+  </script>
+
+  <script>
+    // Show the job seeker guide by default unless user has dismissed it
+    document.addEventListener('DOMContentLoaded', function(){
+      try {
+        const hide = localStorage.getItem('hideJobSeekerGuide') === '1';
+        const el = document.getElementById('jobSeekerGuide');
+        if (el && !hide) el.style.display = 'block';
+      } catch(_) {}
+    });
+
+    function dismissJobSeekerGuide(){
+      try { localStorage.setItem('hideJobSeekerGuide', '1'); } catch(_) {}
+      const el = document.getElementById('jobSeekerGuide');
+      if (el) el.style.display = 'none';
+    }
   </script>
 
   <style>
