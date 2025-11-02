@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
+    <title>Create Account — Job Portal Mandaluyong</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <style>
@@ -20,7 +20,9 @@
                         box-sizing: border-box;
                 }
 
-        .auth-grid { width:100%; max-width: 1200px; display:grid; grid-template-columns: 0.7fr 1.3fr; gap: 32px; align-items: start; }
+    .auth-grid { width:100%; max-width: 1200px; display:grid; grid-template-columns: 0.7fr 1.3fr; gap: 32px; align-items: start; }
+    .app-info-wrapper { width:100%; margin: 64px 0 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.35); }
+    .app-info-inner { max-width: 900px; margin: 0 auto; padding: 0 16px; }
         .hero { 
             background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); 
             border-radius: 16px; 
@@ -296,10 +298,10 @@
         <div class="hero">
             <div style="display:flex; align-items:center; gap:8px; font-weight:700; letter-spacing:.2px; margin-bottom:10px; font-size:18px; position:relative; z-index:1; animation: fadeInUp 0.6s ease-out 0.1s backwards;">
                 <i class="fas fa-briefcase" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,.18); border-radius:7px; font-size:14px;"></i>
-                JobMatcher
+                Job Portal Mandaluyong
             </div>
             <h1 style="line-height:1.2; animation: fadeInUp 0.6s ease-out 0.15s backwards;">Create your account</h1>
-            <p style="font-size:13px; line-height:1.4; animation: fadeInUp 0.6s ease-out 0.2s backwards;">Find jobs that match your skills or post roles and start hiring — all in one place.</p>
+            <p style="font-size:13px; line-height:1.4; animation: fadeInUp 0.6s ease-out 0.2s backwards;">For Mandaluyong job seekers and employers — find local jobs or post openings and start hiring.</p>
             <ul class="bullets">
                 <li><i class="fas fa-check-circle"></i> <span>Fast, simple onboarding</span></li>
                 <li><i class="fas fa-check-circle"></i> <span>Built for Mandaluyong residents and employers</span></li>
@@ -559,7 +561,9 @@
 
         // Initialize based on old value
         (function() {
-            const initial = '{{ old('user_type','job_seeker') }}';
+            const urlParams = new URLSearchParams(window.location.search);
+            const roleParam = urlParams.get('role');
+            const initial = roleParam === 'employer' || roleParam === 'job_seeker' ? roleParam : '{{ old('user_type', request()->get('role','job_seeker')) }}';
             selectType(initial);
         })();
 
@@ -615,5 +619,11 @@
         }
     </script>
 </body>
+
+<div class="app-info-wrapper">
+    <div class="app-info-inner">
+        @include('auth.partials.app-info')
+    </div>
+</div>
 
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Sign in — Job Portal Mandaluyong</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -19,27 +19,28 @@
             align-items: center;
             justify-content: center;
             background: linear-gradient(180deg, #406482 0%, #5C7A94 100%); 
-                padding: 40px 16px 40px 24px; /* small left gutter for hero */
+                padding: 56px 16px 56px 24px; /* more vertical padding */
             width: 100%;
         }
+        
         .auth-inner {
             width: min(1200px, 100% - 48px);
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 0.7fr 1.3fr;
-            gap: 40px;
+            grid-template-columns: 1fr 1fr; /* balanced columns */
+            gap: 80px; /* even more space between hero and form */
             align-items: center;
         }
         .hero { 
             background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
             border-radius: 16px; 
             color:#fff; 
-            padding: 32px 28px; 
+            padding: 36px 32px; 
             box-shadow: 0 15px 40px rgba(51,74,94,.3);
             display:flex; 
             flex-direction:column; 
             justify-content:center; 
-            min-height: 400px;
+            min-height: 420px;
             animation: bumpInLeft 0.75s cubic-bezier(.2,.8,.2,1) both;
             position: relative;
             overflow: hidden;
@@ -134,11 +135,11 @@
       .right { display:flex; align-items:center; justify-content:center; }
             .card { 
                 width: 100%; 
-                max-width: 520px; /* slightly bigger form */
+                max-width: 600px; /* bigger form */
                 background: var(--card);
-                border-radius: 16px; 
+                border-radius: 20px; 
                 box-shadow: 0 18px 40px rgba(0,0,0,.12);
-                padding: 28px;
+                padding: 40px; /* more breathing room */
                 animation: bumpInRight 0.75s cubic-bezier(.2,.8,.2,1) both;
             }
             @keyframes bumpInRight {
@@ -147,20 +148,20 @@
                 80% { transform: translateX(6px); }
                 100% { transform: translateX(0); }
             }
-    .card h2 { margin:0 0 6px; font-size: 24px; font-weight: 700; color: var(--ink); text-align:center; }
-    .sub { margin:0 0 18px; color: var(--muted); font-size: 13px; text-align:center; }
-      label { display:block; font-size: 13px; margin: 10px 0 6px; color: var(--ink); font-weight: 600; }
-    /* Text inputs */
-    input:not([type="checkbox"]) { width: 100%; height: 46px; border-radius: 10px; border: 1px solid #d6dde5; padding: 12px 12px; font-size: 14px; }
+        .card h2 { margin:0 0 12px; font-size: 26px; font-weight: 700; color: var(--ink); text-align:center; }
+        .sub { margin:0 0 24px; color: var(--muted); font-size: 14px; text-align:center; line-height: 1.5; }
+            label { display:block; font-size: 14px; margin: 14px 0 8px; color: var(--ink); font-weight: 600; }
+        /* Text inputs */
+    input:not([type="checkbox"]) { width: 100%; height: 52px; border-radius: 10px; border: 1px solid #d6dde5; padding: 14px 14px; font-size: 15px; margin-bottom: 14px; }
     input:not([type="checkbox"]):focus { outline: none; border-color: var(--brand-2); box-shadow: 0 0 0 4px rgba(100,142,181,.15); }
     /* Remember-me checkbox at regular size */
     input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--brand-2); border-radius: 3px; vertical-align: middle; }
-      .row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin: 8px 0 16px; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin: 14px 0 22px; }
       .row a { font-size: 13px; color: var(--brand-1); text-decoration:none; }
       .row a:hover { text-decoration: underline; }
     .btn { width: 100%; height: 48px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); color: #fff; font-weight:700; letter-spacing:.3px; cursor:pointer; box-shadow: 0 10px 22px rgba(51,74,94,.28); transition: transform .12s ease; }
       .btn:hover { transform: translateY(-1px); }
-      .or { display:flex; align-items:center; gap:12px; color:#9aa9b8; margin:18px 0; font-size:12px; }
+    .or { display:flex; align-items:center; gap:12px; color:#9aa9b8; margin:26px 0 12px; font-size:12px; }
       .or:before, .or:after { content:""; height:1px; flex:1; background:#e5ecf2; }
       .ghost { width:100%; background:#fff; color:var(--brand-1); border:1px solid #d6dde5; box-shadow:none; }
       .fine { font-size: 12px; color: var(--muted); text-align:center; margin-top: 10px; }
@@ -175,14 +176,19 @@
     @media (max-width: 980px) { 
         .auth-inner { 
             grid-template-columns: 1fr; 
+            gap: 36px; /* add vertical spacing between hero and form */
         } 
         .auth-grid { 
-            padding: 24px 16px; 
+            padding: 32px 16px; 
         }
         .hero { 
             min-height: auto; 
-            padding: 24px; 
+            padding: 26px; 
         }
+        .card {
+            padding: 32px; /* slightly tighter on small screens but still spaced */
+        }
+        input:not([type="checkbox"]) { height: 50px; }
     }
     </style>
 </head>
@@ -192,14 +198,14 @@
         <div class="hero">
             <div class="brand">
                 <i class="fas fa-briefcase"></i>
-                JobMatcher
+                Job Portal Mandaluyong
             </div>
-            <h1 style="animation: fadeInUp 0.6s ease-out 0.15s backwards;">Welcome back!</h1>
-            <p style="animation: fadeInUp 0.6s ease-out 0.2s backwards;">Sign in to access your personalized job recommendations and continue your career journey.</p>
+            <h1 style="animation: fadeInUp 0.6s ease-out 0.15s backwards;">Sign in to your Mandaluyong portal</h1>
+            <p style="animation: fadeInUp 0.6s ease-out 0.2s backwards;">Built for both job seekers and employers in Mandaluyong City. Find local jobs or post roles and manage applicants.</p>
             <ul class="bullets">
-                <li><i class="fas fa-check-circle"></i> <span>Access your personalized dashboard</span></li>
-                <li><i class="fas fa-check-circle"></i> <span>View tailored job recommendations</span></li>
-                <li><i class="fas fa-check-circle"></i> <span>Track your applications in real-time</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>For Job Seekers: Find jobs within Mandaluyong</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>For Employers: Post jobs and reach local talent</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>Smart recommendations and application tracking</span></li>
             </ul>
         </div>
         <div class="right" style="width:100%;">
@@ -234,13 +240,15 @@
                     <button type="submit" class="btn" id="loginSubmitBtn">Sign in</button>
                 </form>
 
-                <div class="or">OR</div>
-                <a href="{{ route('register') }}" style="display:block; text-decoration:none;">
-                    <button class="btn ghost"><i class="fa fa-user-plus" style="margin-right:8px;"></i>Create new account</button>
-                </a>
-                <div class="fine">By continuing, you agree to our Terms and acknowledge our Privacy Policy.</div>
-                <div class="footer-links">Need help? <a href="{{ route('contact.support') }}">Contact support</a></div>
+                                <div class="or">OR</div>
+                                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px;">
+                  <a href="{{ route('register', ['role' => 'job_seeker']) }}" style="text-decoration:none;"><button class="btn ghost" style="width:100%"><i class="fas fa-location-dot" style="margin-right:8px;"></i> I'm a Job Seeker</button></a>
+                  <a href="{{ route('register', ['role' => 'employer']) }}" style="text-decoration:none;"><button class="btn ghost" style="width:100%"><i class="fas fa-building" style="margin-right:8px;"></i> I'm an Employer</button></a>
+                </div>
+                <div class="fine" style="margin-top: 12px;">By continuing, you agree to our Terms and acknowledge our Privacy Policy.</div>
+                <div class="footer-links" style="margin-top: 6px;">Need help? <a href="{{ route('contact.support') }}">Contact support</a></div>
             </div>
+            
         </div>
         </div>
     </div>
