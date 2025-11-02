@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JobMatcher - Find Your Dream Job</title>
+    <title>Job Portal Mandaluyong — Local Job Recommendations</title>
+    <meta name="description" content="A Mandaluyong-only job portal that connects local job seekers with employers in Mandaluyong City. Discover local jobs and let Mandaluyong employers post openings.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -71,7 +72,7 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <a href="#" class="logo"><i class="fas fa-briefcase"></i> JobMatcher</a>
+                <a href="#" class="logo"><i class="fas fa-briefcase"></i> Job Portal Mandaluyong</a>
                 <div class="header-btns">
                     <a href="/login" class="btn btn-outline">Sign in</a>
                     <a href="/register" class="btn btn-primary">Sign up</a>
@@ -83,19 +84,19 @@
         <div class="container">
             <div class="hero-grid">
                 <div>
-                    <h1>Find your dream job in Mandaluyong</h1>
-                    <p>Connect with top employers and discover opportunities that match your skills and experience.</p>
+                    <h1>Find jobs in Mandaluyong City</h1>
+                    <p>We help Mandaluyong residents discover local jobs within the city. Employers in Mandaluyong can post openings and reach local talent.</p>
                     <div class="hero-btns">
-                        <a href="/register" class="btn btn-primary"><i class="fas fa-rocket"></i> Get started</a>
-                        <a href="#features" class="btn btn-outline">Learn more</a>
+                        <a href="/register" class="btn btn-primary"><i class="fas fa-location-dot"></i> Find jobs in Mandaluyong</a>
+                        <a href="/register" class="btn btn-outline"><i class="fas fa-building"></i> Post a job (Employers)</a>
                     </div>
                 </div>
                 <div class="hero-visual">
                     <div class="stats">
-                        <div class="stat-box"><h3>1,000+</h3><p>Active Jobs</p></div>
-                        <div class="stat-box"><h3>500+</h3><p>Companies</p></div>
-                        <div class="stat-box"><h3>5,000+</h3><p>Job Seekers</p></div>
-                        <div class="stat-box"><h3>95%</h3><p>Success Rate</p></div>
+                        <div class="stat-box"><h3>100%</h3><p>Mandaluyong-only jobs</p></div>
+                        <div class="stat-box"><h3>Local</h3><p>Employers in the city</p></div>
+                        <div class="stat-box"><h3>Fast</h3><p>Apply in minutes</p></div>
+                        <div class="stat-box"><h3>Smart</h3><p>Skill-based matches</p></div>
                     </div>
                 </div>
             </div>
@@ -104,33 +105,39 @@
     <section class="features" id="features">
         <div class="container">
             <div class="section-title">
-                <h2>Why choose JobMatcher?</h2>
-                <p>Everything you need to advance your career</p>
+                <h2>Why use Mandaluyong’s local job portal?</h2>
+                <p>Built for residents and employers within Mandaluyong City</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-search"></i></div>
-                    <h3>Smart Matching</h3>
-                    <p>AI-powered algorithm matches you with jobs that fit your skills and experience.</p>
+                    <h3>Local-first Matching</h3>
+                    <p>See job recommendations based on your skills, filtered to Mandaluyong-only listings.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-building"></i></div>
-                    <h3>Top Employers</h3>
-                    <p>Connect with leading companies actively hiring talented professionals.</p>
+                    <h3>Verified Employers</h3>
+                    <p>Opportunities posted by employers operating in Mandaluyong City.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
-                    <h3>Career Growth</h3>
-                    <p>Track applications and access resources to advance your career.</p>
+                    <h3>Track Applications</h3>
+                    <p>Apply quickly, track your status, and manage bookmarks in one place.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-bullhorn"></i></div>
+                    <h3>Post Jobs Easily</h3>
+                    <p>Employers can create job posts and reach qualified Mandaluyong talent fast.</p>
                 </div>
             </div>
         </div>
     </section>
     <section class="cta">
         <div class="container">
-            <h2>Ready to start your journey?</h2>
-            <p>Join thousands of professionals who found their dream careers</p>
-            <a href="/register" class="btn btn-primary"><i class="fas fa-user-plus"></i> Create free account</a>
+            <h2>Hire local or get hired in Mandaluyong</h2>
+            <p>Your Mandaluyong-only job portal for residents and employers</p>
+            <a href="/register" class="btn btn-primary" style="margin-right:12px;"><i class="fas fa-location-dot"></i> Find Jobs</a>
+            <a href="/register" class="btn btn-outline"><i class="fas fa-building"></i> Post a Job</a>
         </div>
     </section>
     <footer>
@@ -139,7 +146,7 @@
                 <div class="footer-col">
                     <h4>Job Seekers</h4>
                     <ul>
-                        <li><a href="#">Browse Jobs</a></li>
+                        <li><a href="/login">Browse Jobs</a></li>
                         <li><a href="#">Career Advice</a></li>
                         <li><a href="#">Resume Tips</a></li>
                     </ul>
@@ -147,9 +154,9 @@
                 <div class="footer-col">
                     <h4>Employers</h4>
                     <ul>
-                        <li><a href="#">Post a Job</a></li>
-                        <li><a href="#">Find Talent</a></li>
-                        <li><a href="#">Pricing</a></li>
+                        <li><a href="/login">Post a Job</a></li>
+                        <li><a href="/login">Find Talent</a></li>
+                        <li><a href="#">Guidelines</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
