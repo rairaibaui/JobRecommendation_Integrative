@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\JobPosting;
 use App\Models\Application;
+use App\Models\DocumentValidation;
+use App\Models\JobPosting;
+use Illuminate\Support\Facades\Auth;
 
 class EmployerDashboardController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-        
+
         // Get employer's job postings with application counts
         $jobPostings = JobPosting::where('employer_id', $user->id)
             ->withCount('applications')
@@ -24,6 +24,11 @@ class EmployerDashboardController extends Controller
             ->where('decision', 'hired')
             ->count();
 
-        return view('employer.dashboard', compact('jobPostings', 'user', 'hiredCount'));
+        // Get business permit validation status
+        $validation = DocumentValidation::where('user_id', $user->id)
+            ->where('document_type', 'business_permit')
+            ->first();
+
+        return view('employer.dashboard', compact('jobPostings', 'user', 'hiredCount', 'validation'));
     }
 }

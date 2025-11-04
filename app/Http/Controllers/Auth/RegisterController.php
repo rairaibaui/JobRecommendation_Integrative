@@ -4,12 +4,21 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\DocumentValidationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
+    protected $documentValidationService;
+
+    public function __construct(DocumentValidationService $documentValidationService)
+    {
+        $this->documentValidationService = $documentValidationService;
+    }
+
     /**
      * Display the registration form.
      */
@@ -23,17 +32,21 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        // Derive user type based on email domain: Gmail => job_seeker, otherwise employer
-        $email = (string) $request->input('email', '');
-        $isGmail = preg_match('/@gmail\.com$/i', $email) === 1;
-        $derivedType = $isGmail ? 'job_seeker' : 'employer';
+        // AUTOMATIC ROLE DETECTION:
+        // If user uploads business permit → Employer
+        // No business permit → Job Seeker
+        // This eliminates manual role selection and ensures accuracy
+        $hasBusinessPermit = $request->hasFile('business_permit');
+        $userType = $hasBusinessPermit ? 'employer' : 'job_seeker';
 
-        if ($derivedType === 'employer') {
-            // Employer-specific validation
+        if ($userType === 'employer') {
+            // EMPLOYER REGISTRATION (Auto-detected via business permit upload)
+            // Accepts ANY email domain (Gmail, Yahoo, company emails)
+            // Business permit is REQUIRED and will be AI-validated
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'email' => ['required','string','email','max:255','unique:users,email','not_regex:/@gmail\.com$/i'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'company_name' => 'required|string|max:255',
                 'job_title' => 'nullable|string|max:255',
                 'business_permit' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -49,11 +62,17 @@ class RegisterController extends Controller
                 'terms' => 'accepted',
             ]);
             try {
-                // Store business permit
+                // Store business permit temporarily for validation
                 $permitPath = null;
                 if ($request->hasFile('business_permit')) {
-                    $permitPath = $request->file('business_permit')->store('business_permits', 'public');
+                    $permitPath = $request->file('business_permit')->store('business_permits/temp', 'public');
                 }
+
+                // Move file from temp to permanent location immediately
+                // Allow account creation, validate in background
+                $finalPath = 'business_permits/'.basename($permitPath);
+                Storage::disk('public')->move($permitPath, $finalPath);
+                $permitPath = $finalPath;
 
                 // Generate placeholder phone/location to satisfy schema constraints
                 $generatedPhone = strval(random_int(10000000000, 99999999999));
@@ -71,17 +90,46 @@ class RegisterController extends Controller
                     'user_type' => 'employer',
                     'password' => Hash::make($validated['password']),
                 ]);
+
+                // Queue AI validation for background processing
+                $isDocumentValidationEnabled = config('ai.features.document_validation', false)
+                                               && config('ai.document_validation.business_permit.enabled', false);
+
+                if ($isDocumentValidationEnabled && $permitPath && $user) {
+                    // Dispatch background job for AI validation with delay
+                    $delay = config('ai.document_validation.business_permit.validation_delay_seconds', 10);
+
+                    // Check if Gmail/personal email - apply stricter validation
+                    $isPersonalEmail = preg_match('/@(gmail|yahoo|hotmail|outlook)\.com$/i', $validated['email']) === 1;
+
+                    \App\Jobs\ValidateBusinessPermitJob::dispatch(
+                        $user->id,
+                        $permitPath,
+                        [
+                            'company_name' => $validated['company_name'],
+                            'email' => $validated['email'],
+                            'is_personal_email' => $isPersonalEmail, // Flag for stricter validation
+                        ]
+                    )->delay(now()->addSeconds($delay));
+                }
             } catch (\Throwable $e) {
+                // Clean up uploaded file if it exists
+                if (isset($permitPath) && $permitPath) {
+                    Storage::disk('public')->delete($permitPath);
+                }
+
                 return back()
                     ->withInput()
                     ->with('error', 'Registration failed. Please check your inputs and try again.');
             }
         } else {
-            // Job seeker validation
+            // JOB SEEKER REGISTRATION (Auto-detected - no business permit uploaded)
+            // Can use any email domain
+            // No business permit required
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'email' => ['required','string','email','max:255','unique:users,email','regex:/@gmail\.com$/i'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'birthday' => 'nullable|date',
                 'phone_number' => 'required|digits:11|numeric|unique:users,phone_number',
                 'education_level' => 'nullable|string|max:255',
@@ -120,6 +168,7 @@ class RegisterController extends Controller
                     ->with('error', 'Registration failed. Please check your inputs and try again.');
             }
         }
+
         // Redirect to login for both employer and job seeker; require manual sign-in
         return redirect()->route('login')
             ->with('success', 'Account created successfully! Please sign in to continue.')

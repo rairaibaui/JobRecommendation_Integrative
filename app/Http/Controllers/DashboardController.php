@@ -5,10 +5,19 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\JobPosting;
+use App\Services\AIRecommendationService;
 
 class DashboardController extends Controller
 {
+    protected $aiService;
+
+    public function __construct(AIRecommendationService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -53,73 +62,24 @@ class DashboardController extends Controller
             $needsProfileReminder = $missingCount > 0;
         }
 
-        // If job seeker, show only skill-matched jobs in dashboard
+        // If job seeker, show AI-powered recommendations
         if ($user && ($user->user_type ?? null) === 'job_seeker') {
             $userSkills = $this->parseSkills($user->skills ?? '');
 
-            if ($userSkills->isNotEmpty()) {
-                $jobs = JobPosting::active()
-                    ->with('employer')
-                    ->get()
-                    ->map(function($job) use ($userSkills) {
-                        $jobSkills = $this->parseSkills($job->skills ?? '');
-                        $matchingSkills = $jobSkills->intersect($userSkills);
-                        $matchScore = $jobSkills->count() > 0
-                            ? ($matchingSkills->count() / $jobSkills->count()) * 100
-                            : 0;
+            // Get all active jobs for AI analysis
+            $allJobs = JobPosting::active()->with('employer')->get();
 
-                        return [
-                            'id' => $job->id,
-                            'title' => $job->title,
-                            'company' => $job->company_name ?? 'Company',
-                            'location' => $job->location ?? 'Mandaluyong City',
-                            'type' => $job->type ?? 'Full-Time',
-                            'salary' => $job->salary ?? 'Negotiable',
-                            'description' => $job->description ?? '',
-                            'skills' => $job->skills ?? [],
-                            'apply_url' => '#',
-                            'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
-                            'employer_email' => $job->employer->email ?? '',
-                            'employer_phone' => $job->employer->phone_number ?? '',
-                            'posted_date' => $job->created_at->format('M d, Y'),
-                            'match_score' => round($matchScore, 1),
-                            'matching_skills' => $matchingSkills,
-                            'job_skills' => $jobSkills,
-                        ];
-                    })
-                    ->filter(function($job){ return $job['match_score'] > 0; })
-                    ->sortByDesc('match_score')
-                    ->take(10)
-                    ->values()
-                    ->toArray();
+            // Use AI recommendations if enabled, otherwise fallback to basic matching
+            if (config('ai.features.job_matching', false) && config('ai.openai_api_key')) {
+                try {
+                    $jobs = $this->aiService->getRecommendations($user, $allJobs);
+                } catch (\Exception $e) {
+                    Log::error('AI recommendation failed, using fallback: ' . $e->getMessage());
+                    $jobs = $this->basicSkillMatching($user, $allJobs, $userSkills);
+                }
             } else {
-                // No skills in profile: return recent jobs (fallback), without match info
-                $jobs = JobPosting::active()
-                    ->with('employer')
-                    ->orderByDesc('created_at')
-                    ->limit(10)
-                    ->get()
-                    ->map(function($job) {
-                        return [
-                            'id' => $job->id,
-                            'title' => $job->title,
-                            'company' => $job->company_name ?? 'Company',
-                            'location' => $job->location ?? 'Mandaluyong City',
-                            'type' => $job->type ?? 'Full-Time',
-                            'salary' => $job->salary ?? 'Negotiable',
-                            'description' => $job->description ?? '',
-                            'skills' => $job->skills ?? [],
-                            'apply_url' => '#',
-                            'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
-                            'employer_email' => $job->employer->email ?? '',
-                            'employer_phone' => $job->employer->phone_number ?? '',
-                            'posted_date' => $job->created_at->format('M d, Y'),
-                            'match_score' => 0,
-                            'matching_skills' => collect(),
-                            'job_skills' => collect(),
-                        ];
-                    })
-                    ->toArray();
+                // Use basic skill matching as fallback
+                $jobs = $this->basicSkillMatching($user, $allJobs, $userSkills);
             }
         } else {
             // Non job seekers: recent jobs
@@ -129,6 +89,7 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get()
                 ->map(function($job) {
+                    $jobSkills = $this->parseSkills($job->skills ?? '');
                     return [
                         'id' => $job->id,
                         'title' => $job->title,
@@ -145,7 +106,7 @@ class DashboardController extends Controller
                         'posted_date' => $job->created_at->format('M d, Y'),
                         'match_score' => 0,
                         'matching_skills' => collect(),
-                        'job_skills' => collect(),
+                        'job_skills' => $jobSkills,
                     ];
                 })
                 ->toArray();
@@ -258,5 +219,77 @@ class DashboardController extends Controller
         $user->save();
 
         return redirect()->route('settings')->with('success', 'Password changed successfully!');
+    }
+
+    /**
+     * Basic skill-based matching fallback
+     */
+    private function basicSkillMatching($user, $jobs, $userSkills)
+    {
+        if ($userSkills->isNotEmpty()) {
+            return $jobs
+                ->map(function($job) use ($userSkills) {
+                    $jobSkills = $this->parseSkills($job->skills ?? '');
+                    $matchingSkills = $jobSkills->intersect($userSkills);
+                    $matchScore = $jobSkills->count() > 0
+                        ? ($matchingSkills->count() / $jobSkills->count()) * 100
+                        : 0;
+
+                    return [
+                        'id' => $job->id,
+                        'title' => $job->title,
+                        'company' => $job->company_name ?? 'Company',
+                        'location' => $job->location ?? 'Mandaluyong City',
+                        'type' => $job->type ?? 'Full-Time',
+                        'salary' => $job->salary ?? 'Negotiable',
+                        'description' => $job->description ?? '',
+                        'skills' => $job->skills ?? [],
+                        'apply_url' => '#',
+                        'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                        'employer_email' => $job->employer->email ?? '',
+                        'employer_phone' => $job->employer->phone_number ?? '',
+                        'posted_date' => $job->created_at->format('M d, Y'),
+                        'match_score' => round($matchScore, 1),
+                        'matching_skills' => $matchingSkills,
+                        'job_skills' => $jobSkills,
+                        'ai_explanation' => '',
+                        'career_growth' => '',
+                    ];
+                })
+                ->filter(function($job) { return $job['match_score'] > 0; })
+                ->sortByDesc('match_score')
+                ->take(10)
+                ->values()
+                ->toArray();
+        } else {
+            // No skills: return recent jobs
+            return $jobs
+                ->sortByDesc('created_at')
+                ->take(10)
+                ->map(function($job) {
+                    $jobSkills = $this->parseSkills($job->skills ?? '');
+                    return [
+                        'id' => $job->id,
+                        'title' => $job->title,
+                        'company' => $job->company_name ?? 'Company',
+                        'location' => $job->location ?? 'Mandaluyong City',
+                        'type' => $job->type ?? 'Full-Time',
+                        'salary' => $job->salary ?? 'Negotiable',
+                        'description' => $job->description ?? '',
+                        'skills' => $job->skills ?? [],
+                        'apply_url' => '#',
+                        'employer_name' => $job->employer ? ($job->employer->first_name . ' ' . $job->employer->last_name) : '',
+                        'employer_email' => $job->employer->email ?? '',
+                        'employer_phone' => $job->employer->phone_number ?? '',
+                        'posted_date' => $job->created_at->format('M d, Y'),
+                        'match_score' => 0,
+                        'matching_skills' => collect(),
+                        'job_skills' => $jobSkills,
+                        'ai_explanation' => '',
+                        'career_growth' => '',
+                    ];
+                })
+                ->toArray();
+        }
     }
 }

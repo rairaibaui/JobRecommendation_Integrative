@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DocumentValidation;
 use App\Models\JobPosting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +18,31 @@ class JobPostingController extends Controller
             abort(403, 'Only employers can post jobs');
         }
 
+        // Check if business permit is validated
+        $validation = DocumentValidation::where('user_id', $user->id)
+            ->where('document_type', 'business_permit')
+            ->first();
+
+        if (!$validation || !$validation->is_valid || $validation->validation_status !== 'approved') {
+            $message = 'Your business permit is pending verification. ';
+
+            if (!$validation) {
+                $message .= 'Please upload your business permit in your profile settings.';
+            } elseif ($validation->validation_status === 'rejected') {
+                $message .= 'Your business permit was rejected. Please upload a valid business permit.';
+            } else {
+                $message .= 'Please wait for admin approval or AI validation to complete.';
+            }
+
+            return redirect()->route('employer.dashboard')->withErrors([
+                'validation' => $message,
+            ]);
+        }
+
         // Require essential employer settings before creating a job post
         if (empty($user->company_name) || empty($user->phone_number)) {
             return redirect()->route('settings')->withErrors([
-                'phone_number' => 'Please complete your Employer Settings (Company Name and Contact Number) before posting a job.'
+                'phone_number' => 'Please complete your Employer Settings (Company Name and Contact Number) before posting a job.',
             ]);
         }
 
@@ -36,10 +58,31 @@ class JobPostingController extends Controller
             abort(403, 'Only employers can post jobs');
         }
 
+        // Check if business permit is validated
+        $validation = DocumentValidation::where('user_id', $user->id)
+            ->where('document_type', 'business_permit')
+            ->first();
+
+        if (!$validation || !$validation->is_valid || $validation->validation_status !== 'approved') {
+            $message = 'Your business permit is pending verification. ';
+
+            if (!$validation) {
+                $message .= 'Please upload your business permit in your profile settings.';
+            } elseif ($validation->validation_status === 'rejected') {
+                $message .= 'Your business permit was rejected. Please upload a valid business permit.';
+            } else {
+                $message .= 'Please wait for admin approval or AI validation to complete.';
+            }
+
+            return redirect()->route('employer.dashboard')->withErrors([
+                'validation' => $message,
+            ]);
+        }
+
         // Safety check to ensure company contact details exist
         if (empty($user->company_name) || empty($user->phone_number)) {
             return redirect()->route('settings')->withErrors([
-                'phone_number' => 'Please add your Company Name and Contact Number in Employer Settings before posting.'
+                'phone_number' => 'Please add your Company Name and Contact Number in Employer Settings before posting.',
             ]);
         }
 
@@ -61,7 +104,7 @@ class JobPostingController extends Controller
 
         $jobPosting = JobPosting::create([
             'employer_id' => $user->id,
-            'company_name' => $user->company_name ?? ($user->first_name . ' ' . $user->last_name),
+            'company_name' => $user->company_name ?? ($user->first_name.' '.$user->last_name),
             'title' => $validated['title'],
             'location' => $validated['location'] ?? 'Mandaluyong',
             'type' => $validated['type'],
@@ -98,6 +141,7 @@ class JobPostingController extends Controller
         }
 
         $jobPosting->delete();
+
         return back()->with('success', 'Job posting deleted successfully');
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\DocumentValidationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,13 @@ use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
+    protected $documentValidationService;
+
+    public function __construct(DocumentValidationService $documentValidationService)
+    {
+        $this->documentValidationService = $documentValidationService;
+    }
+
     /**
      * Update only profile picture.
      */
@@ -292,7 +300,7 @@ class ProfileController extends Controller
                     : 'Your resignation has been recorded. You are now set to Seeking Employment.',
                 'data' => [
                     'company_name' => $companyNameBefore,
-                    'reason' => $request->input('reason')
+                    'reason' => $request->input('reason'),
                 ],
                 'read' => false,
             ]);
@@ -360,13 +368,33 @@ class ProfileController extends Controller
             $user->profile_picture = $path;
         }
 
-        // Business permit upload
+        // Business permit upload with background AI validation
         if ($request->hasFile('business_permit')) {
+            // Delete old business permit if exists
             if ($user->business_permit_path && Storage::disk('public')->exists($user->business_permit_path)) {
                 Storage::disk('public')->delete($user->business_permit_path);
             }
-            $bpath = $request->file('business_permit')->store('business_permits', 'public');
-            $user->business_permit_path = $bpath;
+
+            // Store new permit immediately
+            $permitPath = $request->file('business_permit')->store('business_permits', 'public');
+            $user->business_permit_path = $permitPath;
+
+            // Queue AI validation for background processing
+            $isDocumentValidationEnabled = config('ai.features.document_validation', false)
+                                           && config('ai.document_validation.business_permit.enabled', false);
+
+            if ($isDocumentValidationEnabled) {
+                $delay = config('ai.document_validation.business_permit.validation_delay_seconds', 10);
+
+                \App\Jobs\ValidateBusinessPermitJob::dispatch(
+                    $user->id,
+                    $permitPath,
+                    [
+                        'company_name' => $user->company_name ?? 'Unknown',
+                        'email' => $user->email,
+                    ]
+                )->delay(now()->addSeconds($delay));
+            }
         }
 
         $user->save();
@@ -436,6 +464,7 @@ class ProfileController extends Controller
             });
         } catch (\Throwable $e) {
             Log::error('Account deletion failed: '.$e->getMessage());
+
             return redirect()->back()->withErrors(['delete' => 'Failed to delete account. Please try again.']);
         }
 

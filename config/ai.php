@@ -1,0 +1,136 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | OpenAI API Key
+    |--------------------------------------------------------------------------
+    |
+    | Your OpenAI API key for accessing GPT models. Get one from:
+    | https://platform.openai.com/api-keys
+    |
+    */
+
+    'openai_api_key' => env('OPENAI_API_KEY', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Model
+    |--------------------------------------------------------------------------
+    |
+    | The OpenAI model to use for recommendations.
+    | Options: 'gpt-4', 'gpt-4-turbo-preview', 'gpt-3.5-turbo'
+    |
+    */
+
+    'model' => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vision Model
+    |--------------------------------------------------------------------------
+    |
+    | The OpenAI model with vision capabilities for document validation.
+    | Options: 'gpt-4o', 'gpt-4-turbo', 'gpt-4-vision-preview'
+    |
+    */
+
+    'vision_model' => env('OPENAI_VISION_MODEL', 'gpt-4o'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Temperature
+    |--------------------------------------------------------------------------
+    |
+    | Controls randomness. Lower values (0.1-0.5) are more focused and
+    | deterministic. Higher values (0.6-1.0) are more creative.
+    |
+    */
+
+    'temperature' => env('OPENAI_TEMPERATURE', 0.7),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Max Tokens
+    |--------------------------------------------------------------------------
+    |
+    | Maximum number of tokens to generate in the response.
+    |
+    */
+
+    'max_tokens' => env('OPENAI_MAX_TOKENS', 1500),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Duration
+    |--------------------------------------------------------------------------
+    |
+    | How long (in minutes) to cache AI recommendations for the same user.
+    | Set to 0 to disable caching.
+    |
+    */
+
+    'cache_duration' => env('AI_CACHE_DURATION', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Recommendation Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure how the AI recommendation system behaves.
+    |
+    */
+
+    'recommendations' => [
+        'max_jobs_to_analyze' => 50,  // Maximum number of jobs to send to AI
+        'max_recommendations' => 10,   // Maximum recommendations to return
+        'min_match_score' => 30,       // Minimum match score (0-100)
+        'enable_explanations' => true, // Include AI explanation for each match
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feature Flags
+    |--------------------------------------------------------------------------
+    |
+    | Enable or disable specific AI features.
+    |
+    */
+
+    'features' => [
+        'job_matching' => env('AI_JOB_MATCHING', true),
+        'resume_analysis' => env('AI_RESUME_ANALYSIS', true),
+        'skill_suggestions' => env('AI_SKILL_SUGGESTIONS', true),
+        'career_insights' => env('AI_CAREER_INSIGHTS', true),
+        'document_validation' => env('AI_DOCUMENT_VALIDATION', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Document Validation Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure AI-powered document validation for business permits and resumes.
+    |
+    */
+
+    'document_validation' => [
+        'business_permit' => [
+            'enabled' => env('AI_VALIDATE_BUSINESS_PERMIT', true),
+            'min_confidence' => env('AI_BUSINESS_PERMIT_MIN_CONFIDENCE', 80),
+            'personal_email_min_confidence' => env('AI_PERSONAL_EMAIL_MIN_CONFIDENCE', 90), // Stricter for Gmail/Yahoo/etc
+            'auto_approve_threshold' => 85,  // Auto-approve if confidence >= this value
+            'auto_reject_threshold' => 50,   // Auto-reject if confidence < this value
+            'require_manual_review_between' => true, // Require review for scores between thresholds
+            'auto_delete_rejected' => env('AI_AUTO_DELETE_REJECTED', false), // Auto-delete rejected files
+            'validation_delay_seconds' => env('AI_VALIDATION_DELAY', 10), // Delay before processing (allows user to complete signup)
+            'personal_email_domains' => ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'], // Personal email providers
+        ],
+        'resume' => [
+            'enabled' => env('AI_VALIDATE_RESUME', true),
+            'min_confidence' => env('AI_RESUME_MIN_CONFIDENCE', 70),
+            'auto_approve_threshold' => 80,
+            'auto_reject_threshold' => 40,
+        ],
+    ],
+];

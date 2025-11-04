@@ -76,6 +76,55 @@
     margin-bottom: 20px;
   }
 
+  /* Verification Status Badge */
+  .verification-badge {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    border: 2px solid;
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .verification-approved {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+  }
+  
+  .verification-pending {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffeaa7;
+  }
+  
+  .verification-rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+  }
+  
+  .verification-none {
+    background: #e2e3e5;
+    color: #383d41;
+    border-color: #d6d8db;
+  }
+
   .sidebar .sidebar-btn {
     align-self: flex-start;
   }
@@ -458,6 +507,28 @@
       </div>
     </div>
   <div class="company-name" title="{{ $user->company_name }}"><i class="fas fa-building"></i> {{ $user->company_name ?? 'Company Name' }}</div>
+  
+  {{-- Business Permit Verification Status Badge --}}
+  @if($validation)
+    @if($validation->validation_status === 'approved')
+      <div class="verification-badge verification-approved" title="Verified by {{ ucfirst($validation->validated_by) }} - {{ $validation->confidence_score }}% confidence">
+        <i class="fas fa-check-circle"></i> Verified by AI
+      </div>
+    @elseif($validation->validation_status === 'pending_review')
+      <div class="verification-badge verification-pending" title="{{ $validation->reason }}">
+        <i class="fas fa-clock"></i> Under Review
+      </div>
+    @elseif($validation->validation_status === 'rejected')
+      <div class="verification-badge verification-rejected" title="{{ $validation->reason }}">
+        <i class="fas fa-times-circle"></i> Verification Failed
+      </div>
+    @endif
+  @else
+    <div class="verification-badge verification-none" title="Please upload your business permit">
+      <i class="fas fa-exclamation-circle"></i> Not Verified
+    </div>
+  @endif
+  
   <div class="company-badge">Company</div>
   
   <script>
@@ -505,9 +576,92 @@
   <div class="main">
     <div class="welcome">Welcome, {{ $user->company_name ?? $user->first_name }}! 👋</div>
 
+    {{-- Validation Status Alerts --}}
+    @if($validation)
+      @if($validation->validation_status === 'pending_review')
+        <div style="background: #fff3cd; color: #856404; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107; display: flex; align-items: start; gap: 12px;">
+          <i class="fas fa-hourglass-half" style="font-size: 24px; margin-top: 2px;"></i>
+          <div style="flex: 1;">
+            <strong style="display: block; margin-bottom: 6px; font-size: 16px;">⚠️ Business Permit Under Review</strong>
+            <p style="margin: 0; line-height: 1.5; font-size: 14px;">
+              Your business permit is currently being reviewed. 
+              @if($validation->validated_by === 'ai')
+                Our AI system flagged your document for manual verification by our team.
+              @endif
+              You'll receive an email notification once the review is complete (typically within 24-48 hours).
+            </p>
+            @if($validation->reason)
+              <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">
+                <strong>Reason:</strong> {{ $validation->reason }}
+              </p>
+            @endif
+            <p style="margin: 8px 0 0 0; font-size: 13px;">
+              <strong>Note:</strong> You cannot post jobs until your business permit is approved.
+            </p>
+          </div>
+        </div>
+      @elseif($validation->validation_status === 'rejected')
+        <div style="background: #f8d7da; color: #721c24; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #dc3545; display: flex; align-items: start; gap: 12px;">
+          <i class="fas fa-times-circle" style="font-size: 24px; margin-top: 2px;"></i>
+          <div style="flex: 1;">
+            <strong style="display: block; margin-bottom: 6px; font-size: 16px;">❌ Business Permit Verification Failed</strong>
+            <p style="margin: 0; line-height: 1.5; font-size: 14px;">
+              Unfortunately, your business permit could not be verified. Please upload a valid Philippine business permit (DTI, SEC, or Barangay clearance).
+            </p>
+            @if($validation->reason)
+              <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">
+                <strong>Reason:</strong> {{ $validation->reason }}
+              </p>
+            @endif
+            <a href="{{ route('settings') }}" style="display: inline-block; margin-top: 12px; background: #721c24; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">
+              <i class="fas fa-upload"></i> Re-upload Business Permit
+            </a>
+          </div>
+        </div>
+      @elseif($validation->validation_status === 'approved')
+        <div style="background: #d4edda; color: #155724; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #28a745; display: flex; align-items: start; gap: 12px; animation: slideDown 0.5s ease-out;">
+          <i class="fas fa-check-circle" style="font-size: 24px; margin-top: 2px;"></i>
+          <div style="flex: 1;">
+            <strong style="display: block; margin-bottom: 6px; font-size: 16px;">✅ Business Permit Verified!</strong>
+            <p style="margin: 0; line-height: 1.5; font-size: 14px;">
+              Your business permit has been successfully verified 
+              @if($validation->validated_by === 'ai')
+                by our AI system
+              @else
+                by our {{ $validation->validated_by }} team
+              @endif
+              with {{ $validation->confidence_score }}% confidence. You can now post job openings and manage applications.
+            </p>
+          </div>
+          <button onclick="this.parentElement.style.display='none'" style="background: transparent; border: none; color: #155724; cursor: pointer; font-size: 20px; padding: 0; margin-left: auto;">
+            &times;
+          </button>
+        </div>
+      @endif
+    @else
+      <div style="background: #e2e3e5; color: #383d41; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #6c757d; display: flex; align-items: start; gap: 12px;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-top: 2px;"></i>
+        <div style="flex: 1;">
+          <strong style="display: block; margin-bottom: 6px; font-size: 16px;">📄 Business Permit Required</strong>
+          <p style="margin: 0; line-height: 1.5; font-size: 14px;">
+            Please upload your business permit to verify your company and unlock all employer features including job posting.
+          </p>
+          <a href="{{ route('settings') }}" style="display: inline-block; margin-top: 12px; background: #6c757d; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">
+            <i class="fas fa-upload"></i> Upload Business Permit
+          </a>
+        </div>
+      </div>
+    @endif
+
     @if(session('success'))
       <div class="flash-message" style="background: #d4edda; color: #155724; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb; transition: opacity 0.3s ease;">
         <i class="fas fa-check-circle"></i> {{ session('success') }}
+      </div>
+    @endif
+
+    @if($errors->has('validation'))
+      <div class="flash-message" style="background: #f8d7da; color: #721c24; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
+        <i class="fas fa-exclamation-circle"></i> {{ $errors->first('validation') }}
       </div>
     @endif
 

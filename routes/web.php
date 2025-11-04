@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\AIRecommendationController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ContactSupportController;
 use App\Http\Controllers\DashboardController;
@@ -147,4 +148,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.markRead');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+
+    // AI Recommendations
+    Route::prefix('ai')->group(function () {
+        Route::get('/recommendations', [AIRecommendationController::class, 'index'])->name('ai.recommendations');
+        Route::get('/recommendations/api', [AIRecommendationController::class, 'getRecommendations'])->name('ai.recommendations.api');
+        Route::get('/career-insights', [AIRecommendationController::class, 'getCareerInsights'])->name('ai.insights');
+        Route::post('/recommendations/refresh', [AIRecommendationController::class, 'refreshRecommendations'])->name('ai.refresh');
+        Route::get('/status', [AIRecommendationController::class, 'status'])->name('ai.status');
+    });
 });
