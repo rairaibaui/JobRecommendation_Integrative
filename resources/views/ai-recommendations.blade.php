@@ -25,6 +25,8 @@
                 </div>
             </div>
 
+            @include('partials.trust-banner')
+
             <!-- Career Insights -->
             @if($careerInsights)
             <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg shadow-md p-6 mb-6 text-white">

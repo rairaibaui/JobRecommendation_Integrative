@@ -92,6 +92,7 @@ class ApplicationController extends Controller
                         'type' => 'new_application',
                         'title' => 'New Application Received',
                         'message' => "{$applicantName} has applied for {$app->job_title}.",
+                        'link' => route('employer.applicants'),
                         'data' => [
                             'application_id' => $app->id,
                             'job_title' => $app->job_title,

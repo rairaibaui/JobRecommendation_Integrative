@@ -1,885 +1,741 @@
-@extends('layouts.recommendation')
+@extends('jobseeker.layouts.base')
+
+@section('title', 'Settings - Job Portal Mandaluyong')
+
+@php
+    $pageTitle = 'JOB SEEKER SETTINGS';
+@endphp
 
 @section('content')
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-user-cog"></i>
+        Account Settings
+    </h1>
+    <p class="page-subtitle">Manage your profile and preferences</p>
+</div>
 
-    @if(session('success'))
-        <div class="success-message">
-            <i class="fas fa-check-circle"></i>
-            {{ session('success') }}
-        </div>
-    @endif
+@if(session('success'))
+    <div class="alert alert-success flash-message">
+        <i class="fas fa-check-circle"></i> {{ session('success') }}
+    </div>
+@endif
 
-    @if($errors->any())
-        <div class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            @foreach($errors->all() as $error)
-                {{ $error }}
-            @endforeach
-        </div>
-    @endif
+@if($errors->any())
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}
+    </div>
+@endif
 
-    <style>
-        /* Flash Messages */
-        .success-message,
-        .error-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 15px 20px;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 10000;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-        }
-
-        .success-message {
-            background: #4CAF50;
-        }
-
-        .error-message {
-            background: #f44336;
-        }
-
-        /* Tabs */
-        .tab.active {
-            border-bottom: 2px solid #fff;
-            color: #fff !important;
-            cursor: pointer;
-        }
-
-        .tab {
-            cursor: pointer;
-        }
-
-        /* Setting Items */
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-top: 1px solid #E0E6EB;
-            padding: 15px 0;
-        }
-
-        .setting-item:first-child {
-            border-top: none;
-        }
-
-        .setting-item i {
-            font-size: 20px;
-            color: #1E3A5F;
-            margin-top: 2px;
-        }
-
-        /* Buttons */
-        .edit-btn {
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            padding: 6px 12px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: 0.2s ease;
-        }
-
-        .edit-btn:hover {
-            background-color: #f3f3f3;
-        }
-
-        .delete-btn {
-            border-color: #e74c3c;
-            color: #e74c3c;
-        }
-
-        .delete-btn:hover {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        /* Profile Settings Form */
-        .profile-card form label {
-            display: block;
-            font-weight: 600;
-            color: #1E3A5F;
-            margin-bottom: 6px;
-        }
-
-        .profile-card input[type="text"],
-        .profile-card input[type="email"],
-        .profile-card input[type="file"],
-        .profile-card input[type="number"],
-        .profile-card input[type="date"],
-        .profile-card textarea,
-        .profile-card select {
-            width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            padding: 8px 10px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            background-color: white;
-        }
-
-        .profile-card select {
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231E3A5F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 1em;
-            padding-right: 40px;
-        }
-
-        .profile-card select:hover {
-            border-color: #648EB5;
-            background-color: #f8f9fa;
-        }
-
-        .profile-card input:focus,
-        .profile-card textarea:focus,
-        .profile-card select:focus {
-            border-color: #1E3A5F;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
-        }
-
-        /* Input help text */
-        .input-help {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        /* Required field indicator */
-        .required-field::after {
-            content: '*';
-            color: #dc3545;
-            margin-left: 4px;
-        }
-
-        /* Field group spacing */
-        .field-group {
-            margin-bottom: 20px;
-        }
-
-        /* Hover effects */
-        .profile-card input:hover,
-        .profile-card textarea:hover {
-            border-color: #648EB5;
-        }
-
-        .profile-card textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .profile-card button[type="submit"] {
-            background: #1E3A5F;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            transition: 0.2s ease;
-        }
-
-        .profile-card button[type="submit"]:hover {
-            background: #2c4c7a;
-        }
-
-        .profile-card img {
-            margin-top: 10px;
-            border: 2px solid #ddd;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        /* Modal Styling */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: #fff;
-            border-radius: 10px;
-            padding: 25px;
-            width: 90%;
-            max-width: 400px;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            animation: modalFadeIn 0.3s ease-out;
-        }
-
-        @keyframes modalFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 20px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #666;
-            padding: 5px;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s ease;
-        }
-
-        .close-btn:hover {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        .btn-cancel {
-            background: #E4E9EE;
-            color: #333;
-            border: 1px solid #B0B8C2;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .btn-cancel:hover {
-            background: #D0D7DD;
-        }
-
-        .btn-primary {
-            background: #1E3A5F;
-            color: #fff;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .btn-primary:hover {
-            background: #2c4c7a;
-        }
-    </style>
-
-    <div class="main">
-        <div class="top-navbar" style="display:flex; justify-content:space-between; align-items:center;">
-            <div>Job Portal - Mandaluyong</div>
-            @include('partials.notifications')
-        </div>
-
-        <div class="card-large">
-            <div class="recommendation-header">
-                <h3 style="color: #fff;">Settings</h3>
-                <p style="color: #fff;">Manage your account preferences, profile, and security settings.</p>
-            </div>
-
-            <!-- Selected Job Alert -->
-            <div id="selectedJobAlert" style="display:none; background:#fff; padding:20px; border-radius:8px; margin-bottom:20px; border-left:4px solid #648EB5;">
-                <h4 style="color:#1E3A5F; margin-bottom:10px;">Complete Your Profile to Apply</h4>
-                <div id="selectedJobDetails" style="margin-bottom:15px;">
-                    <!-- Job details will be inserted here -->
+<!-- Account Settings Card -->
+<div class="card">
+    <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h2 class="card-title" style="margin:0;">Account Settings</h2>
+        @if(Auth::user()->user_type === 'job_seeker')
+            @if(Auth::user()->employment_status === 'employed')
+                @php
+                    $employmentTitle = 'Employed';
+                    if (Auth::user()->hired_by_company) {
+                        $employmentTitle .= ' at ' . Auth::user()->hired_by_company;
+                    }
+                    if (Auth::user()->hired_date) {
+                        try { $employmentTitle .= ' since ' . Auth::user()->hired_date->format('M d, Y'); } catch (\Throwable $e) {}
+                    }
+                @endphp
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="badge badge-success" title="{{ $employmentTitle }}" style="padding:6px 10px; border-radius:14px; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                        <i class="fas fa-briefcase"></i>
+                        Employed
+                    </span>
+                    <button type="button" onclick="openResignModal()" class="btn btn-danger btn-sm" title="Submit resignation" style="white-space:nowrap;">
+                        <i class="fas fa-door-open"></i> Resign
+                    </button>
                 </div>
-                <p style="color:#666; font-size:14px;">
-                    Please complete your profile below to proceed with your application.
-                    Make sure to include your education, experience, and skills.
-                </p>
-            </div>
-
-            <div class="settings-container" style="margin-top:30px;">
-                <!-- Tabs -->
-                <div class="tabs" style="display:flex; border-bottom:1px solid #8AA4B8; margin-bottom:20px;">
-                    <div class="tab active" style="margin-right:30px; padding-bottom:10px; font-weight:600; color:#fff;">
-                        Account Settings</div>
-                    <div class="tab" style="margin-right:30px; padding-bottom:10px; font-weight:600; color:#D3DCE3;">Profile
-                        Settings</div>
-                </div>
-
-                <!-- Account Settings -->
-                <div class="card-large account-card" style="background:#fff; color:#000; border-radius:10px; padding:25px;">
-                    <h2 style="color:#1E3A5F;">Account Settings</h2>
-                    <div class="setting-item">
-                        <div style="display:flex; align-items:flex-start; gap:12px;">
-                            <i class="fas fa-envelope"></i>
-                            <div><strong>Email</strong>
-                                <p>Update your account email address.</p>
-                            </div>
-                        </div>
-                        <button class="edit-btn" onclick="openChangeEmailModal()">Change Email</button>
-                    </div>
-                    <div class="setting-item">
-                        <div style="display:flex; align-items:flex-start; gap:12px;">
-                            <i class="fas fa-lock"></i>
-                            <div><strong>Password</strong>
-                                <p>Change your password to keep your account secure.</p>
-                            </div>
-                        </div>
-                        <button class="edit-btn" onclick="openChangePasswordModal()">Change Password</button>
-                    </div>
-                    <div class="setting-item">
-                        <div style="display:flex; align-items:flex-start; gap:12px;">
-                            <i class="fas fa-user-times"></i>
-                            <div><strong>Delete Account</strong>
-                                <p>Permanently delete your account and all data.</p>
-                            </div>
-                        </div>
-                        <button class="edit-btn delete-btn" onclick="openDeleteAccountModal()">Delete</button>
-                    </div>
-                </div>
-
-                <!-- Profile Settings -->
-                <div class="card-large profile-card"
-                    style="display:none; background:#fff; color:#000; border-radius:10px; padding:25px;">
-                    <h2 style="color:#1E3A5F;">Profile Settings</h2>
-
-                    @if(Auth::user()->user_type === 'job_seeker')
-                        <!-- Employment Status Display (Read-only, updated automatically when hired) -->
-                        <div style="background:#e8f0f7; border-left:4px solid #648EB5; padding:15px; margin-bottom:20px; border-radius:6px;">
-                            <h3 style="margin:0 0 10px 0; color:#334A5E; font-size:16px;">
-                                <i class="fas fa-briefcase"></i> Employment Status
-                            </h3>
-                            @if(Auth::user()->employment_status === 'employed')
-                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                                    <span style="background:#28a745; color:#fff; padding:6px 12px; border-radius:12px; font-size:14px; font-weight:600;">
-                                        <i class="fas fa-check-circle"></i> Currently Employed
-                                    </span>
-                                </div>
-                                @if(Auth::user()->hired_by_company)
-                                    <p style="margin:8px 0 0 0; color:#555; font-size:14px;">
-                                        <i class="fas fa-building"></i> <strong>Company:</strong> {{ Auth::user()->hired_by_company }}
-                                    </p>
-                                @endif
-                                @if(Auth::user()->hired_date)
-                                    <p style="margin:4px 0 0 0; color:#555; font-size:13px;">
-                                        <i class="fas fa-calendar-alt"></i> <strong>Since:</strong> {{ Auth::user()->hired_date->format('M d, Y') }}
-                                    </p>
-                                @endif
-                                <div style="display:flex; gap:10px; margin-top:12px;">
-                                    <form method="POST" action="{{ route('profile.resign') }}" onsubmit="return handleResignSubmit(event, this)">
-                                        @csrf
-                                        <input type="hidden" name="reason" id="resignReasonInput">
-                                        <button type="submit" class="edit-btn" style="background:#dc3545;color:#fff;border:none;">
-                                            <i class="fas fa-door-open"></i> Resign
-                                        </button>
-                                    </form>
-                                </div>
-                                <p style="margin:12px 0 0 0; color:#856404; font-size:12px; font-style:italic;">
-                                    <i class="fas fa-info-circle"></i> You cannot apply for other jobs while employed. After resigning, you can apply again.
-                                </p>
-                            @else
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <span style="background:#17a2b8; color:#fff; padding:6px 12px; border-radius:12px; font-size:14px; font-weight:600;">
-                                        <i class="fas fa-search"></i> Actively Seeking Employment
-                                    </span>
-                                </div>
-                                <p style="margin:8px 0 0 0; color:#555; font-size:13px;">
-                                    You can apply for job opportunities. Good luck! 🍀
-                                </p>
-                            @endif
-                        </div>
-                    @endif
-
-                    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
-                        @csrf
-                        <label>First Name</label>
-                        <input type="text" name="first_name" value="{{ Auth::user()->first_name }}" required>
-
-                        <label>Last Name</label>
-                        <input type="text" name="last_name" value="{{ Auth::user()->last_name }}" required>
-
-                        <label>Email</label>
-                        <input type="email" value="{{ Auth::user()->email }}" readonly>
-
-                        <label>Date of Birth</label>
-                        <input type="date" name="birthday" value="{{ Auth::user()->date_of_birth ? \Carbon\Carbon::parse(Auth::user()->date_of_birth)->format('Y-m-d') : '' }}">
-
-                        <label>Phone Number</label>
-                        <input type="text" name="phone_number" value="{{ Auth::user()->phone_number }}">
-
-                        <label>Education Level</label>
-                        <input type="text" name="education_level" value="{{ Auth::user()->education_level }}">
-
-                        <label>Skills (Comma separated)</label>
-                        <input type="text" name="skills" value="{{ Auth::user()->skills }}">
-
-                        <div class="field-group">
-                            <label>Years of Experience</label>
-                            <input type="number" name="years_of_experience" value="{{ Auth::user()->years_of_experience }}" min="0">
-                        </div>
-
-                        <div class="field-group">
-                            <label class="required-field">Barangay in Mandaluyong City</label>
-                            <div class="input-help">Select your barangay from the list below</div>
-                            <select name="location" class="form-select">
-                                <option value="">Select your barangay</option>
-                                <option value="Addition Hills" {{ Auth::user()->location == 'Addition Hills' ? 'selected' : '' }}>Addition Hills</option>
-                                <option value="Bagong Silang" {{ Auth::user()->location == 'Bagong Silang' ? 'selected' : '' }}>Bagong Silang</option>
-                                <option value="Barangka Drive" {{ Auth::user()->location == 'Barangka Drive' ? 'selected' : '' }}>Barangka Drive</option>
-                                <option value="Barangka Ibaba" {{ Auth::user()->location == 'Barangka Ibaba' ? 'selected' : '' }}>Barangka Ibaba</option>
-                                <option value="Barangka Ilaya" {{ Auth::user()->location == 'Barangka Ilaya' ? 'selected' : '' }}>Barangka Ilaya</option>
-                                <option value="Barangka Itaas" {{ Auth::user()->location == 'Barangka Itaas' ? 'selected' : '' }}>Barangka Itaas</option>
-                                <option value="Buayang Bato" {{ Auth::user()->location == 'Buayang Bato' ? 'selected' : '' }}>Buayang Bato</option>
-                                <option value="Burol" {{ Auth::user()->location == 'Burol' ? 'selected' : '' }}>Burol</option>
-                                <option value="Daang Bakal" {{ Auth::user()->location == 'Daang Bakal' ? 'selected' : '' }}>Daang Bakal</option>
-                                <option value="Hagdang Bato Itaas" {{ Auth::user()->location == 'Hagdang Bato Itaas' ? 'selected' : '' }}>Hagdang Bato Itaas</option>
-                                <option value="Hagdang Bato Libis" {{ Auth::user()->location == 'Hagdang Bato Libis' ? 'selected' : '' }}>Hagdang Bato Libis</option>
-                                <option value="Harapin Ang Bukas" {{ Auth::user()->location == 'Harapin Ang Bukas' ? 'selected' : '' }}>Harapin Ang Bukas</option>
-                                <option value="Highway Hills" {{ Auth::user()->location == 'Highway Hills' ? 'selected' : '' }}>Highway Hills</option>
-                                <option value="Hulo" {{ Auth::user()->location == 'Hulo' ? 'selected' : '' }}>Hulo</option>
-                                <option value="Mabini-J. Rizal" {{ Auth::user()->location == 'Mabini-J. Rizal' ? 'selected' : '' }}>Mabini-J. Rizal</option>
-                                <option value="Malamig" {{ Auth::user()->location == 'Malamig' ? 'selected' : '' }}>Malamig</option>
-                                <option value="Mauway" {{ Auth::user()->location == 'Mauway' ? 'selected' : '' }}>Mauway</option>
-                                <option value="Namayan" {{ Auth::user()->location == 'Namayan' ? 'selected' : '' }}>Namayan</option>
-                                <option value="New Zañiga" {{ Auth::user()->location == 'New Zañiga' ? 'selected' : '' }}>New Zañiga</option>
-                                <option value="Old Zañiga" {{ Auth::user()->location == 'Old Zañiga' ? 'selected' : '' }}>Old Zañiga</option>
-                                <option value="Pag-asa" {{ Auth::user()->location == 'Pag-asa' ? 'selected' : '' }}>Pag-asa</option>
-                                <option value="Plainview" {{ Auth::user()->location == 'Plainview' ? 'selected' : '' }}>Plainview</option>
-                                <option value="Pleasant Hills" {{ Auth::user()->location == 'Pleasant Hills' ? 'selected' : '' }}>Pleasant Hills</option>
-                                <option value="Poblacion" {{ Auth::user()->location == 'Poblacion' ? 'selected' : '' }}>Poblacion</option>
-                                <option value="San Jose" {{ Auth::user()->location == 'San Jose' ? 'selected' : '' }}>San Jose</option>
-                                <option value="Vergara" {{ Auth::user()->location == 'Vergara' ? 'selected' : '' }}>Vergara</option>
-                                <option value="Wack-Wack Greenhills" {{ Auth::user()->location == 'Wack-Wack Greenhills' ? 'selected' : '' }}>Wack-Wack Greenhills</option>
-                            </select>
-                        </div>
-
-                        <div class="field-group">
-                            <label>Complete Address</label>
-                            <div class="input-help">Enter your full address details (e.g., Block 1 Lot 2, 123 Main Street, Building Name)</div>
-                            <input type="text" name="address" value="{{ Auth::user()->address }}" 
-                                   placeholder="House/Unit No., Street Name, Building Name">
-                        </div>
-
-                        <div class="field-group">
-                            <label>Profile Picture</label>
-                        <input type="file" name="profile_picture" accept="image/*">
-
-                        @if(Auth::user()->profile_picture)
-                            <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-                                <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" width="120" height="120"
-                                    style="border-radius:50%;object-fit:cover; border:none; outline:none;">
-                                <label style="font-weight:500;">
-                                    <input type="checkbox" name="remove_picture" value="1">
-                                    Remove current picture
-                                </label>
-                            </div>
-                        @endif
-                        
-                        <div class="field-group">
-                            <label>Professional Summary</label>
-                            <div class="input-help">A short paragraph about your background — this will be used when you apply to jobs.</div>
-                            <textarea name="summary">{{ old('summary', Auth::user()->summary) }}</textarea>
-                        </div>
-
-                        <div class="field-group">
-                            <label>Education</label>
-                            <div id="educationList">
-                                @php 
-                                    $edu = Auth::user()->education;
-                                    if (!is_array($edu)) {
-                                        try {
-                                            $edu = json_decode($edu ?: '[]', true) ?: [];
-                                        } catch (Exception $e) {
-                                            $edu = [];
-                                        }
-                                    }
-                                @endphp
-                                @if(!empty($edu))
-                                    @foreach($edu as $i => $e)
-                                        <div class="education-item" data-index="{{ $i }}" style="margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;">
-                                            <input type="text" name="education[{{ $i }}][degree]" placeholder="Degree / Course" value="{{ $e['degree'] ?? '' }}" style="margin-bottom:6px;" />
-                                            <input type="text" name="education[{{ $i }}][school]" placeholder="School / Institution" value="{{ $e['school'] ?? '' }}" style="margin-bottom:6px;" />
-                                            <input type="text" name="education[{{ $i }}][year]" placeholder="Year (e.g., 2018)" value="{{ $e['year'] ?? '' }}" />
-                                            <button type="button" onclick="removeEducation(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
-                                        </div>
-                                    @endforeach
-                                @endif
-                            </div>
-                            <button type="button" id="addEducationBtn" class="edit-btn" style="margin-top:8px;">Add Education</button>
-                        </div>
-
-                        <div class="field-group">
-                            <label>Work Experience</label>
-                            <div id="experienceList">
-                                @php 
-                                    $exps = Auth::user()->experiences;
-                                    if (!is_array($exps)) {
-                                        try {
-                                            $exps = json_decode($exps ?: '[]', true) ?: [];
-                                        } catch (Exception $e) {
-                                            $exps = [];
-                                        }
-                                    }
-                                @endphp
-                                @if(!empty($exps))
-                                    @foreach($exps as $i => $ex)
-                                        <div class="experience-item" data-index="{{ $i }}" style="margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;">
-                                            <input type="text" name="experiences[{{ $i }}][position]" placeholder="Position" value="{{ $ex['position'] ?? '' }}" style="margin-bottom:6px;" />
-                                            <input type="text" name="experiences[{{ $i }}][company]" placeholder="Company" value="{{ $ex['company'] ?? '' }}" style="margin-bottom:6px;" />
-                                            <input type="text" name="experiences[{{ $i }}][start_date]" placeholder="Start (e.g., Jan 2020)" value="{{ $ex['start_date'] ?? '' }}" style="margin-bottom:6px;" />
-                                            <input type="text" name="experiences[{{ $i }}][end_date]" placeholder="End (e.g., Dec 2022 or Present)" value="{{ $ex['end_date'] ?? '' }}" style="margin-bottom:6px;" />
-                                            <textarea name="experiences[{{ $i }}][responsibilities]" placeholder="Key responsibilities">{{ $ex['responsibilities'] ?? '' }}</textarea>
-                                            <button type="button" onclick="removeExperience(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
-                                        </div>
-                                    @endforeach
-                                @endif
-                            </div>
-                            <button type="button" id="addExperienceBtn" class="edit-btn" style="margin-top:8px;">Add Experience</button>
-                        </div>
-
-                        <div class="field-group">
-                            <label>Languages</label>
-                            <input type="text" name="languages" value="{{ old('languages', Auth::user()->languages) }}" placeholder="e.g., English (Fluent), Filipino (Native)">
-                        </div>
-
-                        <div class="field-group">
-                            <label>Portfolio / Links</label>
-                            <div class="input-help">Add links to your portfolio, GitHub, LinkedIn (comma separated)</div>
-                            <input type="text" name="portfolio_links" value="{{ old('portfolio_links', Auth::user()->portfolio_links) }}">
-                        </div>
-
-                        <div class="field-group">
-                            <label>Availability</label>
-                            <select name="availability">
-                                <option value="" {{ Auth::user()->availability == '' ? 'selected' : '' }}>Select availability</option>
-                                <option value="immediate" {{ Auth::user()->availability == 'immediate' ? 'selected' : '' }}>Immediate</option>
-                                <option value="2_weeks" {{ Auth::user()->availability == '2_weeks' ? 'selected' : '' }}>2 weeks</option>
-                                <option value="1_month" {{ Auth::user()->availability == '1_month' ? 'selected' : '' }}>1 month</option>
-                            </select>
-                        </div>
-
-                        <div class="field-group">
-                            <label>Upload Resume (PDF/DOC)</label>
-                            <input type="file" name="resume_file" accept=".pdf,.doc,.docx">
-                            @if(Auth::user()->resume_file)
-                                <div style="margin-top:8px;">
-                                    Current: <a href="{{ asset('storage/' . Auth::user()->resume_file) }}" target="_blank">View uploaded resume</a>
-                                </div>
-                            @endif
-                        </div>
-
-                        <button type="submit" class="edit-btn">Update Profile</button>
-                    </form>
+            @else
+                <span class="badge badge-info" title="Actively seeking opportunities" style="padding:6px 10px; border-radius:14px; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                    <i class="fas fa-search"></i>
+                    Actively Seeking
+                </span>
+            @endif
+        @endif
+    </div>
+    
+    <div class="card-body" style="padding: 0;">
+        <div style="padding: 20px; border-bottom: 1px solid #E0E6EB; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-envelope" style="color: #648EB5; font-size: 20px;"></i>
+                <div>
+                    <strong style="display: block; margin-bottom: 4px; color: #1E3A5F; font-size: 15px;">Email Address</strong>
+                    <p style="margin: 0; color: #666; font-size: 14px;">{{ Auth::user()->email }}</p>
                 </div>
             </div>
+            <button class="btn btn-secondary btn-sm" onclick="openChangeEmailModal()" style="white-space: nowrap;">
+                <i class="fas fa-edit"></i> Change Email
+            </button>
+        </div>
+        
+        <div style="padding: 20px; border-bottom: 1px solid #E0E6EB; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-lock" style="color: #648EB5; font-size: 20px;"></i>
+                <div>
+                    <strong style="display: block; margin-bottom: 4px; color: #1E3A5F; font-size: 15px;">Password</strong>
+                    <p style="margin: 0; color: #666; font-size: 14px;">Change your password to keep your account secure</p>
+                </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()" style="white-space: nowrap;">
+                <i class="fas fa-key"></i> Change Password
+            </button>
+        </div>
+        
+        <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-user-times" style="color: #dc3545; font-size: 20px;"></i>
+                <div>
+                    <strong style="display: block; margin-bottom: 4px; color: #1E3A5F; font-size: 15px;">Delete Account</strong>
+                    <p style="margin: 0; color: #666; font-size: 14px;">Permanently delete your account and all data</p>
+                </div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="openDeleteAccountModal()" style="white-space: nowrap;">
+                <i class="fas fa-trash-alt"></i> Delete
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Modals -->
-    @include('settings.modals')
+<!-- Employment Status Card (if job seeker) -->
+{{-- Employment Status card removed: status now shown as a badge in Account Settings header --}}
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- Personal Information Card -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Personal Information</h2>
+    </div>
     
-   <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Check for selected job from dashboard
-    const selectedJob = localStorage.getItem('selectedJob');
-    if (selectedJob) {
-        const jobData = JSON.parse(selectedJob);
-        const alertDiv = document.getElementById('selectedJobAlert');
-        const detailsDiv = document.getElementById('selectedJobDetails');
+    <div class="card-body">
+        <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+            @csrf
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        First Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           name="first_name" 
+                           class="form-control" 
+                           required 
+                           value="{{ old('first_name', Auth::user()->first_name) }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        Last Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           name="last_name" 
+                           class="form-control" 
+                           required 
+                           value="{{ old('last_name', Auth::user()->last_name) }}">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Email (login)</label>
+                    <input type="email" 
+                           class="form-control" 
+                           value="{{ Auth::user()->email }}" 
+                           readonly 
+                           style="background: #f8f9fa; cursor: not-allowed;">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" 
+                           name="phone_number" 
+                           class="form-control" 
+                           value="{{ old('phone_number', Auth::user()->phone_number) }}" 
+                           placeholder="e.g., 0917 123 4567">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" 
+                       name="birthday" 
+                       class="form-control" 
+                       value="{{ old('birthday', Auth::user()->date_of_birth ? \Carbon\Carbon::parse(Auth::user()->date_of_birth)->format('Y-m-d') : '') }}">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Barangay in Mandaluyong City</label>
+                    <select name="location" class="form-control">
+                        <option value="">Select your barangay</option>
+                        @php
+                            $barangays = ['Addition Hills', 'Bagong Silang', 'Barangka Drive', 'Barangka Ibaba', 'Barangka Ilaya', 'Barangka Itaas', 'Buayang Bato', 'Burol', 'Daang Bakal', 'Hagdang Bato Itaas', 'Hagdang Bato Libis', 'Harapin Ang Bukas', 'Highway Hills', 'Hulo', 'Mabini-J. Rizal', 'Malamig', 'Mauway', 'Namayan', 'New Zañiga', 'Old Zañiga', 'Pag-asa', 'Plainview', 'Pleasant Hills', 'Poblacion', 'San Jose', 'Vergara', 'Wack-Wack Greenhills'];
+                        @endphp
+                        @foreach($barangays as $brgy)
+                            <option value="{{ $brgy }}" {{ Auth::user()->location == $brgy ? 'selected' : '' }}>{{ $brgy }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Complete Address</label>
+                    <input type="text" 
+                           name="address" 
+                           class="form-control" 
+                           value="{{ old('address', Auth::user()->address) }}" 
+                           placeholder="House/Unit No., Street Name">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Profile Picture</label>
+                <input type="file" 
+                       name="profile_picture" 
+                       class="form-control" 
+                       accept="image/*"
+                       style="padding: 8px;">
+                @if(Auth::user()->profile_picture)
+                    <div style="margin-top:12px; display:flex; align-items:center; gap:12px;">
+                        <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" 
+                             width="88" 
+                             height="88" 
+                             style="border-radius:50%; object-fit:cover; border:3px solid #648EB5;">
+                        <label style="font-weight:500; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" name="remove_picture" value="1">
+                            Remove current picture
+                        </label>
+                    </div>
+                @endif
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Professional Summary</label>
+                <textarea name="summary" 
+                          class="form-control" 
+                          rows="4" 
+                          placeholder="Brief overview of your professional background and career goals...">{{ old('summary', Auth::user()->summary) }}</textarea>
+                <small class="form-help">
+                    <i class="fas fa-info-circle"></i> This will be shown to employers when you apply
+                </small>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Education Level</label>
+                    <input type="text" 
+                           name="education_level" 
+                           class="form-control" 
+                           value="{{ old('education_level', Auth::user()->education_level) }}"
+                           placeholder="e.g., Bachelor's Degree">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Years of Experience</label>
+                    <input type="number" 
+                           name="years_of_experience" 
+                           class="form-control" 
+                           value="{{ old('years_of_experience', Auth::user()->years_of_experience) }}" 
+                           min="0"
+                           placeholder="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Skills</label>
+                <input type="text" 
+                       name="skills" 
+                       class="form-control" 
+                       value="{{ old('skills', Auth::user()->skills) }}"
+                       placeholder="e.g., Communication, Microsoft Office, Customer Service">
+                <small class="form-help">
+                    <i class="fas fa-info-circle"></i> Separate skills with commas
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
+                    Resume (PDF)
+                    @if(Auth::user()->resume_file)
+                        <span style="color: #28a745; font-size: 14px; margin-left: 8px;">
+                            <i class="fas fa-check-circle"></i> File uploaded
+                        </span>
+                    @endif
+                </label>
+                
+                @if(Auth::user()->resume_file)
+                    <div style="background: #d4edda; border: 1px solid #28a745; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-check-circle" style="color: #28a745; font-size: 20px;"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #155724; font-size: 14px;">Resume already uploaded</div>
+                            <div style="font-size: 12px; color: #155724;">You can upload a new file to replace the current one</div>
+                        </div>
+                    </div>
+                @endif
+                
+                @if($errors->has('resume_file'))
+                    <div style="background: #f8d7da; border: 1px solid #dc3545; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-exclamation-circle" style="color: #dc3545; font-size: 20px;"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #721c24; font-size: 14px;">Upload Failed</div>
+                            <div style="font-size: 13px; color: #721c24;">{{ $errors->first('resume_file') }}</div>
+                        </div>
+                    </div>
+                @endif
+                
+                <div style="position: relative;">
+                    @if(Auth::user()->resume_file)
+                        <div style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #28a745; font-size: 18px; pointer-events: none; z-index: 1;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    @endif
+                    <input type="file" 
+                           name="resume_file" 
+                           class="form-control" 
+                           accept=".pdf"
+                           style="padding: 8px; @if(Auth::user()->resume_file) border-color: #28a745; background-color: #f0fff4; @endif">
+                </div>
+                @if(Auth::user()->resume_file)
+                    <div style="margin-top:8px;">
+                        <a href="{{ asset('storage/' . Auth::user()->resume_file) }}" 
+                           target="_blank"
+                           class="btn-sm btn-secondary"
+                           style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-file-pdf"></i> View Current Resume
+                        </a>
+                    </div>
+                @endif
+            </div>
+            
+            <div class="d-flex justify-content-end gap-2 mt-4" style="flex-wrap: wrap;">
+                <button type="submit" class="btn btn-primary" style="padding: 10px 18px; background:#5B9BD5; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:8px; box-shadow: 0 2px 0 rgba(0,0,0,0.06);">
+                    <i class="fas fa-save"></i>
+                    <span>Save Changes</span>
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Change Email Modal -->
+<div id="changeEmailModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 420px;">
+        <button onclick="closeChangeEmailModal()" class="close-btn">&times;</button>
+        <h2 style="color: #2C3E50; margin-bottom: 25px; font-size: 22px; font-weight: 600;">Change Email Address</h2>
+        <form method="POST" action="{{ route('profile.changeEmail') }}">
+            @csrf
+            <div style="margin-bottom: 20px;">
+                <label for="email" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Email Address</label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       value="{{ Auth::user()->email }}" 
+                       required
+                       style="width: 100%; padding: 12px 15px; border: 2px solid #E0E6EB; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border-color 0.3s;">
+            </div>
+            
+            <div class="button-group" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" onclick="closeChangeEmailModal()" class="btn-cancel" style="padding: 12px 24px; background: #E4E9EE; color: #555; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary" style="padding: 12px 24px; background: #5B9BD5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+                    Change Email
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="changePasswordModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 420px;">
+        <button onclick="closeChangePasswordModal()" class="close-btn">&times;</button>
+        <h2 style="color: #2C3E50; margin-bottom: 25px; font-size: 22px; font-weight: 600;">Change Password</h2>
+        <form method="POST" action="{{ route('change.password.submit') }}">
+            @csrf
+            <div style="margin-bottom: 18px;">
+                <label for="current_password" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">Current Password</label>
+                <input type="password" 
+                       id="current_password" 
+                       name="current_password" 
+                       autocomplete="current-password" 
+                       required
+                       style="width: 100%; padding: 12px 15px; border: 2px solid #E0E6EB; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border-color 0.3s;">
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label for="password" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Password</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       autocomplete="new-password" 
+                       required
+                       style="width: 100%; padding: 12px 15px; border: 2px solid #E0E6EB; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border-color 0.3s;">
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label for="password_confirmation" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">Confirm New Password</label>
+                <input type="password" 
+                       id="password_confirmation" 
+                       name="password_confirmation" 
+                       autocomplete="new-password" 
+                       required
+                       style="width: 100%; padding: 12px 15px; border: 2px solid #E0E6EB; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border-color 0.3s;">
+            </div>
+
+            <div class="button-group" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" onclick="closeChangePasswordModal()" class="btn-cancel" style="padding: 12px 24px; background: #E4E9EE; color: #555; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary" style="padding: 12px 24px; background: #5B9BD5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+                    Change Password
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div id="deleteAccountModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <button onclick="closeDeleteAccountModal()" class="close-btn">&times;</button>
+        <h2 style="color: #dc3545; margin-bottom: 20px; font-size: 22px; font-weight: 600;">
+            <i class="fas fa-exclamation-triangle"></i> Confirm Account Deletion
+        </h2>
         
-        if (alertDiv && detailsDiv) {
-            detailsDiv.innerHTML = `
-                <div style="margin-bottom:10px;">
-                    <strong style="color:#1E3A5F;">Job Title:</strong> ${jobData.title}<br>
-                    <strong style="color:#1E3A5F;">Location:</strong> ${jobData.location}<br>
-                    <strong style="color:#1E3A5F;">Type:</strong> ${jobData.type}<br>
-                    <strong style="color:#1E3A5F;">Salary:</strong> ${jobData.salary}
-                </div>
-                <div style="margin-bottom:10px;">
-                    <strong style="color:#1E3A5F;">Required Skills:</strong><br>
-                    ${jobData.skills.map(skill => `<span style="background:#648EB5; color:white; padding:2px 8px; border-radius:4px; margin:2px; display:inline-block;">${skill}</span>`).join(' ')}
-                </div>
-            `;
-            alertDiv.style.display = 'block';
+        <div class="alert alert-danger" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: #f8d7da; border: 1px solid #f5c2c7; color: #842029;">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>Warning:</strong> This action cannot be undone!
+        </div>
 
-            // Switch to profile tab
-            const profileTab = document.querySelector('.tabs .tab:nth-child(2)');
-            if (profileTab) profileTab.click();
-        }
+        <p style="color: #333; margin-bottom: 15px; line-height: 1.6; font-size: 15px;">
+            You are about to permanently delete your account for 
+            <strong>{{ Auth::user()->name }}</strong>.
+        </p>
 
-        // Clear the selected job
-        localStorage.removeItem('selectedJob');
+        <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+            This will immediately and permanently remove:
+        </p>
+
+        <ul style="margin: 0 0 20px 20px; color: #666; font-size: 14px; line-height: 1.8;">
+            <li><strong>{{ \App\Models\Application::where('user_id', Auth::id())->count() }} job application(s)</strong></li>
+            <li>Your resume and profile information</li>
+            <li>All bookmarks and saved jobs</li>
+            <li>All associated data and history</li>
+        </ul>
+
+        <form id="deleteAccountForm" method="POST" action="{{ route('account.delete') }}">
+            @csrf
+            @method('DELETE')
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label" style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">
+                    Type <strong style="color: #dc3545;">DELETE</strong> to confirm:
+                </label>
+                <input type="text" 
+                       id="deleteConfirmInputJobSeeker" 
+                       class="form-control" 
+                       placeholder="Type DELETE in capital letters"
+                       required
+                       autocomplete="off"
+                       style="border: 2px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 8px;">
+                <small style="color: #6c757d; display: block; margin-top: 6px; font-size: 13px;">
+                    This verification step ensures you understand the consequences.
+                </small>
+            </div>
+
+            <div class="button-group" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeDeleteAccountModal()" class="btn-cancel" style="padding: 12px 24px; background: #E4E9EE; color: #555; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" 
+                        id="confirmDeleteBtnJobSeeker"
+                        class="btn-danger" 
+                        disabled
+                        style="padding: 12px 24px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s; opacity: 0.6;">
+                    <i class="fas fa-trash-alt"></i> Permanently Delete Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resign Modal -->
+<div id="resignModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 480px;">
+        <button onclick="closeResignModal()" class="close-btn">&times;</button>
+        <h2 style="color: #2C3E50; margin-bottom: 14px; font-size: 22px; font-weight: 600; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-door-open" style="color:#dc3545;"></i> Confirm Resignation
+        </h2>
+        <p style="color:#555; margin-bottom:16px; font-size:14px; line-height:1.5;">
+            This will update your employment status to <strong>Actively Seeking</strong>. Your employer may be notified. You can optionally include a brief reason.
+        </p>
+        <form method="POST" action="{{ route('profile.resign') }}" onsubmit="return handleResignSubmit(event)">
+            @csrf
+            <div style="margin-bottom: 14px;">
+                <label for="resign_reason" style="display:block; font-weight:600; color:#2C3E50; margin-bottom:8px; font-size:14px;">Reason (optional)</label>
+                <textarea id="resign_reason" name="reason" rows="4" placeholder="e.g., Moving to a new city, focusing on studies, personal reasons..." style="width:100%; padding:12px 14px; border:2px solid #E0E6EB; border-radius:8px; font-size:14px; box-sizing:border-box;"></textarea>
+            </div>
+            <div class="button-group" style="display:flex; gap:10px; justify-content:flex-end; margin-top: 10px;">
+                <button type="button" onclick="closeResignModal()" class="btn-cancel" style="padding: 10px 20px; background:#E4E9EE; color:#555; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600;">Cancel</button>
+                <button type="submit" id="resignSubmitBtn" class="btn-danger" style="padding: 10px 20px; background:#dc3545; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600;">
+                    <i class="fas fa-check"></i> <span id="resignBtnText">Confirm Resignation</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+</div>
+
+<!-- Modal Overlay -->
+<div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; backdrop-filter: blur(3px);"></div>
+
+<style>
+/* Modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    width: 90%;
+    max-width: 420px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.modal input[type="password"]:focus,
+.modal input[type="email"]:focus {
+    outline: none;
+    border-color: #5B9BD5;
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.1);
+}
+
+.btn-cancel:hover {
+    background: #D0D7DD !important;
+}
+
+.btn-primary:hover {
+    background: #4A8BC2 !important;
+}
+
+.btn-danger:hover {
+    background: #c82333 !important;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 25px 20px;
+    }
+}
+</style>
+
+@endsection
+
+@push('scripts')
+<script>
+// Auto-hide flash messages after 2 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const flashMessage = document.querySelector('.flash-message');
+    if (flashMessage) {
+        setTimeout(() => {
+            flashMessage.style.opacity = '0';
+            setTimeout(() => flashMessage.remove(), 300);
+        }, 2000);
     }
 
-    // ===== Tabs =====
-    const tabs = document.querySelectorAll('.tabs .tab');
-    const accountCard = document.querySelector('.account-card');
-    const profileCard = document.querySelector('.profile-card');
+    // Format phone number as user types
+    const phoneInput = document.querySelector('input[name="phone_number"]');
+    if (phoneInput) {
+        formatPhoneNumber(phoneInput);
 
-    tabs.forEach((tab, i) => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            accountCard.style.display = i === 0 ? 'block' : 'none';
-            profileCard.style.display = i === 1 ? 'block' : 'none';
+        phoneInput.addEventListener('input', function(e) {
+            formatPhoneNumber(e.target);
         });
-    });
+    }
 
-    // ===== Modals =====
-    const overlay = document.getElementById('settingsOverlay');
-    const changePasswordModal = document.getElementById('changePasswordModal');
-    const changeEmailModal = document.getElementById('changeEmailModal');
-    const deleteAccountModal = document.getElementById('deleteAccountModal');
+    function formatPhoneNumber(input) {
+        let value = input.value.replace(/\D/g, '');
+        let formatted = '';
 
-    window.openChangePasswordModal = () => { changePasswordModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-    window.closeChangePasswordModal = () => { changePasswordModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
-
-    window.openChangeEmailModal = () => { changeEmailModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-    window.closeChangeEmailModal = () => { changeEmailModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
-
-    window.openDeleteAccountModal = () => { deleteAccountModal.style.display = 'flex'; overlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-    window.closeDeleteAccountModal = () => { deleteAccountModal.style.display = 'none'; overlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
-
-    // Handle resign form submit (exposed globally for inline onsubmit)
-    window.handleResignSubmit = async function(event, form) {
-        event.preventDefault();
-        
-        const confirmed = await customConfirm(
-            'Are you sure you want to resign? This will set your status to actively seeking.',
-            'Confirm Resignation',
-            'Yes, Resign'
-        );
-        
-        if (confirmed) {
-            // Get optional reason
-            const reason = await customPrompt(
-                'Optional: Enter a reason for your resignation',
-                'Resignation Reason',
-                'Enter your reason (optional)'
-            );
-            
-            // Add reason as hidden input if provided
-            if (reason) {
-                // Prefer existing hidden input if present
-                const reasonInputExisting = form.querySelector('#resignReasonInput');
-                if (reasonInputExisting) {
-                    reasonInputExisting.value = reason;
-                } else {
-                    const reasonInput = document.createElement('input');
-                    reasonInput.type = 'hidden';
-                    reasonInput.name = 'reason';
-                    reasonInput.value = reason;
-                    form.appendChild(reasonInput);
-                }
+        if (value.length > 0) {
+            if (value.startsWith('63')) {
+                formatted = '+63 ';
+                value = value.substring(2);
+                if (value.length > 0) formatted += value.substring(0, 3);
+                if (value.length > 3) formatted += ' ' + value.substring(3, 6);
+                if (value.length > 6) formatted += ' ' + value.substring(6, 10);
+            } else {
+                if (value.length > 0) formatted = value.substring(0, 4);
+                if (value.length > 4) formatted += ' ' + value.substring(4, 7);
+                if (value.length > 7) formatted += ' ' + value.substring(7, 11);
             }
-            form.submit();
         }
-        
+
+        input.value = formatted;
+    }
+});
+
+// Modal functions
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+    document.getElementById('modalOverlay').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function hideModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function openChangeEmailModal() {
+    showModal('changeEmailModal');
+}
+
+function closeChangeEmailModal() {
+    hideModal('changeEmailModal');
+}
+
+function openChangePasswordModal() {
+    showModal('changePasswordModal');
+}
+
+function closeChangePasswordModal() {
+    hideModal('changePasswordModal');
+}
+
+function openDeleteAccountModal() {
+    showModal('deleteAccountModal');
+    // Reset the confirmation input
+    const input = document.getElementById('deleteConfirmInputJobSeeker');
+    const btn = document.getElementById('confirmDeleteBtnJobSeeker');
+    if (input) input.value = '';
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+    }
+}
+
+function closeDeleteAccountModal() {
+    hideModal('deleteAccountModal');
+}
+
+function openResignModal() {
+    showModal('resignModal');
+}
+
+function closeResignModal() {
+    hideModal('resignModal');
+}
+
+// Handle resign form submission with spinner
+function handleResignSubmit(e) {
+    const btn = document.getElementById('resignSubmitBtn');
+    const btnText = document.getElementById('resignBtnText');
+    
+    if (btn.disabled) {
+        e.preventDefault();
         return false;
     }
+    
+    btn.disabled = true;
+    btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    
+    return true;
+}
 
-    // Note: Reason is only prompted after the user confirms resignation
-
-    // ===== Flash Messages Auto-hide =====
-    const successMsg = document.querySelector('.success-message');
-    const errorMsg = document.querySelector('.error-message');
-
-    if (successMsg) {
-        setTimeout(() => {
-            successMsg.style.transition = 'opacity 0.5s';
-            successMsg.style.opacity = '0';
-            setTimeout(() => successMsg.remove(), 500);
-        }, 2000); // 2 seconds
+// Enable delete button only when "DELETE" is typed (Job Seeker)
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteInput = document.getElementById('deleteConfirmInputJobSeeker');
+    const deleteBtn = document.getElementById('confirmDeleteBtnJobSeeker');
+    
+    if (deleteInput && deleteBtn) {
+        deleteInput.addEventListener('input', function() {
+            if (this.value === 'DELETE') {
+                deleteBtn.disabled = false;
+                deleteBtn.style.opacity = '1';
+            } else {
+                deleteBtn.disabled = true;
+                deleteBtn.style.opacity = '0.6';
+            }
+        });
     }
 
-    if (errorMsg) {
-        setTimeout(() => {
-            errorMsg.style.transition = 'opacity 0.5s';
-            errorMsg.style.opacity = '0';
-            setTimeout(() => errorMsg.remove(), 500);
-        }, 2000); // 2 seconds
-    }
-
-    // ===== Dynamic Education & Experience Fields =====
-    const educationList = document.getElementById('educationList');
-    const addEducationBtn = document.getElementById('addEducationBtn');
-    const experienceList = document.getElementById('experienceList');
-    const addExperienceBtn = document.getElementById('addExperienceBtn');
-
-    function nextIndex(container) {
-        const items = container ? container.querySelectorAll('[data-index]') : [];
-        return items.length ? (Math.max(...Array.from(items).map(i => Number(i.getAttribute('data-index')))) + 1) : 0;
-    }
-
-    window.removeEducation = function(btn) {
-        const item = btn.closest('.education-item');
-        if (item) item.remove();
-    }
-
-    window.removeExperience = function(btn) {
-        const item = btn.closest('.experience-item');
-        if (item) item.remove();
-    }
-
-    addEducationBtn?.addEventListener('click', () => {
-        const idx = nextIndex(educationList);
-        const wrapper = document.createElement('div');
-        wrapper.className = 'education-item';
-        wrapper.setAttribute('data-index', idx);
-        wrapper.style = 'margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;';
-        wrapper.innerHTML = `
-            <input type="text" name="education[${idx}][degree]" placeholder="Degree / Course" style="margin-bottom:6px;" />
-            <input type="text" name="education[${idx}][school]" placeholder="School / Institution" style="margin-bottom:6px;" />
-            <input type="text" name="education[${idx}][year]" placeholder="Year (e.g., 2018)" />
-            <button type="button" onclick="removeEducation(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
-        `;
-        educationList.appendChild(wrapper);
-    });
-
-    addExperienceBtn?.addEventListener('click', () => {
-        const idx = nextIndex(experienceList);
-        const wrapper = document.createElement('div');
-        wrapper.className = 'experience-item';
-        wrapper.setAttribute('data-index', idx);
-        wrapper.style = 'margin-bottom:10px; border:1px solid #EEE; padding:10px; border-radius:6px;';
-        wrapper.innerHTML = `
-            <input type="text" name="experiences[${idx}][position]" placeholder="Position" style="margin-bottom:6px;" />
-            <input type="text" name="experiences[${idx}][company]" placeholder="Company" style="margin-bottom:6px;" />
-            <input type="text" name="experiences[${idx}][start_date]" placeholder="Start (e.g., Jan 2020)" style="margin-bottom:6px;" />
-            <input type="text" name="experiences[${idx}][end_date]" placeholder="End (e.g., Dec 2022 or Present)" style="margin-bottom:6px;" />
-            <textarea name="experiences[${idx}][responsibilities]" placeholder="Key responsibilities"></textarea>
-            <button type="button" onclick="removeExperience(this)" class="edit-btn" style="margin-top:8px;">Remove</button>
-        `;
-        experienceList.appendChild(wrapper);
-    });
-
-    // ===== Helper: CSRF token and toast messages =====
-    function getCsrfToken() { return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); }
-
-    function showMessage(message, type) {
-        const messageDiv = document.createElement('div');
-        messageDiv.textContent = message;
-        messageDiv.style.position = 'fixed';
-        messageDiv.style.top = '20px';
-        messageDiv.style.right = '20px';
-        messageDiv.style.padding = '10px 20px';
-        messageDiv.style.borderRadius = '4px';
-        messageDiv.style.zIndex = '10000';
-        messageDiv.style.color = 'white';
-        messageDiv.style.boxShadow = '0 6px 12px rgba(0,0,0,0.12)';
-        switch(type) {
-            case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break;
-            case 'info': messageDiv.style.backgroundColor = '#2196F3'; break;
-            case 'error': messageDiv.style.backgroundColor = '#f44336'; break;
-            default: messageDiv.style.backgroundColor = '#2196F3';
-        }
-        document.body.appendChild(messageDiv);
-        setTimeout(() => { messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 400); }, 2000);
-    }
-
-    // ===== Ajax submit for profile form =====
-    const profileForm = document.querySelector('.profile-card form');
-    if (profileForm) {
-        profileForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const submitBtn = profileForm.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.disabled = true;
-
-            const formData = new FormData(profileForm);
-            formData.append('_token', getCsrfToken());
-
-            // Convert education and experiences arrays to proper format
-            const educationItems = profileForm.querySelectorAll('.education-item');
-            educationItems.forEach((item, index) => {
-                const itemData = {};
-                item.querySelectorAll('input').forEach(input => {
-                    const name = input.getAttribute('name').match(/\[(\w+)\]$/)[1];
-                    itemData[name] = input.value;
-                });
-                formData.set(`education[${index}]`, JSON.stringify(itemData));
-            });
-
-            const experienceItems = profileForm.querySelectorAll('.experience-item');
-            experienceItems.forEach((item, index) => {
-                const itemData = {};
-                item.querySelectorAll('input, textarea').forEach(input => {
-                    const name = input.getAttribute('name').match(/\[(\w+)\]$/)[1];
-                    itemData[name] = input.value;
-                });
-                formData.set(`experiences[${index}]`, JSON.stringify(itemData));
-            });
-
-            // Debug: Log form data
-            console.log('Form data:', Object.fromEntries(formData.entries()));
-
-            fetch(profileForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            }).then(async res => {
-                if (submitBtn) submitBtn.disabled = false;
-                const data = await res.json();
-                console.log('Response:', data); // Debug: Log response
-
-                if (res.ok) {
-                    showMessage(data.message || 'Profile updated successfully.', 'success');
-                    // Refresh profile pic if one was uploaded
-                    const picInput = profileForm.querySelector('input[name="profile_picture"]');
-                    if (picInput?.files?.length) {
-                        setTimeout(() => window.location.reload(), 800);
-                    }
-                } else if (res.status === 422) {
-                    const errs = data.errors || {};
-                    const messages = Object.values(errs).flat().join(' ');
-                    showMessage(messages || 'Validation failed.', 'error');
-                    console.error('Validation errors:', errs); // Debug: Log validation errors
-                } else {
-                    showMessage(data.message || 'Failed to update profile.', 'error');
-                    console.error('Error response:', data); // Debug: Log error response
-                }
-            }).catch((error) => {
-                console.error('Fetch error:', error); // Debug: Log any fetch errors
-                if (submitBtn) submitBtn.disabled = false;
-                showMessage('Error updating profile. Check console for details.', 'error');
-            });
+    // Confirmation before submitting
+    const deleteForm = document.getElementById('deleteAccountForm');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            if (deleteInput && deleteInput.value !== 'DELETE') {
+                e.preventDefault();
+                alert('Please type DELETE to confirm account deletion.');
+                return false;
+            }
+            
+            if (!confirm('Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.')) {
+                e.preventDefault();
+                return false;
+            }
         });
     }
 });
+
+// Close modal when clicking overlay
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'modalOverlay') {
+        closeChangeEmailModal();
+        closeChangePasswordModal();
+        closeDeleteAccountModal();
+    }
+});
 </script>
-
-@include('partials.custom-modals')
-
-@endsection
+@endpush

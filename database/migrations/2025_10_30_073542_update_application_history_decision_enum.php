@@ -35,10 +35,7 @@ return new class extends Migration
             
             $table->timestamps();
             
-            // Index for faster queries
-            $table->index(['employer_id', 'decision']);
-            $table->index(['job_seeker_id', 'decision']);
-            $table->index('decision_date');
+            // Indexes removed - already exist from previous migration (2025_10_30_060427)
         });
         
         // 3. Copy data from old table
@@ -73,9 +70,7 @@ return new class extends Migration
             
             $table->timestamps();
             
-            $table->index(['employer_id', 'decision']);
-            $table->index(['job_seeker_id', 'decision']);
-            $table->index('decision_date');
+            // Indexes removed - already exist from previous migration
         });
         
         // Copy back only hired and rejected records

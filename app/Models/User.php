@@ -45,6 +45,13 @@ class User extends Authenticatable
         'employment_status',
         'hired_by_company',
         'hired_date',
+        'is_admin',
+        'role',
+        'resume_verification_status',
+        'verification_flags',
+        'verification_score',
+        'verified_at',
+        'verification_notes',
     ];
 
     /**
@@ -70,6 +77,7 @@ class User extends Authenticatable
         'experiences' => 'array',
         'years_of_experience' => 'integer',
         'hired_date' => 'datetime',
+        'is_admin' => 'boolean',
     ];
 
     public function bookmarks()
@@ -90,5 +98,10 @@ class User extends Authenticatable
     public function unreadNotifications()
     {
         return $this->hasMany(Notification::class)->where('read', false);
+    }
+
+    public function documentValidations()
+    {
+        return $this->hasMany(DocumentValidation::class);
     }
 }

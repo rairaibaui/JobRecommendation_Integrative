@@ -348,6 +348,13 @@
                     @error('job_title') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
+                    <label for="employer_phone_number">Contact Number</label>
+                    <input type="text" name="employer_phone_number" id="employer_phone_number" value="{{ old('employer_phone_number') }}" 
+                        placeholder="e.g., 0917 123 4567" autocomplete="tel"
+                        class="@error('employer_phone_number') input-error @enderror">
+                    @error('employer_phone_number') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
                     <label for="business_permit">Company/Business Verification Document (Business Permit)</label>
                     <div id="permit-drop" class="upload-zone" onclick="document.getElementById('business_permit').click()"
                          ondragover="handlePermitDrag(event,true)" ondragleave="handlePermitDrag(event,false)" ondrop="handlePermitDrop(event)">
@@ -616,6 +623,32 @@
                 const event = new Event('change');
                 input.dispatchEvent(event);
             }
+        }
+
+        // Phone number formatting for employer
+        const employerPhoneInput = document.getElementById('employer_phone_number');
+        if (employerPhoneInput) {
+            employerPhoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                let formatted = '';
+
+                if (value.length > 0) {
+                    // Philippine format: 0917 123 4567
+                    if (value.startsWith('63')) {
+                        formatted = '+63 ';
+                        value = value.substring(2);
+                        if (value.length > 0) formatted += value.substring(0, 3);
+                        if (value.length > 3) formatted += ' ' + value.substring(3, 6);
+                        if (value.length > 6) formatted += ' ' + value.substring(6, 10);
+                    } else {
+                        if (value.length > 0) formatted = value.substring(0, 4);
+                        if (value.length > 4) formatted += ' ' + value.substring(4, 7);
+                        if (value.length > 7) formatted += ' ' + value.substring(7, 11);
+                    }
+                }
+
+                e.target.value = formatted;
+            });
         }
     </script>
 </body>

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DocumentValidation extends Model
 {
@@ -19,6 +20,8 @@ class DocumentValidation extends Model
         'user_id',
         'document_type',
         'file_path',
+        'file_hash',
+        'permit_number',
         'is_valid',
         'confidence_score',
         'validation_status',
@@ -27,6 +30,8 @@ class DocumentValidation extends Model
         'validated_by',
         'validated_at',
         'admin_notes',
+        'permit_expiry_date',
+        'expiry_reminder_sent',
     ];
 
     /**
@@ -41,6 +46,8 @@ class DocumentValidation extends Model
         'validated_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'permit_expiry_date' => 'date',
+        'expiry_reminder_sent' => 'boolean',
     ];
 
     /**
@@ -49,6 +56,14 @@ class DocumentValidation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Audit trail entries for this validation.
+     */
+    public function auditTrails(): HasMany
+    {
+        return $this->hasMany(AuditTrail::class, 'validation_id');
     }
 
     /**

@@ -227,8 +227,8 @@
 
                 <form id="loginForm" method="POST" action="{{ route('login.submit') }}">
                     @csrf
-                      <label for="email">Email</label>
-                      <input type="email" name="email" id="email" placeholder="you@example.com" value="{{ session('email') ?? old('email') }}" autocomplete="email" required autofocus>
+                      <label for="email">Email / Username</label>
+                      <input type="text" name="email" id="email" placeholder="you@example.com or admin" value="{{ session('email') ?? old('email') }}" autocomplete="email" required autofocus>
                       <label for="password">Password</label>
                       <input type="password" name="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
                     <div class="row">

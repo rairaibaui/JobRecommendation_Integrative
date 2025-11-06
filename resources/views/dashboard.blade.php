@@ -1,977 +1,322 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Dashboard -                                                         Job Portal Mandaluyong</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<style>
-  * { box-sizing: border-box; margin:0; padding:0; }
-  body {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%);
-    padding: 88px 20px 20px 20px;
-    gap: 20px;
-  }
+@extends('jobseeker.layouts.base')
 
-  /* Sidebar */
-  .sidebar {
-    position: fixed;
-    left: 20px;
-    top: 88px;
-    width: 250px;
-    height: calc(100vh - 108px);
-    border-radius: 8px;
-    background: #FFF;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+@section('title', 'Dashboard - Job Portal Mandaluyong')
+@php $pageTitle = 'DASHBOARD'; @endphp
 
-  .sidebar .profile-ellipse {
-    align-self: center;
-  }
+@section('content')
+  <div class="welcome">Welcome, {{ Auth::user()->first_name }}! 👋</div>
 
-  .profile-name {
-    align-self: center;
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: #000;
-    margin-bottom: 20px;
-  }
+  @include('partials.trust-banner')
 
-  .sidebar .sidebar-btn {
-    align-self: flex-start;
-  }
-
-  .profile-ellipse {
-    width: 62px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .profile-icon {
-    width: 62px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-radius: 50%;
-  }
-
-  .profile-icon i {
-    font-size: 30px;
-    color: #FFF;
-  }
-
-  .profile-icon img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    border: none;
-    outline: none;
-    box-shadow: none;
-    display: block;
-  }
-
-  .sidebar-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    height: 39px;
-    padding: 0 10px;
-    border-radius: 8px;
-    background: transparent;
-    box-shadow: none;
-    color: #000;
-    font-size: 20px;
-    font-weight: 400;
-    cursor: pointer;
-  }
-
-  .sidebar-btn.active {
-    background: #648EB5;
-    box-shadow: 0 7px 4px rgba(0,0,0,0.25);
-    color: #000;
-    width: 100%;
-  }
-
-  .sidebar-btn-icon {
-    margin-right: 10px;
-  }
-
-  /* Main content */
-  .main {
-    margin-left: 290px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .top-navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 68px;
-    background: #2B4053;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    color: #FFF;
-    font-family: 'Poppins', sans-serif;
-    font-size: 24px;
-    font-weight: 800;
-    z-index: 1000;
-  }
-
-  .notification-bell {
-    position: relative;
-    cursor: pointer;
-    padding: 10px;
-    margin-right: 20px;
-  }
-
-  .notification-bell i {
-    font-size: 24px;
-    color: #FFF;
-    transition: all 0.3s;
-  }
-
-  .notification-bell:hover i {
-    transform: scale(1.1);
-    color: #FFD700;
-  }
-
-  .notification-bell .badge {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: #ff4757;
-    color: white;
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 10px;
-    font-weight: bold;
-    min-width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Notification dropdown */
-  .notif-wrapper { position: relative; }
-  .notif-dropdown {
-    position: absolute;
-    top: 54px;
-    right: 0;
-    width: 360px;
-    max-height: 420px;
-    overflow-y: auto;
-    background: #fff;
-    color: #333;
-    border-radius: 12px;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
-    padding: 10px 0;
-    z-index: 1100;
-    font-size: 14px;
-    line-height: 1.35;
-  }
-  .notif-header { padding: 10px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; font-weight:600; }
-  .notif-list { list-style: none; margin: 0; padding: 0; }
-  .notif-item { padding: 12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; }
-  .notif-item.unread { background:#f7fbff; }
-  .notif-item i { color:#648EB5; margin-top:3px; }
-  .notif-item .meta { font-size:12px; color:#888; margin-top:4px; }
-  .notif-empty { padding: 20px; text-align:center; color:#777; }
-  .notif-actions { padding: 8px 12px; display:flex; justify-content:flex-end; }
-  .notif-actions button { background:#648EB5; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; }
-
-  .hamburger {
-    margin-right: 20px;
-    color: #FFF;
-  }
-
-  .welcome {
-    font-family: 'Poppins', sans-serif;
-    font-size: 32px;
-    font-weight: 600;
-    color: #FFF;
-    margin-bottom: 10px;
-  }
-
-  /* Recommended & Bookmarked Jobs */
-  .cards {
-    display: flex;
-    gap: 20px;
-  }
-
-  .card-medium {
-    width: 100%;
-    height: 138px;
-    background: #FFF;
-    border-radius: 8px;
-    box-shadow: 0 8px 4px 0 #908D8D;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 20px;
-    position: relative;
-  }
-
-  .card-medium .card-icon {
-    width: 69px;
-    height: 54px;
-    border-radius: 8px;
-    background: #648EB5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .card-medium .card-icon i {
-    font-size: 34px;
-    color: #FFF;
-  }
-
-  .card-medium .card-title {
-    font-family: 'Roboto', sans-serif;
-    font-size: 18px;
-    font-weight: 400;
-    color: #000;
-  }
-
-  .card-medium .view-all {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    font-family: 'Roboto', sans-serif;
-    font-size: 18px;
-    color: #648EB5;
-    text-decoration: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .card-medium .view-all::after {
-    content: '\f105';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    font-size: 16px;
-  }
-
-  /* Top Job Recommendations */
-  .card-large {
-    width: 100%;
-    flex: 1;
-    background: #FFF;
-    border-radius: 8px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .recommendation-header {
-    text-align: left;
-    margin-bottom: 10px;
-  }
-
-  .recommendation-header h3 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 24px;
-    font-weight: 600;
-    color: #000;
-    margin: 0 0 5px 0;
-  }
-
-  .recommendation-header p {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
-    color: #666;
-    margin: 0;
-  }
-
-  .job-card {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid #BBB1B1;
-    background: #FFF;
-    box-shadow: 0 10px 4px rgba(0,0,0,0.25);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: all 0.3s ease;
-  }
-
-  .job-preview {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-
-  .job-details {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    opacity: 0;
-    margin-top: 0;
-    padding: 0 10px;
-  }
-
-  .job-details.expanded {
-    max-height: 1000px;
-    opacity: 1;
-    margin-top: 20px;
-    border-top: 1px solid #eee;
-    padding-top: 20px;
-  }
-
-  .job-details h4 {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 10px;
-  }
-
-  .skills-section {
-    margin-top: 20px;
-  }
-
-  .job-title {
-    font-family: 'Roboto', sans-serif;
-    font-size: 20px;
-    font-weight: 500;
-    color: #000;
-  }
-
-  .job-location, .job-type, .job-salary {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
-    color: #333;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .job-location i, .job-type i, .job-salary i {
-    color: #648EB5;
-    width: 16px;
-  }
-
-  .job-description {
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    color: #666;
-    margin-top: 8px;
-    line-height: 1.4;
-  }
-
-  .skills-header {
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    color: #333;
-    margin-top: 8px;
-    font-weight: 600;
-  }
-
-  .job-skills {
-    display: flex;
-    gap: 10px;
-    margin-top: 5px;
-  }
-
-  .skill {
-    background: #648EB5;
-    color: #FFF;
-    border-radius: 6px;
-    padding: 3px 8px;
-    font-size: 14px;
-  }
-
-  .job-actions {
-    display: flex;
-    gap: 20px;
-    margin-top: auto;
-  }
-  .view-details, .bookmark-btn {
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 180ms ease;
-  }
-
-  .view-details {
-    background: #FFF;
-    border: 1px solid #648EB5;
-    color: #648EB5;
-  }
-
-  /* Job Card Styles */
-  .job-card {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid #BBB1B1;
-    background: #FFF;
-    box-shadow: 0 10px 4px rgba(0,0,0,0.25);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: all 0.3s ease;
-  }
-
-  .job-title {
-    font-family: 'Roboto', sans-serif;
-    font-size: 20px;
-    font-weight: 500;
-    color: #000;
-  }
-
-  .job-preview {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-
-  .job-location, .job-type, .job-salary {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
-    color: #333;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .job-location i, .job-type i, .job-salary i {
-    color: #648EB5;
-    width: 16px;
-  }
-
-  .job-details {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    opacity: 0;
-    margin-top: 0;
-    padding: 0 10px;
-  }
-
-  .job-details.expanded {
-    max-height: 1000px;
-    opacity: 1;
-    margin-top: 20px;
-    border-top: 1px solid #eee;
-    padding-top: 20px;
-  }
-
-  .job-description {
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    color: #666;
-    line-height: 1.4;
-  }
-
-  .skills-section {
-    margin-top: 20px;
-  }
-
-  .job-skills {
-    display: flex;
-    gap: 10px;
-    margin-top: 5px;
-  }
-
-  .skill {
-      background: #648EB5;
-      color: #FFF;
-      border-radius: 6px;
-      padding: 3px 8px;
-      font-size: 14px;
-  }
-  
-  .skill.matching-skill {
-      background: #4CAF50;
-      position: relative;
-  }
-  
-  .skill.matching-skill::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      right: -2px;
-      width: 8px;
-      height: 8px;
-      background: #FFD700;
-      border-radius: 50%;
-      border: 1px solid #4CAF50;
-  }
-
-  .job-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: auto;
-  }
-
-  .view-details, .apply-btn, .bookmark-btn {
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-  }
-
-  .view-details {
-    background: #f8f9fa;
-    color: #666;
-    border: 1px solid #ddd;
-  }
-
-  .apply-btn {
-    background: #648EB5;
-    color: white;
-    flex: 1;
-  }
-
-  .bookmark-btn {
-    background: white;
-    border: 1px solid #648EB5;
-    color: #648EB5;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .job-actions button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-
-  /* Make job-actions align right when space allows */
-  .job-actions { justify-self: end; align-items: center; }
-
-</style>
-</head>
-<body>
-
-<!-- Sidebar -->
-<div class="sidebar">
-  <div class="profile-ellipse">
-    <div class="profile-icon">
-      @if(Auth::user()->profile_picture)
-        <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture" style="cursor:pointer;" onclick="showProfilePictureModal()">
-      @else
-        <i class="fas fa-user" style="cursor:pointer;" onclick="showProfilePictureModal()"></i>
-      @endif
-    </div>
-  </div>
-
-  <!-- Palitan ang hardcoded na name ng dynamic user name -->
-  <div class="profile-name">{{ Auth::user()->first_name }} {{ Auth::user()->last_name }}</div>
-
-  <a href="{{ route('dashboard') }}" class="sidebar-btn {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-    style="text-decoration: none;">
-    <i class="fas fa-home sidebar-btn-icon"></i>
-    Dashboard
-  </a>
-  <a href="{{ route('recommendation') }}" class="sidebar-btn {{ request()->routeIs('recommendation') ? 'active' : '' }}"
-    style="text-decoration: none;">
-    <i class="fas fa-suitcase sidebar-btn-icon"></i>
-    Recommendation
-  </a>
-  <a href="{{ route('my-applications') }}" class="sidebar-btn {{ request()->routeIs('my-applications') ? 'active' : '' }}"
-    style="text-decoration: none;">
-    <i class="fas fa-file-alt sidebar-btn-icon"></i>
-    My Applications
-  </a>
   @if(Auth::user()->user_type === 'job_seeker')
-  <a href="{{ route('work-history') }}" class="sidebar-btn {{ request()->routeIs('work-history') ? 'active' : '' }}"
-    style="text-decoration: none;">
-    <i class="fas fa-clock-rotate-left sidebar-btn-icon"></i>
-    Work History
-  </a>
-  @endif
-  <a href="{{ route('bookmarks') }}" class="sidebar-btn {{ request()->routeIs('bookmarks') ? 'active' : '' }}"
-    style="text-decoration: none;">
-    <i class="fas fa-bookmark sidebar-btn-icon"></i>
-    Bookmarks
-  </a>
-  <a href="{{ route('settings') }}" class="sidebar-btn {{ request()->routeIs('settings') ? 'active' : '' }}"
-    style="text-decoration: none;">
-    <i class="fas fa-cog sidebar-btn-icon"></i>
-    Settings
-  </a>
-  <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;" onsubmit="return showLogoutModal(this);">
-      @csrf
-      <button type="submit" class="sidebar-btn"
-        style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <i class="fas fa-sign-out-alt sidebar-btn-icon"></i>
-        Logout
-      </button>
-    </form>
-  </div>
-
-  @include('partials.logout-confirm')
-  <!-- Main Content -->
-  <div class="main">
-    <div class="top-navbar">
-      <div style="display: flex; align-items: center;">
-        Job Portal - Mandaluyong
-      </div>
-      <div style="display: flex; align-items: center;" class="notif-wrapper">
-        <div class="notification-bell" onclick="toggleNotifDropdown(event)" ondblclick="showProfilePictureModal()">
-          <i class="fas fa-bell"></i>
-          @php $unreadCount = Auth::user()->unreadNotifications()->count(); @endphp
-          @if($unreadCount > 0)
-            <span class="badge" id="notifCount">{{ $unreadCount }}</span>
-          @endif
-        </div>
-        <script>
-        function showProfilePictureModal() {
-          // Remove any existing modal
-          const oldModal = document.getElementById('profilePicModal');
-          if (oldModal) oldModal.remove();
-          // Get user profile picture URL
-          const picUrl = @json(Auth::user()->profile_picture ? asset('storage/' . Auth::user()->profile_picture) : null);
-          const name = @json(Auth::user()->first_name . ' ' . Auth::user()->last_name);
-          const modal = document.createElement('div');
-          modal.id = 'profilePicModal';
-          modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; display:flex; align-items:center; justify-content:center;';
-          modal.innerHTML = `
-            <div style="background:white; border-radius:16px; padding:30px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; align-items:center; max-width:350px; width:90%;">
-              <button onclick="document.getElementById('profilePicModal').remove();" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:#333;">&times;</button>
-              <h3 style="margin-bottom:18px; color:#648EB5; font-size:20px; font-weight:600;">Profile Picture</h3>
-              ${picUrl ? `<img src='${picUrl}' alt='Profile Picture' style='width:120px; height:120px; object-fit:cover; border-radius:50%; border:4px solid #648EB5; margin-bottom:12px;'>` : `<div style='width:120px; height:120px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:48px; color:#aaa; margin-bottom:12px;'><i class='fas fa-user'></i></div>`}
-              <div style="font-size:16px; color:#333; font-weight:500;">${name}</div>
-              <button onclick="document.getElementById('profilePicModal').remove();" style="margin-top:22px; background:#6c757d; color:white; border:none; padding:8px 22px; border-radius:8px; cursor:pointer; font-size:14px;">Close</button>
+    @if(($needsProfileReminder ?? false) && !empty($profileMissing))
+      <div class="notice notice-warning" style="background:#fff; border-left:5px solid #ff9800;">
+        <i class="fas fa-user-edit" style="color:#ff9800;"></i>
+        <div style="flex:1;">
+          <div style="font-family:'Poppins', sans-serif; font-size:16px; font-weight:600; color:#263238;">Complete your profile to get better job matches</div>
+          <div style="font-size:13px; color:#455a64; margin-top:4px;">Missing: {{ implode(', ', $profileMissing) }}</div>
+          <div style="margin-top:10px; background:#f1f5f9; border-radius:8px; overflow:hidden; width:100%; max-width:420px;">
+            <div style="height:8px; background:#e2e8f0; width:100%; position:relative;">
+              <div style="height:8px; width: {{ $profileCompletePercent }}%; background:linear-gradient(90deg,#4CAF50,#81C784);"></div>
             </div>
-          `;
-          document.body.appendChild(modal);
-        }
-        </script>
-        <div id="notifDropdown" class="notif-dropdown" style="display:none;" data-loaded="0">
-          <div class="notif-header">
-            <span>Notifications</span>
-            <button onclick="markAllNotificationsRead(event)" style="background:#eee;color:#333;border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">Mark all as read</button>
+            <div style="font-size:12px; color:#64748b; margin-top:6px;">Profile {{ $profileCompletePercent }}% complete</div>
           </div>
-          <ul class="notif-list" id="notifList">
-            <li class="notif-empty">Loading...</li>
-          </ul>
-          <div class="notif-actions">
-            <button onclick="refreshNotifications(event)" style="background:#4E8EA2">Refresh</button>
-          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <a href="{{ route('settings') }}" class="btn btn-warning btn-sm" style="color:#7a4b00;">Complete Profile</a>
+          <a href="{{ route('recommendation') }}" class="btn btn-sm" style="background:#fff; border:1px solid #ffcc80; color:#7a4b00;">See Matches</a>
         </div>
       </div>
-    </div>
-
-    <div class="welcome">Welcome, {{ Auth::user()->first_name }}! 👋</div>
-
-    @if(Auth::user()->user_type === 'job_seeker')
-      @if(($needsProfileReminder ?? false) && !empty($profileMissing))
-        <!-- Profile completion reminder -->
-        <div style="background:#fff; border-left:5px solid #ff9800; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.08); padding:16px 18px; margin:8px 0 14px 0;">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:flex-start; gap:12px;">
-              <div style="width:40px; height:40px; border-radius:8px; background:#ff9800; display:flex; align-items:center; justify-content:center; color:#fff;">
-                <i class="fas fa-user-edit"></i>
-              </div>
-              <div>
-                <div style="font-family:'Poppins', sans-serif; font-size:16px; font-weight:600; color:#263238;">Complete your profile to get better job matches</div>
-                <div style="font-size:13px; color:#455a64; margin-top:4px;">Missing: {{ implode(', ', $profileMissing) }}</div>
-                <div style="margin-top:10px; background:#f1f5f9; border-radius:8px; overflow:hidden; width:100%; max-width:420px;">
-                  <div style="height:8px; background:#e2e8f0; width:100%; position:relative;">
-                    <div style="height:8px; width: {{ $profileCompletePercent }}%; background:linear-gradient(90deg,#4CAF50,#81C784);"></div>
-                  </div>
-                  <div style="font-size:12px; color:#64748b; margin-top:6px;">Profile {{ $profileCompletePercent }}% complete</div>
-                </div>
-              </div>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <a href="{{ route('settings') }}" style="background:#ff9800; color:#fff; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">Complete Profile</a>
-              <a href="{{ route('recommendation') }}" style="background:#fff; border:1px solid #ffcc80; color:#7a4b00; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">See Matches</a>
-            </div>
-          </div>
-        </div>
-      @endif
-      <!-- Job Seeker Getting Started Guide -->
-      <div id="jobSeekerGuide" style="display:none; background:#ffffff; border-radius:12px; border-left:5px solid #648EB5; box-shadow:0 8px 20px rgba(0,0,0,0.08); padding:18px 18px 14px 18px; margin:8px 0 14px 0; position:relative;">
-        <button type="button" aria-label="Dismiss guide" onclick="dismissJobSeekerGuide()" title="Hide"
-          style="position:absolute; top:10px; right:10px; background:#eef2f7; border:1px solid #d9e2ec; color:#5b6b7a; width:28px; height:28px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-        >&times;</button>
-        <div style="display:flex; gap:12px; align-items:flex-start;">
-          <div style="width:40px; height:40px; border-radius:8px; background:#648EB5; display:flex; align-items:center; justify-content:center; color:#fff;">
-            <i class="fas fa-hands-helping"></i>
-          </div>
-          <div style="flex:1;">
-            <div style="font-family:'Poppins', sans-serif; font-size:18px; font-weight:600; color:#263238; margin-bottom:6px;">Welcome to Job Portal — Getting Started</div>
-            <ul style="margin-left:18px; color:#455a64; line-height:1.5; font-size:14px;">
-              <li><strong>Complete your profile</strong> in <a href="{{ route('settings') }}" style="color:#648EB5; text-decoration:none;">Settings</a> — add your skills, experience, and location for better matches.</li>
-              <li>Check <a href="{{ route('recommendation') }}" style="color:#648EB5; text-decoration:none;">Recommendations</a> — jobs are ranked by how your skills match.</li>
-              <li><strong>Bookmark</strong> interesting jobs to save them for later and view them in <a href="{{ route('bookmarks') }}" style="color:#648EB5; text-decoration:none;">Bookmarks</a>.</li>
-              <li>Use <strong>Apply</strong> to submit using your profile snapshot; you can preview details before sending.</li>
-              <li>Track progress in <a href="{{ route('my-applications') }}" style="color:#648EB5; text-decoration:none;">My Applications</a> and watch the bell icon for <strong>Notifications</strong>.</li>
-              <li>Forgot your password? Use <em>Forgot Password</em> on the login page — we’ll email you a reset link.</li>
-            </ul>
-            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-              <a href="{{ route('settings') }}" style="background:#648EB5; color:#fff; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">Open Settings</a>
-              <a href="{{ route('recommendation') }}" style="background:#e3f2fd; color:#1565c0; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">See Recommendations</a>
-              <a href="{{ route('bookmarks') }}" style="background:#fff3cd; color:#7a5a00; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px; border:1px solid #ffe69c;">View Bookmarks</a>
-              <a href="{{ route('my-applications') }}" style="background:#d1e7dd; color:#0f5132; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:13px;">My Applications</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      @if(Auth::user()->employment_status === 'employed')
-        <div style="display:flex; align-items:center; gap:10px; margin:6px 0 10px 0;">
-          <span style="background:#d1e7dd; color:#0f5132; padding:6px 12px; border-radius:16px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
-            <i class="fas fa-briefcase"></i>
-            Currently employed @if(Auth::user()->hired_by_company) at {{ Auth::user()->hired_by_company }} @endif
-          </span>
-          @if(Auth::user()->hired_date)
-            <span style="background:#e2e3e5; color:#41464b; padding:6px 12px; border-radius:16px; font-size:12px;">
-              <i class="fas fa-calendar-alt"></i> since {{ Auth::user()->hired_date->format('M d, Y') }}
-            </span>
-          @endif
-        </div>
-      @else
-        <div style="margin:6px 0 10px 0;">
-          <span style="background:#d1ecf1; color:#0c5460; padding:6px 12px; border-radius:16px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px;">
-            <i class="fas fa-search"></i>
-            Actively seeking opportunities
-          </span>
-        </div>
-      @endif
     @endif
 
-    <!-- Recommended & Bookmarked Jobs -->
-    <div class="cards">
-      <div class="card-medium">
-        <div class="card-icon">
-          <i class="fas fa-star"></i>
-        </div>
-        <div class="card-title">Recommended Jobs</div>
-  <a href="{{ route('recommendation') }}" class="view-all">View All Recommendations</a>
-      </div>
+      {{-- Resume Verification Status --}}
+      @if(Auth::user()->resume_file)
+        @php
+          $status = Auth::user()->resume_verification_status ?? 'pending';
+          $score = Auth::user()->verification_score ?? 0;
+          $flags = json_decode(Auth::user()->verification_flags ?? '[]', true) ?: [];
+          
+          // Remove "Missing Resume" flag if resume file exists (safeguard against stale data)
+          $flags = array_filter($flags, function($flag) {
+            return strtolower($flag) !== 'missing resume';
+          });
+          
+          $notes = Auth::user()->verification_notes ?? '';
+        
+          $statusConfig = [
+            'verified' => [
+              'color' => '#28a745',
+              'bg' => '#d4edda',
+              'border' => '#28a745',
+              'icon' => 'fa-check-circle',
+              'title' => 'Resume Verified',
+              'message' => 'Your resume is verified.'
+            ],
+            'needs_review' => [
+              'color' => '#ff9800',
+              'bg' => '#fff3cd',
+              'border' => '#ff9800',
+              'icon' => 'fa-exclamation-triangle',
+              'title' => 'Resume Needs Review',
+              'message' => 'Your resume requires admin review before approval.'
+            ],
+            'incomplete' => [
+              'color' => '#dc3545',
+              'bg' => '#f8d7da',
+              'border' => '#dc3545',
+              'icon' => 'fa-times-circle',
+              'title' => 'Resume Incomplete',
+              'message' => 'Your resume is missing important information.'
+            ],
+            'pending' => [
+              'color' => '#17a2b8',
+              'bg' => '#d1ecf1',
+              'border' => '#17a2b8',
+              'icon' => 'fa-clock',
+              'title' => 'Verification Pending',
+              'message' => 'Your resume is being analyzed...'
+            ],
+            'rejected' => [
+              'color' => '#dc3545',
+              'bg' => '#f8d7da',
+              'border' => '#dc3545',
+              'icon' => 'fa-ban',
+              'title' => 'Resume Rejected',
+              'message' => 'Your resume did not meet verification requirements.'
+            ]
+          ];
+        
+          $config = $statusConfig[$status] ?? $statusConfig['pending'];
+        @endphp
 
-      <div class="card-medium">
-        <div class="card-icon">
-          <i class="fas fa-bookmark"></i>
+        <div class="card" style="border-left: 4px solid {{ $config['border'] }}; background: {{ $config['bg'] }}; margin-bottom: 20px;">
+          <div class="card-body" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; gap: 20px;">
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px 0; color: {{ $config['color'] }}; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                  <i class="fas {{ $config['icon'] }}"></i>
+                  {{ $config['title'] }}
+                </h3>
+                <p style="margin: 0 0 12px 0; color: #555; font-size: 14px;">{{ $config['message'] }}</p>
+              
+                @if($score > 0)
+                  <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <span style="font-size: 13px; color: #666; font-weight: 600;">Quality Score</span>
+                      <span style="font-size: 13px; color: {{ $config['color'] }}; font-weight: 700;">{{ $score }}/100</span>
+                    </div>
+                    <div style="background: #fff; border-radius: 10px; height: 12px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                      <div style="height: 100%; width: {{ $score }}%; background: linear-gradient(90deg, {{ $config['color'] }}, {{ $config['color'] }}aa); transition: width 0.3s ease;"></div>
+                    </div>
+                  </div>
+                @endif
+              
+                @if(!empty($flags))
+                  <div style="margin-bottom: 12px;">
+                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">Issues Detected:</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                      @foreach($flags as $flag)
+                        <span style="background: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #555; border: 1px solid rgba(0,0,0,0.1);">
+                          <i class="fas fa-flag" style="font-size: 10px; margin-right: 4px;"></i>
+                          {{ ucwords(str_replace('_', ' ', $flag)) }}
+                        </span>
+                      @endforeach
+                    </div>
+                  </div>
+                @endif
+              
+                @if($notes)
+                  <p style="margin: 12px 0 0 0; padding: 10px; background: #fff; border-radius: 6px; font-size: 13px; color: #666; border-left: 3px solid {{ $config['color'] }};">
+                    <i class="fas fa-info-circle" style="margin-right: 6px;"></i>
+                    {{ $notes }}
+                  </p>
+                @endif
+              </div>
+            
+              <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                @if($status !== 'verified')
+                  <a href="{{ route('settings') }}" class="btn btn-sm" style="background: {{ $config['color'] }}; color: white; white-space: nowrap; border: none;">
+                    <i class="fas fa-upload"></i> Re-upload Resume
+                  </a>
+                @endif
+                <a href="{{ asset('storage/' . Auth::user()->resume_file) }}" target="_blank" class="btn btn-secondary btn-sm" style="white-space: nowrap;">
+                  <i class="fas fa-file-pdf"></i> View Resume
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="card-title">Bookmarked Jobs</div>
-  <a href="{{ route('bookmarks') }}" class="view-all">View All Bookmarks</a>
+      @endif
+
+    @if(Auth::user()->employment_status === 'employed')
+      <div class="d-flex align-items-center gap-2 mt-1 mb-1">
+        <span class="badge badge-success"><i class="fas fa-briefcase"></i> Currently employed @if(Auth::user()->hired_by_company) at {{ Auth::user()->hired_by_company }} @endif</span>
+        @if(Auth::user()->hired_date)
+          <span class="badge badge-secondary"><i class="fas fa-calendar-alt"></i> since {{ Auth::user()->hired_date->format('M d, Y') }}</span>
+        @endif
+      </div>
+    @else
+      <div class="mt-1 mb-1">
+        <span class="badge badge-info"><i class="fas fa-search"></i> Actively seeking opportunities</span>
+      </div>
+    @endif
+  @endif
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <h3><i class="fas fa-star text-primary"></i></h3>
+      <p>Recommended Jobs</p>
+      <div class="mt-1">
+        <a href="{{ route('recommendation') }}" class="btn btn-primary btn-sm">View All Recommendations</a>
       </div>
     </div>
-
-    <!-- Top Job Recommendations -->
-    <div class="card-large">
-      <div class="recommendation-header" style="background: linear-gradient(180deg, #ffffffff 0%, #ffffffff 100%); color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
-        <h3>Top Job Recommendations</h3>
-        <p>This is based on the skills that you have</p>
+    <div class="stat-box">
+      <h3><i class="fas fa-bookmark text-primary"></i></h3>
+      <p>Bookmarked Jobs</p>
+      <div class="mt-1">
+        <a href="{{ route('bookmarks') }}" class="btn btn-primary btn-sm">View All Bookmarks</a>
       </div>
-      <div style="padding: 20px;">
-        @if(count($jobs ?? []) > 0)
-        <p style="font-family: 'Poppins', sans-serif; font-size: 18px; color: #333; margin-bottom: 20px;">
-          Showing {{ count($jobs) }} skill-matched {{ Str::plural('job', count($jobs)) }}
-        </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Top Job Recommendations</h3>
+      <span class="text-muted">Based on your profile and skills</span>
+    </div>
+    <div class="card-body">
+      @if(count($jobs ?? []) > 0)
+        <p class="mb-2">Showing {{ count($jobs) }} skill-matched {{ Str::plural('job', count($jobs)) }}</p>
         @foreach($jobs as $job)
-        <div class="job-card" 
-             data-job-id="{{ $job['id'] ?? '' }}"
-             data-title="{{ $job['title'] }}" 
-             data-location="{{ $job['location'] ?? '' }}" 
-             data-type="{{ $job['type'] ?? '' }}" 
-             data-salary="{{ $job['salary'] ?? '' }}" 
-             data-description="{{ $job['description'] ?? '' }}" 
-             data-skills='@json($job['skills'] ?? [])'
-             data-company="{{ $job['company'] ?? '' }}"
-             data-employer-name="{{ $job['employer_name'] ?? '' }}"
-             data-employer-email="{{ $job['employer_email'] ?? '' }}"
-             data-employer-phone="{{ $job['employer_phone'] ?? '' }}"
-             data-posted-date="{{ $job['posted_date'] ?? '' }}">
+          <div class="job-card" 
+               data-job-id="{{ $job['id'] ?? '' }}"
+               data-title="{{ $job['title'] }}" 
+               data-location="{{ $job['location'] ?? '' }}" 
+               data-type="{{ $job['type'] ?? '' }}" 
+               data-salary="{{ $job['salary'] ?? '' }}" 
+               data-description="{{ $job['description'] ?? '' }}" 
+               data-skills='@json($job['skills'] ?? [])'
+               data-company="{{ $job['company'] ?? '' }}"
+               data-employer-name="{{ $job['employer_name'] ?? '' }}"
+               data-employer-email="{{ $job['employer_email'] ?? '' }}"
+               data-employer-phone="{{ $job['employer_phone'] ?? '' }}"
+               data-posted-date="{{ $job['posted_date'] ?? '' }}">
             <div class="job-title">{{ $job['title'] }}</div>
 
-            <!-- Match Score Display (only for job seekers with skills) -->
             @if(isset($job['match_score']) && $job['match_score'] > 0)
-            <div class="match-indicator" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                <div class="match-score" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-star"></i>
-                    {{ $job['match_score'] }}% Match
+              <div class="match-indicator" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <div class="badge badge-success" style="background:linear-gradient(135deg, #4CAF50, #45a049); color:white;">
+                  <i class="fas fa-star"></i> {{ $job['match_score'] }}% Match
                 </div>
                 @if(isset($job['matching_skills']) && $job['matching_skills']->count() > 0)
-                <div class="matching-skills-preview" style="font-size: 12px; color: #666;">
-                    <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+                  <div class="text-muted" style="font-size:12px;">
+                    <i class="fas fa-check-circle" style="color:#4CAF50;"></i>
                     Matches: {{ $job['matching_skills']->take(3)->implode(', ') }}
                     @if($job['matching_skills']->count() > 3)
-                        +{{ $job['matching_skills']->count() - 3 }} more
+                      +{{ $job['matching_skills']->count() - 3 }} more
                     @endif
-                </div>
+                  </div>
                 @endif
-            </div>
+              </div>
             @endif
 
-            <div class="job-preview">
-                <div class="job-location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>{{ $job['location'] ?? 'N/A' }}</span>
-                </div>
-                <div class="job-type">
-                    <i class="fas fa-briefcase"></i>
-                    <span>{{ $job['type'] ?? 'Full-time' }}</span>
-                </div>
-                <div class="job-salary">
-                    <i class="fas fa-money-bill"></i>
-                    <span>{{ $job['salary'] ?? 'Negotiable' }}</span>
-                </div>
+            <!-- Required Skills - Visible at Top -->
+            <div style="margin: 12px 0;">
+              <h4 style="margin: 0 0 8px 0; color: #495057; font-size: 14px; font-weight: 600;">
+                <i class="fas fa-tools" style="color: #648EB5;"></i> Required Skills
+              </h4>
+              <div class="job-skills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                @if(!empty($job['skills']))
+                  @foreach($job['skills'] as $skill)
+                    @php $isMatching = isset($job['matching_skills']) && $job['matching_skills']->contains(strtolower($skill)); @endphp
+                    <span class="skill" style="background: {{ $isMatching ? 'linear-gradient(135deg, #4CAF50, #45a049)' : 'linear-gradient(135deg, #648EB5, #7a9cc6)' }}; color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      {{ $skill }} @if($isMatching)<i class="fas fa-check" style="margin-left:4px;"></i>@endif
+                    </span>
+                  @endforeach
+                @else
+                  <span class="skill" style="background: #e9ecef; color: #6c757d; padding: 6px 14px; border-radius: 20px; font-size: 13px;">No specific skills listed</span>
+                @endif
+              </div>
             </div>
-            
-            <div class="job-details">
-                <!-- Company & Employer Info Section -->
-                <div class="employer-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #648EB5;">
-                    <h4 style="margin: 0 0 10px 0; color: #648EB5; font-size: 14px; font-weight: 600;">
-                        <i class="fas fa-building"></i> Company & Contact Information
-                    </h4>
-                    <div style="display: grid; gap: 8px; font-size: 14px;">
-                        @if(!empty($job['company']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-briefcase" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Company:</strong> {{ $job['company'] }}
-                            </div>
-                        @endif
-                        @if(!empty($job['employer_name']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-user-tie" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Contact Person:</strong> {{ $job['employer_name'] }}
-                            </div>
-                        @endif
-                        @if(!empty($job['employer_email']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-envelope" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Email:</strong> <a href="mailto:{{ $job['employer_email'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_email'] }}</a>
-                            </div>
-                        @endif
-                        @if(!empty($job['employer_phone']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-phone" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Phone:</strong> <a href="tel:{{ $job['employer_phone'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_phone'] }}</a>
-                            </div>
-                        @endif
-                        @if(!empty($job['posted_date']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-calendar" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Posted:</strong> {{ $job['posted_date'] }}
-                            </div>
-                        @endif
-                    </div>
-                </div>
 
-                <div class="job-description">
-                    {{ $job['description'] ?? '' }}
-                </div>
-                <div class="skills-section">
-                    <div class="job-skills">
-                        @if(!empty($job['skills']))
-                            @foreach($job['skills'] as $skill)
-                                @php
-                                    $isMatching = isset($job['matching_skills']) && $job['matching_skills']->contains(strtolower($skill));
-                                @endphp
-                                <span class="skill {{ $isMatching ? 'matching-skill' : '' }}">
-                                    {{ $skill }}
-                                    @if($isMatching)
-                                        <i class="fas fa-check" style="margin-left: 4px;"></i>
-                                    @endif
-                                </span>
-                            @endforeach
-                        @else
-                            <span class="skill">No specific skills listed</span>
-                        @endif
-                    </div>
-                    @if(isset($job['match_score']) && $job['match_score'] > 0)
-                    <div class="match-details" style="margin-top: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #4CAF50;">
-                        <div style="font-size: 13px; color: #333; margin-bottom: 6px;">
-                            <strong>Why this job matches you:</strong>
-                        </div>
-                        <div style="font-size: 12px; color: #666;">
-                            You have {{ $job['matching_skills']->count() }} out of {{ $job['job_skills']->count() }} required skills
-                            @if($job['matching_skills']->count() > 0)
-                                ({{ $job['matching_skills']->implode(', ') }})
-                            @endif
-                        </div>
-                    </div>
-                    @endif
-                </div>
+            <div class="job-preview">
+              <div class="job-location"><i class="fas fa-map-marker-alt"></i> <span>{{ $job['location'] ?? 'N/A' }}</span></div>
+              <div class="job-type"><i class="fas fa-briefcase"></i> <span>{{ $job['type'] ?? 'Full-time' }}</span></div>
+              <div class="job-salary"><i class="fas fa-money-bill"></i> <span>{{ $job['salary'] ?? 'Negotiable' }}</span></div>
+            </div>
+
+            <!-- Company Information - Always Visible -->
+            <div class="employer-info" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 8px; margin-top: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+              <h4 style="margin: 0 0 15px 0; color: #648EB5; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-building"></i> Company & Contact Information
+              </h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; font-size: 14px;">
+                @if(!empty($job['company']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-briefcase" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Company:</strong> <span style="color: #212529;">{{ $job['company'] }}</span></div>
+                  </div>
+                @endif
+                @if(!empty($job['employer_name']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user-tie" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Contact Person:</strong> <span style="color: #212529;">{{ $job['employer_name'] }}</span></div>
+                  </div>
+                @endif
+                @if(!empty($job['employer_email']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-envelope" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Email:</strong> <a href="mailto:{{ $job['employer_email'] }}" style="color: #648EB5; text-decoration: none; font-weight: 500;">{{ $job['employer_email'] }}</a></div>
+                  </div>
+                @endif
+                @if(!empty($job['employer_phone']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-phone" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Phone:</strong> <a href="tel:{{ $job['employer_phone'] }}" style="color: #648EB5; text-decoration: none; font-weight: 500;">{{ $job['employer_phone'] }}</a></div>
+                  </div>
+                @endif
+                @if(!empty($job['posted_date']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-calendar" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Posted:</strong> <span style="color: #212529;">{{ $job['posted_date'] }}</span></div>
+                  </div>
+                @endif
+              </div>
+            </div>
+
+            <div class="job-details">
+              <div class="job-description">{{ $job['description'] ?? '' }}</div>
             </div>
 
             <div class="job-actions">
-        <button class="view-details btn-details" onclick="toggleDetails(this)" data-job-id="{{ $job['id'] }}">
-                    <i class="fas fa-chevron-down"></i>
-                    View Details
-                </button>
-                <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
-                    <i class="fas fa-paper-plane"></i>
-                    Apply
-                </button>
-        <button class="bookmark-btn" data-job='@json($job)' onclick="toggleBookmark(this)">
-          @php $isBookmarked = isset($bookmarkedTitles) && in_array($job['title'], $bookmarkedTitles); @endphp
-          <i class="{{ $isBookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
-        </button>
+              <button class="view-details btn-details" onclick="toggleDetails(this)" data-job-id="{{ $job['id'] }}">
+                <i class="fas fa-chevron-down"></i> View Details
+              </button>
+              <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
+                <i class="fas fa-paper-plane"></i> Apply
+              </button>
+              <button class="bookmark-btn" data-job='@json($job)' onclick="toggleBookmark(this)">
+                @php $isBookmarked = isset($bookmarkedTitles) && in_array($job['title'], $bookmarkedTitles); @endphp
+                <i class="{{ $isBookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
+              </button>
             </div>
-        </div>
+          </div>
         @endforeach
-        @else
-        <p style="font-family: 'Poppins', sans-serif; font-size: 16px; color: #666; margin-bottom: 20px; font-style: italic;">
-          No skill-matched jobs found. Complete your profile with skills to see personalized recommendations.
-        </p>
-        @endif
-        </div>
-      </div>
+      @else
+        <p class="text-muted" style="font-style:italic;">No skill-matched jobs found. Complete your profile with skills to see personalized recommendations.</p>
+      @endif
+    </div>
+  </div>
 
-      <!-- Other Recent Jobs -->
-      @if(count($otherJobs ?? []) > 0)
-      <div class="card-large" style="margin-top: 20px;">
-        <div class="recommendation-header" style="background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%); color: #333; padding: 20px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #dee2e6;">
-          <h3>Other Recent Jobs</h3>
-          <p>More opportunities posted recently</p>
-        </div>
-        <div style="padding: 20px;">
-          <p style="font-family: 'Poppins', sans-serif; font-size: 18px; color: #333; margin-bottom: 20px;">
-            Showing {{ count($otherJobs) }} additional {{ Str::plural('job', count($otherJobs)) }}
-          </p>
-          @foreach($otherJobs as $job)
+  @if(count($otherJobs ?? []) > 0)
+    <div class="card mt-2">
+      <div class="card-header">
+        <h3 class="card-title">Other Recent Jobs</h3>
+        <span class="text-muted">More opportunities posted recently</span>
+      </div>
+      <div class="card-body">
+        <p class="mb-2">Showing {{ count($otherJobs) }} additional {{ Str::plural('job', count($otherJobs)) }}</p>
+        @foreach($otherJobs as $job)
           <div class="job-card"
                data-job-id="{{ $job['id'] ?? '' }}"
                data-title="{{ $job['title'] }}"
@@ -979,494 +324,120 @@
                data-type="{{ $job['type'] ?? '' }}"
                data-salary="{{ $job['salary'] ?? '' }}"
                data-description="{{ $job['description'] ?? '' }}"
-               data-skills='@json($job['skills'] ?? [])'>
+               data-skills='@json($job['skills'] ?? [])'
+               data-company="{{ $job['company'] ?? '' }}"
+               data-employer-name="{{ $job['employer_name'] ?? '' }}"
+               data-employer-email="{{ $job['employer_email'] ?? '' }}"
+               data-employer-phone="{{ $job['employer_phone'] ?? '' }}"
+               data-posted-date="{{ $job['posted_date'] ?? '' }}">
             <div class="job-title">{{ $job['title'] }}</div>
 
+            <!-- Required Skills - Visible at Top -->
+            <div style="margin: 12px 0;">
+              <h4 style="margin: 0 0 8px 0; color: #495057; font-size: 14px; font-weight: 600;">
+                <i class="fas fa-tools" style="color: #648EB5;"></i> Required Skills
+              </h4>
+              <div class="job-skills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                @if(!empty($job['skills']))
+                  @foreach($job['skills'] as $skill)
+                    <span class="skill" style="background: linear-gradient(135deg, #648EB5, #7a9cc6); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">{{ $skill }}</span>
+                  @endforeach
+                @else
+                  <span class="skill" style="background: #e9ecef; color: #6c757d; padding: 6px 14px; border-radius: 20px; font-size: 13px;">No specific skills listed</span>
+                @endif
+              </div>
+            </div>
+
             <div class="job-preview">
-                <div class="job-location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>{{ $job['location'] ?? 'N/A' }}</span>
-                </div>
-                <div class="job-type">
-                    <i class="fas fa-briefcase"></i>
-                    <span>{{ $job['type'] ?? 'Full-time' }}</span>
-                </div>
-                <div class="job-salary">
-                    <i class="fas fa-money-bill"></i>
-                    <span>{{ $job['salary'] ?? 'Negotiable' }}</span>
-                </div>
+              <div class="job-location"><i class="fas fa-map-marker-alt"></i> <span>{{ $job['location'] ?? 'N/A' }}</span></div>
+              <div class="job-type"><i class="fas fa-briefcase"></i> <span>{{ $job['type'] ?? 'Full-time' }}</span></div>
+              <div class="job-salary"><i class="fas fa-money-bill"></i> <span>{{ $job['salary'] ?? 'Negotiable' }}</span></div>
+            </div>
+
+            <!-- Company Information - Always Visible -->
+            <div class="employer-info" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 8px; margin-top: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+              <h4 style="margin: 0 0 15px 0; color: #648EB5; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-building"></i> Company & Contact Information
+              </h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; font-size: 14px;">
+                @if(!empty($job['company']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-briefcase" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Company:</strong> <span style="color: #212529;">{{ $job['company'] }}</span></div>
+                  </div>
+                @endif
+                @if(!empty($job['employer_name']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user-tie" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Contact Person:</strong> <span style="color: #212529;">{{ $job['employer_name'] }}</span></div>
+                  </div>
+                @endif
+                @if(!empty($job['employer_email']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-envelope" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Email:</strong> <a href="mailto:{{ $job['employer_email'] }}" style="color: #648EB5; text-decoration: none; font-weight: 500;">{{ $job['employer_email'] }}</a></div>
+                  </div>
+                @endif
+                @if(!empty($job['employer_phone']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-phone" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Phone:</strong> <a href="tel:{{ $job['employer_phone'] }}" style="color: #648EB5; text-decoration: none; font-weight: 500;">{{ $job['employer_phone'] }}</a></div>
+                  </div>
+                @endif
+                @if(!empty($job['posted_date']))
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-calendar" style="color: #648EB5; width: 18px; font-size: 16px;"></i>
+                    <div><strong style="color: #495057;">Posted:</strong> <span style="color: #212529;">{{ $job['posted_date'] }}</span></div>
+                  </div>
+                @endif
+              </div>
             </div>
 
             <div class="job-details">
-                <!-- Company & Employer Info Section -->
-                <div class="employer-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #648EB5;">
-                    <h4 style="margin: 0 0 10px 0; color: #648EB5; font-size: 14px; font-weight: 600;">
-                        <i class="fas fa-building"></i> Company & Contact Information
-                    </h4>
-                    <div style="display: grid; gap: 8px; font-size: 14px;">
-                        @if(!empty($job['company']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-briefcase" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Company:</strong> {{ $job['company'] }}
-                            </div>
-                        @endif
-                        @if(!empty($job['employer_name']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-user-tie" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Contact Person:</strong> {{ $job['employer_name'] }}
-                            </div>
-                        @endif
-                        @if(!empty($job['employer_email']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-envelope" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Email:</strong> <a href="mailto:{{ $job['employer_email'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_email'] }}</a>
-                            </div>
-                        @endif
-                        @if(!empty($job['employer_phone']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-phone" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Phone:</strong> <a href="tel:{{ $job['employer_phone'] }}" style="color: #648EB5; text-decoration: none;">{{ $job['employer_phone'] }}</a>
-                            </div>
-                        @endif
-                        @if(!empty($job['posted_date']))
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-calendar" style="color: #648EB5; width: 16px;"></i>
-                                <strong>Posted:</strong> {{ $job['posted_date'] }}
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="job-description">
-                    {{ $job['description'] ?? '' }}
-                </div>
-                <div class="skills-section">
-                    <div class="job-skills">
-                        @if(!empty($job['skills']))
-                            @foreach($job['skills'] as $skill)
-                                <span class="skill">{{ $skill }}</span>
-                            @endforeach
-                        @else
-                            <span class="skill">No specific skills listed</span>
-                        @endif
-                    </div>
-                </div>
+              <div class="job-description">{{ $job['description'] ?? '' }}</div>
             </div>
 
             <div class="job-actions">
-        <button class="view-details btn-details" onclick="toggleDetails(this)" data-job-id="{{ $job['id'] }}">
-                    <i class="fas fa-chevron-down"></i>
-                    View Details
-                </button>
-                <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
-                    <i class="fas fa-paper-plane"></i>
-                    Apply
-                </button>
-        <button class="bookmark-btn" data-job='@json($job)' onclick="toggleBookmark(this)">
-          @php $isBookmarked = isset($bookmarkedTitles) && in_array($job['title'], $bookmarkedTitles); @endphp
-          <i class="{{ $isBookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
-        </button>
+              <button class="view-details btn-details" onclick="toggleDetails(this)" data-job-id="{{ $job['id'] }}">
+                <i class="fas fa-chevron-down"></i> View Details
+              </button>
+              <button class="apply-btn" onclick="openApplyModal(this)" title="Apply using your profile">
+                <i class="fas fa-paper-plane"></i> Apply
+              </button>
+              <button class="bookmark-btn" data-job='@json($job)' onclick="toggleBookmark(this)">
+                <i class="far fa-bookmark"></i>
+              </button>
             </div>
           </div>
-          @endforeach
-        </div>
-      </div>
-      @endif
-    </div>
-
-    </div>
-  </div>
-
-  <!-- Include job details JavaScript -->
-  <script src="{{ asset('js/job-details.js') }}"></script>
-
-  <!-- Apply Modal -->
-  <div id="applyOverlay" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-    <div class="apply-modal-container" style="background:white; border-radius:16px; width:90%; max-width:800px; max-height:85vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modalSlideIn 0.3s ease;">
-      
-      <!-- Modal Header -->
-      <div style="background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); padding:30px; color:white; position:relative;">
-        <button onclick="closeApplyModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">&times;</button>
-        <div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
-          <div style="background:rgba(255,255,255,0.2); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center;">
-            <i class="fas fa-briefcase" style="font-size:24px;"></i>
-          </div>
-          <div>
-            <h2 id="applyJobTitle" style="margin:0; font-size:24px; font-weight:600;">Apply for Position</h2>
-            <p style="margin:5px 0 0 0; opacity:0.9; font-size:14px;">Submit your application with confidence</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Modal Body -->
-      <div id="resumePreview" style="padding:30px; max-height:calc(85vh - 180px); overflow-y:auto;">
-        <div style="display:flex; align-items:center; justify-content:center; padding:40px;">
-          <div class="loading-spinner" style="width:40px; height:40px; border:4px solid #f3f3f3; border-top:4px solid #648EB5; border-radius:50%; animation:spin 1s linear infinite;"></div>
-          <p style="margin-left:15px; color:#666; font-style:italic;">Loading your profile...</p>
-        </div>
-      </div>
-
-      <!-- Modal Footer -->
-      <div style="padding:20px 30px; background:#f8f9fa; border-top:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
-        <div style="color:#666; font-size:14px;">
-          <i class="fas fa-shield-alt" style="color:#648EB5; margin-right:5px;"></i>
-          Your data is secure
-        </div>
-        <div style="display:flex; gap:12px;">
-          <button onclick="closeApplyModal()" style="padding:10px 20px; border:1px solid #ddd; border-radius:8px; background:white; cursor:pointer; font-size:14px; font-weight:500; color:#666; transition:all 0.2s;">
-            Cancel
-          </button>
-          <button id="confirmApplyBtn" style="padding:10px 24px; border:none; border-radius:8px; background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); color:white; cursor:pointer; font-size:14px; font-weight:600; transition:all 0.2s; box-shadow:0 4px 12px rgba(100,142,181,0.3); display:flex; align-items:center; gap:8px; white-space:nowrap;">
-            <i class="fas fa-paper-plane"></i>
-            <span>Submit Application</span>
-          </button>
-        </div>
+        @endforeach
       </div>
     </div>
-  </div>
+  @endif
 
-  <style>
-    @keyframes modalSlideIn {
-      from { transform:translateY(-30px); opacity:0; }
-      to { transform:translateY(0); opacity:1; }
-    }
-    
-    @keyframes spin {
-      0% { transform:rotate(0deg); }
-      100% { transform:rotate(360deg); }
-    }
+@endsection
 
-    .apply-modal-container button:hover {
-      transform:translateY(-2px);
-      box-shadow:0 6px 16px rgba(0,0,0,0.15);
-    }
-
-    #resumePreview::-webkit-scrollbar {
-      width:8px;
-    }
-
-    #resumePreview::-webkit-scrollbar-track {
-      background:#f1f1f1;
-      border-radius:4px;
-    }
-
-    #resumePreview::-webkit-scrollbar-thumb {
-      background:#648EB5;
-      border-radius:4px;
-    }
-
-    #resumePreview::-webkit-scrollbar-thumb:hover {
-      background:#4E8EA2;
-    }
-
-    .job-info-card {
-      background:#f8f9fa;
-      border-radius:12px;
-      padding:20px;
-      margin-bottom:20px;
-      border-left:4px solid #648EB5;
-    }
-
-    .profile-section {
-      background:white;
-      border-radius:12px;
-      padding:20px;
-      margin-bottom:15px;
-      border:1px solid #e0e0e0;
-      transition:all 0.2s;
-    }
-
-    .profile-section:hover {
-      box-shadow:0 4px 12px rgba(0,0,0,0.08);
-      transform:translateY(-2px);
-    }
-
-    .profile-section h4 {
-      color:#648EB5;
-      font-size:16px;
-      margin:0 0 12px 0;
-      font-weight:600;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    .profile-section h4 i {
-      font-size:18px;
-    }
-
-    .info-row {
-      display:flex;
-      align-items:flex-start;
-      margin-bottom:8px;
-      font-size:14px;
-      color:#333;
-    }
-
-    .info-label {
-      font-weight:600;
-      min-width:120px;
-      color:#666;
-    }
-
-    .info-value {
-      flex:1;
-      color:#333;
-    }
-
-    .experience-item, .education-item {
-      background:#f8f9fa;
-      padding:12px;
-      border-radius:8px;
-      margin-bottom:10px;
-      border-left:3px solid #648EB5;
-    }
-
-    .experience-item strong, .education-item strong {
-      color:#648EB5;
-      font-size:15px;
-    }
-
-    .date-range {
-      font-size:13px;
-      color:#666;
-      font-style:italic;
-      margin-top:4px;
-    }
-  </style>
-
-  <script>
-    function getCsrfToken() { return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); }
-
-    let currentJobData = null;
-    let currentResumeSnapshot = null;
-
-    function openApplyModal(button) {
-      const card = button.closest('.job-card');
-      currentJobData = {
-        id: card.dataset.jobId || null,
-        title: card.dataset.title || '',
-        location: card.dataset.location || '',
-        type: card.dataset.type || '',
-        salary: card.dataset.salary || '',
-        description: card.dataset.description || '',
-        skills: card.dataset.skills ? JSON.parse(card.dataset.skills) : []
-      };
-
-      document.getElementById('applyJobTitle').textContent = currentJobData.title || 'Job Position';
-      document.getElementById('resumePreview').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; padding:40px;"><div class="loading-spinner" style="width:40px; height:40px; border:4px solid #f3f3f3; border-top:4px solid #648EB5; border-radius:50%; animation:spin 1s linear infinite;"></div><p style="margin-left:15px; color:#666; font-style:italic;">Loading your profile...</p></div>';
-      document.getElementById('applyOverlay').style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-
-      // Fetch profile resume snapshot
-      fetch("{{ route('profile.resume') }}", { headers: { 'X-CSRF-TOKEN': getCsrfToken() }})
-        .then(r => r.json())
-        .then(profile => {
-          currentResumeSnapshot = profile;
-          const html = [];
-          
-          // Job Info Card
-          html.push('<div class="job-info-card">');
-          html.push('<h4 style="margin:0 0 10px 0; color:#648EB5; font-weight:600;"><i class="fas fa-briefcase"></i> Job Details</h4>');
-          html.push(`<div class="info-row"><span class="info-label">Position:</span><span class="info-value">${currentJobData.title}</span></div>`);
-          html.push(`<div class="info-row"><span class="info-label">Location:</span><span class="info-value">${currentJobData.location || 'Not specified'}</span></div>`);
-          html.push(`<div class="info-row"><span class="info-label">Type:</span><span class="info-value">${currentJobData.type || 'Full-time'}</span></div>`);
-          html.push(`<div class="info-row"><span class="info-label">Salary:</span><span class="info-value">${currentJobData.salary || 'Negotiable'}</span></div>`);
-          html.push('</div>');
-
-          // Personal Info Section
-          html.push('<div class="profile-section">');
-          html.push('<h4><i class="fas fa-user"></i> Personal Information</h4>');
-          html.push(`<div class="info-row"><span class="info-label">Name:</span><span class="info-value">${profile.first_name} ${profile.last_name}</span></div>`);
-          html.push(`<div class="info-row"><span class="info-label">Email:</span><span class="info-value">${profile.email}</span></div>`);
-          if (profile.phone_number) html.push(`<div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${profile.phone_number}</span></div>`);
-          if (profile.birthday) {
-            const birthday = new Date(profile.birthday).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            html.push(`<div class="info-row"><span class="info-label">Birthday:</span><span class="info-value">${birthday}</span></div>`);
-          }
-          if (profile.location) html.push(`<div class="info-row"><span class="info-label">Location:</span><span class="info-value">${profile.location}</span></div>`);
-          html.push('</div>');
-
-          // Professional Summary
-          if (profile.summary) {
-            html.push('<div class="profile-section">');
-            html.push('<h4><i class="fas fa-file-alt"></i> Professional Summary</h4>');
-            html.push(`<p style="color:#333; line-height:1.6; margin:0;">${profile.summary}</p>`);
-            html.push('</div>');
-          }
-
-          // Education
-          if (profile.education && profile.education.length) {
-            html.push('<div class="profile-section">');
-            html.push('<h4><i class="fas fa-graduation-cap"></i> Education</h4>');
-            profile.education.forEach(e => {
-              html.push('<div class="education-item">');
-              html.push(`<strong>${e.degree || 'Degree'}</strong>`);
-              html.push(`<div style="color:#666; margin-top:4px;">${e.school || ''} ${e.year ? '• Class of ' + e.year : ''}</div>`);
-              html.push('</div>');
-            });
-            html.push('</div>');
-          }
-
-          // Work Experience
-          if (profile.experiences && profile.experiences.length) {
-            html.push('<div class="profile-section">');
-            html.push('<h4><i class="fas fa-briefcase"></i> Work Experience</h4>');
-            profile.experiences.forEach(ex => {
-              html.push('<div class="experience-item">');
-              html.push(`<strong>${ex.position || 'Position'}</strong>`);
-              html.push(`<div style="color:#666; margin-top:2px;">${ex.company || 'Company'}</div>`);
-              if (ex.start_date || ex.end_date) {
-                html.push(`<div class="date-range">${ex.start_date || 'Start'} - ${ex.end_date || 'Present'}</div>`);
-              }
-              if (ex.responsibilities) {
-                html.push(`<div style="margin-top:8px; color:#555; font-size:13px; line-height:1.5;">${ex.responsibilities}</div>`);
-              }
-              html.push('</div>');
-            });
-            html.push('</div>');
-          }
-
-          // Skills
-          if (profile.skills) {
-            html.push('<div class="profile-section">');
-            html.push('<h4><i class="fas fa-code"></i> Skills</h4>');
-            html.push(`<p style="color:#333; line-height:1.6; margin:0;">${profile.skills}</p>`);
-            html.push('</div>');
-          }
-
-          // Languages
-          if (profile.languages) {
-            html.push('<div class="profile-section">');
-            html.push('<h4><i class="fas fa-language"></i> Languages</h4>');
-            html.push(`<p style="color:#333; line-height:1.6; margin:0;">${profile.languages}</p>`);
-            html.push('</div>');
-          }
-
-          // Portfolio
-          if (profile.portfolio_links) {
-            html.push('<div class="profile-section">');
-            html.push('<h4><i class="fas fa-link"></i> Portfolio & Links</h4>');
-            html.push(`<p style="color:#648EB5; line-height:1.6; margin:0; word-break:break-all;">${profile.portfolio_links}</p>`);
-            html.push('</div>');
-          }
-
-          document.getElementById('resumePreview').innerHTML = html.join('\n');
-        })
-        .catch(() => { 
-          document.getElementById('resumePreview').innerHTML = '<div style="text-align:center; padding:40px;"><i class="fas fa-exclamation-circle" style="font-size:48px; color:#f44336; margin-bottom:15px;"></i><p style="color:#c00; font-size:16px; margin:0;">Failed to load profile.</p><p style="color:#666; font-size:14px; margin-top:8px;">Please update your profile in Settings before applying.</p></div>'; 
-        });
-    }
-
-    function closeApplyModal() {
-      document.getElementById('applyOverlay').style.display = 'none';
-      document.body.style.overflow = 'auto';
-      currentJobData = null;
-      currentResumeSnapshot = null;
-    }
-
-    document.getElementById('confirmApplyBtn')?.addEventListener('click', function(){
-      if (!currentJobData) {
-        showMessage('No job selected', 'error');
-        return;
-      }
-      
-      const submitBtn = this;
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Submitting...';
-      
-      const payload = {
-        job_title: currentJobData.title,
-        job_posting_id: currentJobData.id || null,
-        job_data: currentJobData,
-        resume_snapshot: currentResumeSnapshot || {}
-      };
-
-      console.log('Submitting application:', payload);
-
-      fetch("{{ route('job.apply') }}", {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'X-CSRF-TOKEN': getCsrfToken() 
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(response => response.json().then(data => ({ ok: response.ok, data })))
-      .then(({ ok, data }) => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        
-        if (ok && data.success) {
-          console.log('Application submitted successfully:', data);
-          closeApplyModal();
-          showMessage(data.message || 'Application submitted successfully!', 'success');
-        } else {
-          console.error('Application failed:', data);
-          showMessage(data.message || 'Failed to submit application', 'error');
+@push('scripts')
+<script>
+  // Local expand/collapse with persistence
+  document.addEventListener('DOMContentLoaded', function() {
+    const expandedJobs = JSON.parse(localStorage.getItem('expandedDashboardJobs') || '[]');
+    document.querySelectorAll('.job-card').forEach((card, index) => {
+      if (expandedJobs.includes(index)) {
+        const details = card.querySelector('.job-details');
+        const button = card.querySelector('.btn-details');
+        const icon = button ? button.querySelector('i') : null;
+        if (details) {
+          details.classList.add('expanded');
+          if (button && icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details'; }
         }
-      })
-      .catch(error => {
-        console.error('Error submitting application:', error);
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        showMessage('Network error. Please try again.', 'error');
-      });
-    });
-
-    function showMessage(message, type) {
-      const messageDiv = document.createElement('div');
-      messageDiv.textContent = message;
-      messageDiv.style.position = 'fixed';
-      messageDiv.style.top = '20px';
-      messageDiv.style.right = '20px';
-      messageDiv.style.padding = '12px 24px';
-      messageDiv.style.borderRadius = '4px';
-      messageDiv.style.zIndex = '10000';
-      messageDiv.style.color = 'white';
-      messageDiv.style.transform = 'translateY(-20px)';
-      messageDiv.style.opacity = '0';
-      messageDiv.style.transition = 'all 0.3s ease';
-      messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-      switch(type) { 
-        case 'success': messageDiv.style.backgroundColor = '#4CAF50'; break; 
-        case 'info': messageDiv.style.backgroundColor = '#2196F3'; break; 
-        case 'error': messageDiv.style.backgroundColor = '#f44336'; break; 
-        default: messageDiv.style.backgroundColor = '#2196F3'; 
       }
-      document.body.appendChild(messageDiv);
-      setTimeout(() => { messageDiv.style.transform = 'translateY(0)'; messageDiv.style.opacity = '1'; }, 10);
-      setTimeout(() => { messageDiv.style.transform = 'translateY(-20px)'; messageDiv.style.opacity = '0'; setTimeout(() => messageDiv.remove(), 300); }, 2000);
-    }
-
-    // Load expanded state from localStorage on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      const expandedJobs = JSON.parse(localStorage.getItem('expandedDashboardJobs') || '[]');
-      
-      document.querySelectorAll('.job-card').forEach((card, index) => {
-        if (expandedJobs.includes(index)) {
-          const details = card.querySelector('.job-details');
-          const button = card.querySelector('.btn-details');
-          const icon = button ? button.querySelector('i') : null;
-          
-          if (details) {
-            details.classList.add('expanded');
-            if (button && icon) {
-              icon.classList.remove('fa-chevron-down');
-              icon.classList.add('fa-chevron-up');
-              button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
-            }
-          }
-        }
-      });
     });
+  });
 
-    function toggleDetails(button) {
-        const jobCard = button.closest('.job-card');
-        const details = jobCard.querySelector('.job-details');
-        const icon = button.querySelector('i');
-        
+  function toggleDetails(button) {
+    const jobCard = button.closest('.job-card');
+    const details = jobCard.querySelector('.job-details');
+    const icon = button.querySelector('i');
     if (details.classList.contains('expanded')) {
       details.classList.remove('expanded');
       icon.classList.remove('fa-chevron-up');
@@ -1478,330 +449,41 @@
       icon.classList.add('fa-chevron-up');
       button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
     }
-        
-        // Save expanded state to localStorage
-        const cards = Array.from(document.querySelectorAll('.job-card'));
-        const expandedJobs = [];
-        cards.forEach((card, index) => {
-          const cardDetails = card.querySelector('.job-details');
-          if (cardDetails && cardDetails.classList.contains('expanded')) {
-            expandedJobs.push(index);
-          }
-        });
-        localStorage.setItem('expandedDashboardJobs', JSON.stringify(expandedJobs));
-    }
+    const cards = Array.from(document.querySelectorAll('.job-card'));
+    const expandedJobs = [];
+    cards.forEach((card, index) => { if (card.querySelector('.job-details')?.classList.contains('expanded')) expandedJobs.push(index); });
+    localStorage.setItem('expandedDashboardJobs', JSON.stringify(expandedJobs));
+  }
 
+  function getCsrfToken() { return document.querySelector('meta[name="csrf-token"]').getAttribute('content'); }
   function toggleBookmark(button) {
-    // Read full job data from data-job attribute (JSON)
     const job = JSON.parse(button.getAttribute('data-job') || '{}');
     const icon = button.querySelector('i');
     const isBookmarked = icon.classList.contains('fas');
     const url = isBookmarked ? "{{ route('bookmark.remove') }}" : "{{ route('bookmark.add') }}";
-
-    // disable button while request is in-flight
     button.disabled = true;
-
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-      },
-      body: JSON.stringify({ job: job })
-    })
-    .then(response => response.json().then(data => ({ ok: response.ok, data })))
-    .then(({ ok, data }) => {
-      if (!ok) {
-        showMessage(data.message || 'Failed to update bookmark', 'error');
-        return;
-      }
-
-      if (isBookmarked) {
-        // It was bookmarked, now removed
-        icon.classList.remove('fas');
-        icon.classList.add('far');
-        showMessage('Removed from bookmarks', 'info');
-      } else {
-        // It was not bookmarked, now added
-        icon.classList.remove('far');
-        icon.classList.add('fas');
-        showMessage('Bookmarked — visible in Bookmarks page', 'success');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      showMessage('Failed to update bookmark', 'error');
-    })
-    .finally(() => { button.disabled = false; });
-  }
-
-  // Notifications logic
-  function toggleNotifDropdown(e){
-    e.stopPropagation();
-    const dd = document.getElementById('notifDropdown');
-    const visible = dd.style.display === 'block';
-    if (!visible && dd.dataset.loaded !== '1') {
-      loadNotifications();
-    }
-    dd.style.display = visible ? 'none' : 'block';
-  }
-
-  document.addEventListener('click', function(e){
-    const dd = document.getElementById('notifDropdown');
-    if(!dd) return;
-    if (dd.style.display === 'block' && !dd.contains(e.target)) {
-      dd.style.display = 'none';
-    }
-  });
-
-  function loadNotifications(){
-    const list = document.getElementById('notifList');
-    list.innerHTML = '<li class="notif-empty">Loading...</li>';
-    fetch("{{ route('notifications.list') }}")
-      .then(r => r.json())
-      .then(({success, unread, notifications}) => {
-        if(!success){ list.innerHTML = '<li class="notif-empty">Failed to load</li>'; return; }
-        // update badge
-        const badge = document.getElementById('notifCount');
-        if (badge) badge.textContent = unread; else if (unread > 0) {
-          const bell = document.querySelector('.notification-bell');
-          const span = document.createElement('span');
-          span.className = 'badge'; span.id = 'notifCount'; span.textContent = unread;
-          bell.appendChild(span);
-        }
-        if(!notifications.length){ list.innerHTML = '<li class="notif-empty">No notifications yet</li>'; return; }
-        list.innerHTML = notifications.map(n => renderNotifItem(n)).join('');
-        document.getElementById('notifDropdown').dataset.loaded = '1';
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() }, body: JSON.stringify({ job }) })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok) { showToast(data.message || 'Failed to update bookmark', 'error'); return; }
+        icon.classList.toggle('fas'); icon.classList.toggle('far');
+        showToast(isBookmarked ? 'Removed from bookmarks' : 'Bookmarked — visible in Bookmarks page', isBookmarked ? 'info' : 'success');
       })
-      .catch(() => list.innerHTML = '<li class="notif-empty">Network error</li>');
+      .catch(() => showToast('Failed to update bookmark', 'error'))
+      .finally(() => { button.disabled = false; });
+  }
+  function showToast(msg, type){
+    const el = document.createElement('div');
+    el.textContent = msg; el.style.cssText = 'position:fixed; top:20px; right:20px; padding:12px 24px; border-radius:10px; color:#fff; z-index:10000; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-weight:600;';
+    el.style.background = type==='success' ? '#28a745' : type==='info' ? '#648EB5' : '#dc3545';
+    document.body.appendChild(el); setTimeout(()=>{ el.remove(); }, 2000);
   }
 
-  function renderNotifItem(n){
-    const icon = n.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
-    const isUnread = n.read ? '' : 'unread';
-    const when = new Date(n.created_at).toLocaleString();
-    return `<li class="notif-item ${isUnread}" onclick="showNotificationDetail(${n.id})" style="cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='${n.read ? '' : '#f7fbff'}'">
-      <i class="fas ${icon}"></i>
-      <div style="flex:1;">
-        <div style=\"font-weight:600; color:#333;\">${escapeHtml(n.title || 'Notification')}</div>
-        <div style=\"color:#555; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;\">${escapeHtml(n.message || '')}</div>
-        <div class="meta">${when}</div>
-      </div>
-      <i class="fas fa-chevron-right" style="color:#ccc; font-size:12px; align-self:center;"></i>
-    </li>`;
-  }
-
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
-  }
-
-  function markAllNotificationsRead(e){
-    e.stopPropagation();
-    fetch("{{ route('notifications.markAllRead') }}", {
-      method:'POST',
-      headers:{ 'X-CSRF-TOKEN': getCsrfToken() }
-    }).then(r=>r.json()).then(({success})=>{
-      if(success){
-        const items = document.querySelectorAll('.notif-item');
-        items.forEach(li => li.classList.remove('unread'));
-        const badge = document.getElementById('notifCount');
-        if (badge) badge.remove();
-      }
-    });
-  }
-
-  function refreshNotifications(e){ e.stopPropagation(); loadNotifications(); }
-
-  function showNotificationDetail(notifId){
-    fetch("{{ route('notifications.list') }}")
-      .then(r => r.json())
-      .then(({notifications}) => {
-        const notif = notifications.find(n => n.id === notifId);
-        if (!notif) return;
-        
-        const icon = notif.type === 'application_status_changed' ? 'fa-clipboard-check' : 'fa-paper-plane';
-        const createdAt = notif.created_at ? new Date(notif.created_at).toLocaleString('en-US', {
-          year: 'numeric', month: 'long', day: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-        }) : '';
-        
-        let additionalInfo = '';
-        if (notif.data) {
-          try {
-            const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data;
-            additionalInfo = '<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">';
-            additionalInfo += '<h4 style="margin:0 0 10px 0; color:#648EB5; font-size:14px;">Additional Details</h4>';
-            for (const [key, value] of Object.entries(data)) {
-              const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-              let displayValue = value;
-              if (label === 'Interview Date' && value) {
-                try {
-                  const d = new Date(value);
-                  if (!isNaN(d.getTime())) {
-                    displayValue = d.toLocaleString('en-US', {
-                      year: 'numeric', month: 'long', day: 'numeric',
-                      hour: '2-digit', minute: '2-digit'
-                    });
-                  }
-                } catch(e) {}
-              }
-              additionalInfo += `<div style="margin-bottom:8px;"><strong>${label}:</strong> ${escapeHtml(String(displayValue))}</div>`;
-            }
-            additionalInfo += '</div>';
-          } catch(e) {}
-        }
-        
-        const modal = document.createElement('div');
-        modal.id = 'notifDetailModal';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
-        modal.innerHTML = `
-          <div style="background:white; border-radius:16px; width:90%; max-width:600px; max-height:85vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modalSlideIn 0.3s ease;">
-            <div style="background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); padding:25px; color:white; position:relative;">
-              <button onclick="closeNotifModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">&times;</button>
-              <div style="display:flex; align-items:center; gap:15px;">
-                <div style="width:50px; height:50px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                  <i class="fas ${icon}" style="font-size:24px;"></i>
-                </div>
-                <div>
-                  <h3 style="margin:0; font-size:20px; font-weight:600;">Notification Details</h3>
-                  <p style="margin:5px 0 0 0; opacity:0.9; font-size:13px;">${createdAt}</p>
-                </div>
-              </div>
-            </div>
-            <div style="padding:25px; max-height:calc(85vh - 150px); overflow-y:auto;">
-              <h4 style="margin:0 0 10px 0; color:#333; font-size:18px;">${escapeHtml(notif.title || 'Notification')}</h4>
-              <p style="color:#555; line-height:1.6; margin:0;">${escapeHtml(notif.message || '')}</p>
-              ${additionalInfo}
-            </div>
-            <div style="padding:20px 25px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
-              <button onclick="closeNotifModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Close</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-        document.body.style.overflow = 'hidden';
-        
-        // Mark this specific notification as read and update count immediately
-        if (!notif.read) {
-          fetch("{{ url('/notifications') }}/" + notifId + "/read", {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': getCsrfToken() }
-          }).then(r => r.json()).then(({success, unreadCount}) => {
-            if (success) {
-              // Update badge count immediately
-              const badge = document.getElementById('notifCount');
-              if (unreadCount > 0) {
-                if (badge) {
-                  badge.textContent = unreadCount;
-                } else {
-                  const bell = document.querySelector('.notification-bell');
-                  if (bell) {
-                    const span = document.createElement('span');
-                    span.className = 'badge';
-                    span.id = 'notifCount';
-                    span.textContent = unreadCount;
-                    span.style.cssText = 'position:absolute; top:0; right:0; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; font-weight:700;';
-                    bell.appendChild(span);
-                  }
-                }
-              } else {
-                if (badge) badge.remove();
-              }
-              // Refresh the notification list to show updated read status
-              loadNotifications();
-            }
-          });
-        }
-      });
-  }
-
-  function closeNotifModal(){
-    const modal = document.getElementById('notifDetailModal');
-    if (modal) {
-      modal.remove();
-      document.body.style.overflow = 'auto';
-    }
-  }
-
-  // Auto-refresh notifications every 30 seconds
-  (function(){
-    let lastUnreadCount = 0;
-
-    function checkForNewNotifications(){
-      fetch("{{ route('notifications.list') }}")
-        .then(r => r.json())
-        .then(({success, unread, notifications}) => {
-          if(!success) return;
-          
-          // Update badge
-          const badge = document.getElementById('notifCount');
-          if (unread > 0) {
-            if (badge) {
-              badge.textContent = unread;
-            } else {
-              const bell = document.querySelector('.notification-bell');
-              if (bell) {
-                const span = document.createElement('span');
-                span.className = 'badge';
-                span.id = 'notifCount';
-                span.textContent = unread;
-                bell.appendChild(span);
-              }
-            }
-          } else {
-            if (badge) badge.remove();
-          }
-
-          // Show visual indicator for new notifications
-          if (unread > lastUnreadCount && lastUnreadCount !== 0) {
-            const bell = document.querySelector('.notification-bell i');
-            if (bell) {
-              bell.style.animation = 'bellRing 0.5s ease';
-              setTimeout(() => { bell.style.animation = ''; }, 500);
-            }
-          }
-
-          lastUnreadCount = unread;
-
-          // If dropdown is open, refresh the list
-          const dd = document.getElementById('notifDropdown');
-          if (dd && dd.style.display === 'block') {
-            loadNotifications();
-          }
-        })
-        .catch(() => {});
-    }
-
-    // Check every 3 seconds for near real-time notifications
-    setInterval(checkForNewNotifications, 3000);
-  })();
-  </script>
-
-  <script>
-    // Show the job seeker guide by default unless user has dismissed it
-    document.addEventListener('DOMContentLoaded', function(){
-      try {
-        const hide = localStorage.getItem('hideJobSeekerGuide') === '1';
-        const el = document.getElementById('jobSeekerGuide');
-        if (el && !hide) el.style.display = 'block';
-      } catch(_) {}
-    });
-
-    function dismissJobSeekerGuide(){
-      try { localStorage.setItem('hideJobSeekerGuide', '1'); } catch(_) {}
-      const el = document.getElementById('jobSeekerGuide');
-      if (el) el.style.display = 'none';
-    }
-  </script>
-
-  <style>
-    @keyframes bellRing {
-      0%, 100% { transform: rotate(0deg); }
-      10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
-      20%, 40%, 60%, 80% { transform: rotate(10deg); }
-    }
-  </style>
-
-  </body>
-  </html>
+  // Job Seeker guide visibility
+  document.addEventListener('DOMContentLoaded', function(){
+    try { const hide = localStorage.getItem('hideJobSeekerGuide') === '1'; const el = document.getElementById('jobSeekerGuide'); if (el && !hide) el.style.display = 'block'; } catch(_) {}
+  });
+  function dismissJobSeekerGuide(){ try { localStorage.setItem('hideJobSeekerGuide', '1'); } catch(_) {} const el = document.getElementById('jobSeekerGuide'); if (el) el.style.display = 'none'; }
+</script>
+@endpush
 

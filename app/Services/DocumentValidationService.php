@@ -152,13 +152,14 @@ class DocumentValidationService
         $prompt .= "- Expired permits (validity date has passed)\n";
         $prompt .= "- Documents without official seals, logos, or signatures\n\n";
 
-        $prompt .= "RESPONSE FORMAT (JSON only, no additional text):\n";
+    $prompt .= "RESPONSE FORMAT (JSON only, no additional text):\n";
         $prompt .= "{\n";
         $prompt .= '  "is_business_permit": true/false,'."\n";
         $prompt .= '  "confidence_score": 0-100,'."\n";
         $prompt .= '  "document_type": "description of what this document is",'."\n";
         $prompt .= '  "has_official_seals": true/false,'."\n";
         $prompt .= '  "has_registration_number": true/false,'."\n";
+    $prompt .= '  "permit_number": "the permit or registration number exactly as printed, or null",' ."\n";
         $prompt .= '  "business_name_matches": true/false/null,'."\n";
         $prompt .= '  "appears_authentic": true/false,'."\n";
         $prompt .= '  "is_expired": true/false/null,'."\n";
@@ -213,15 +214,27 @@ class DocumentValidationService
                 $requiresReview = true;
             }
 
+            // Parse expiry date from validity_dates if available
+            $permitExpiryDate = null;
+            if (!empty($data['validity_dates'])) {
+                $permitExpiryDate = $this->extractExpiryDate($data['validity_dates']);
+            }
+
+            // Extract permit/registration number if available
+            $permitNumber = $data['permit_number'] ?? null;
+
             return [
                 'valid' => $finalValid,
                 'confidence' => $confidenceScore,
                 'reason' => $data['reason'] ?? 'Unable to verify document',
                 'requires_review' => $requiresReview,
+                'permit_expiry_date' => $permitExpiryDate,
+                'permit_number' => $permitNumber,
                 'ai_analysis' => [
                     'document_type' => $data['document_type'] ?? 'Unknown',
                     'has_official_seals' => $data['has_official_seals'] ?? false,
                     'has_registration_number' => $data['has_registration_number'] ?? false,
+                    'permit_number' => $permitNumber,
                     'business_name_matches' => $data['business_name_matches'] ?? null,
                     'appears_authentic' => $data['appears_authentic'] ?? false,
                     'is_expired' => $data['is_expired'] ?? null,
@@ -305,6 +318,50 @@ class DocumentValidationService
         ];
 
         return $formats[$mimeType] ?? null;
+    }
+
+    /**
+     * Extract expiry date from validity dates string.
+     * 
+     * @param string $validityDates String containing validity dates
+     * @return string|null Expiry date in Y-m-d format or null
+     */
+    protected function extractExpiryDate(string $validityDates): ?string
+    {
+        try {
+            // Common date patterns in Philippine business permits:
+            // "Valid until December 31, 2025"
+            // "Valid from: Jan 1, 2025 to: Dec 31, 2025"
+            // "Expiry Date: 12/31/2025"
+            // "Valid: 2025-01-01 to 2025-12-31"
+            
+            // Try to find "until", "to", "expiry", "expires" patterns
+            $patterns = [
+                '/(?:until|expires?|expiry.*?|to)[:\s]+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i',
+                '/(?:until|expires?|expiry)[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/i',
+                '/to[:\s]+(\d{4}-\d{2}-\d{2})/i',
+                '/(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})(?!.*\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/', // Last date found
+            ];
+
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $validityDates, $matches)) {
+                    $dateStr = $matches[1];
+                    
+                    // Try to parse the date
+                    try {
+                        $date = new \DateTime($dateStr);
+                        return $date->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to extract expiry date from: ' . $validityDates);
+            return null;
+        }
     }
 
     /**

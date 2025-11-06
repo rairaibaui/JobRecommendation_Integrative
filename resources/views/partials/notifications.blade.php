@@ -3,12 +3,12 @@
     <i class="fas fa-bell"></i>
     <span id="empNotifBadge" class="badge" style="position:absolute; top:5px; right:5px; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; min-width:18px; height:18px; align-items:center; justify-content:center; display:none;">0</span>
   </div>
-  <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:360px; max-height:420px; overflow-y:auto; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:10px 0; z-index:1100; font-size:14px; line-height:1.35;">
-    <div class="notif-header" style="padding:10px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; font-weight:600;">
-      <span>Notifications</span>
-      <div style="display:flex; gap:8px;">
-        <button onclick="empMarkAllNotificationsRead(event)" style="background:#eee;color:#333;border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">Mark all as read</button>
-        <button onclick="empRefreshNotifications(event)" style="background:#4E8EA2; color:#fff; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:12px;">Refresh</button>
+  <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:380px; max-height:500px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:0; z-index:1100; font-size:14px; line-height:1.35;">
+    <div class="notif-header" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #f0f0f0; background:#f8f9fa;">
+      <span style="font-size:20px; font-weight:700; color:#2c3e50;">Notifications</span>
+      <div style="display:flex; gap:10px;">
+        <button onclick="empMarkAllNotificationsRead(event)" style="background:transparent;color:#5a6c7d;border:1px solid #cbd5e0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all 0.2s;font-weight:500;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='transparent'">Mark all as read</button>
+        <button onclick="empRefreshNotifications(event)" style="background:#5B9BD5; color:#fff; border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s;" onmouseover="this.style.background='#4a8bc4'" onmouseout="this.style.background='#5B9BD5'">Refresh</button>
       </div>
     </div>
     <ul id="empNotifList" class="notif-list" style="list-style:none; margin:0; padding:0;"></ul>
@@ -47,7 +47,7 @@
         if (!list || !badge || !dd) return;
         if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread; } else { badge.style.display = 'none'; }
         dd.dataset.loaded = '1';
-        if (!notifications.length){ list.innerHTML = '<li class="notif-empty" style="padding:20px; text-align:center; color:#777;">No notifications yet</li>'; return; }
+        if (!notifications.length){ list.innerHTML = '<li class="notif-empty" style="padding:40px 20px; text-align:center; color:#94a3b8;"><i class="fas fa-bell-slash" style="font-size:48px; color:#cbd5e0; margin-bottom:12px; display:block;"></i><div style="font-size:16px; font-weight:500; color:#64748b;">No notifications yet</div><div style="font-size:13px; margin-top:4px;">You\'re all caught up!</div></li>'; return; }
         list.innerHTML = notifications.map(n => empRenderNotifItem(n)).join('');
       })
       .catch(() => {});
@@ -56,6 +56,10 @@
   function empRenderNotifItem(n){
     const icon = (function(){
       switch(n.type){
+        case 'success': return 'check-circle';
+        case 'error': return 'times-circle';
+        case 'warning': return 'exclamation-triangle';
+        case 'info': return 'info-circle';
         case 'interview_scheduled': return 'calendar-alt';
         case 'application_accepted': return 'check-circle';
         case 'application_rejected': return 'times-circle';
@@ -67,17 +71,33 @@
         default: return 'bell';
       }
     })();
+    
+    const iconColor = (function(){
+      switch(n.type){
+        case 'success': return '#28a745';
+        case 'error': return '#dc3545';
+        case 'warning': return '#ffa500';
+        case 'info': return '#17a2b8';
+        case 'new_application': return '#5B9BD5';
+        default: return '#648EB5';
+      }
+    })();
     const readClass = n.read ? '' : 'unread';
-    const createdAt = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+    const bgColor = n.read ? '#fff' : '#f0f7ff';
+    const createdAt = n.created_at ? new Date(n.created_at).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+    const hasLink = n.link ? ' style="cursor:pointer;"' : '';
+    const linkIndicator = n.link ? '<i class="fas fa-chevron-right" style="color:#cbd5e0; font-size:14px; margin-left:auto; flex-shrink:0;"></i>' : '';
     return `
-      <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})" style="padding:12px 16px; display:flex; gap:10px; border-bottom:1px solid #f3f3f3; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='${n.read ? '' : '#f7fbff'}'">
-        <i class="fas fa-${icon}" style="color:#648EB5; margin-top:3px;"></i>
-        <div style="flex:1;">
-          <div style="font-weight:600;">${escapeHtml(n.title || '')}</div>
-          <div style="color:#555; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(n.message || '')}</div>
-          <div class="meta" style="font-size:12px; color:#888; margin-top:4px;">${createdAt}</div>
+      <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})"${hasLink} style="padding:14px 16px; display:flex; align-items:flex-start; gap:12px; border-bottom:1px solid #f0f0f0; cursor:pointer; transition:all 0.2s; background:${bgColor};" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${bgColor}'">
+        <div style="width:40px; height:40px; background:${iconColor}15; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i class="fas fa-${icon}" style="color:${iconColor}; font-size:18px;"></i>
         </div>
-        <i class="fas fa-chevron-right" style="color:#ccc; font-size:12px; align-self:center;"></i>
+        <div style="flex:1; min-width:0; overflow:hidden;">
+          <div style="font-weight:600; font-size:14px; color:#2c3e50; margin-bottom:5px; line-height:1.3;">${escapeHtml(n.title || '')}</div>
+          <div style="color:#64748b; font-size:13px; line-height:1.5; margin-bottom:6px; word-wrap:break-word; overflow-wrap:break-word;">${escapeHtml(n.message || '')}</div>
+          <div class="meta" style="font-size:11px; color:#94a3b8;">${createdAt}</div>
+        </div>
+        ${linkIndicator}
       </li>
     `;
   }
@@ -100,7 +120,22 @@
       .then(r => r.json())
       .then(({notifications}) => {
         const notif = notifications.find(n => n.id === notifId);
-        if (!notif) return;
+        if (!notif) {
+          console.error('Notification not found:', notifId);
+          return;
+        }
+        
+        console.log('Notification clicked:', notif);
+        console.log('Has link?', notif.link);
+        
+        // If notification has a link, redirect to it
+        if (notif.link && notif.link.trim() !== '') {
+          console.log('Redirecting to:', notif.link);
+          window.location.href = notif.link;
+          return;
+        }
+        
+        console.log('No link, showing modal');
         
         const icon = (function(){
           switch(notif.type){

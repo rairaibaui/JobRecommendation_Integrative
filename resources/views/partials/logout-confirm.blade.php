@@ -208,10 +208,13 @@
 </style>
 
 <script>
-  let logoutFormPending = null;
+  // Use window-scoped variable to avoid redeclaration errors
+  if (typeof window.logoutFormPending === 'undefined') {
+    window.logoutFormPending = null;
+  }
 
   function showLogoutModal(form) {
-    logoutFormPending = form;
+    window.logoutFormPending = form;
     const modal = document.getElementById('logoutConfirmModal');
     if (modal) {
       modal.style.display = 'flex';
@@ -226,11 +229,11 @@
       modal.style.display = 'none';
       document.body.style.overflow = 'auto';
     }
-    logoutFormPending = null;
+    window.logoutFormPending = null;
   }
 
   function confirmLogout() {
-    if (logoutFormPending) {
+    if (window.logoutFormPending) {
       // Show loading state
       const icon = document.getElementById('logoutModalIcon');
       const title = document.getElementById('logoutModalTitle');
@@ -262,10 +265,10 @@
             // Create a new form element to avoid any event handler issues
             const newForm = document.createElement('form');
             newForm.method = 'POST';
-            newForm.action = logoutFormPending.action;
+            newForm.action = window.logoutFormPending.action;
           
             // Copy CSRF token
-            const csrfInput = logoutFormPending.querySelector('input[name="_token"]');
+            const csrfInput = window.logoutFormPending.querySelector('input[name="_token"]');
             if (csrfInput) {
               const newCsrf = document.createElement('input');
               newCsrf.type = 'hidden';
@@ -282,18 +285,21 @@
     }
   }
 
-  // Close modal on ESC key
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      closeLogoutModal();
-    }
-  });
+  // Close modal on ESC key (use addEventListener only once)
+  if (!window.logoutModalEscListenerAdded) {
+    window.logoutModalEscListenerAdded = true;
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeLogoutModal();
+      }
+    });
 
-  // Close modal on overlay click
-  document.addEventListener('click', function(e) {
-    const modal = document.getElementById('logoutConfirmModal');
-    if (modal && e.target === modal) {
-      closeLogoutModal();
-    }
-  });
+    // Close modal on overlay click
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('logoutConfirmModal');
+      if (modal && e.target === modal) {
+        closeLogoutModal();
+      }
+    });
+  }
 </script>
