@@ -11,18 +11,18 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('resume_verification_status')->default('pending')->after('resume_file');
+            // $table->string('resume_verification_status')->default('pending')->after('resume_file');
             // Status: pending, verified, needs_review, incomplete, rejected
 
-            $table->json('verification_flags')->nullable()->after('resume_verification_status');
+            // $table->json('verification_flags')->nullable()->after('resume_verification_status');
             // Stores array of issues: missing_experience, missing_education, duplicate_content, etc.
 
-            $table->integer('verification_score')->default(0)->after('verification_flags');
+            // $table->integer('verification_score')->default(0)->after('verification_flags');
             // Score 0-100 based on completeness and quality
 
-            $table->timestamp('verified_at')->nullable()->after('verification_score');
+            // $table->timestamp('verified_at')->nullable()->after('verification_score');
 
-            $table->text('verification_notes')->nullable()->after('verified_at');
+            // $table->text('verification_notes')->nullable()->after('verified_at');
             // Admin notes or AI feedback
         });
     }
