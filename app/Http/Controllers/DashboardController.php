@@ -41,12 +41,12 @@ class DashboardController extends Controller
             if (empty($user->phone_number)) {
                 $profileMissing[] = 'Phone Number';
             }
-            $education = is_array($user->education ?? null) ? $user->education : [];
-            if (empty($education)) {
+            // Check education_level field instead of education array
+            if (empty($user->education_level)) {
                 $profileMissing[] = 'Education';
             }
-            $experiences = is_array($user->experiences ?? null) ? $user->experiences : [];
-            if (empty($experiences)) {
+            // Check years_of_experience field instead of experiences array
+            if (!isset($user->years_of_experience) || $user->years_of_experience === null || $user->years_of_experience === '') {
                 $profileMissing[] = 'Work Experience';
             }
             if (empty($user->resume_file)) {
@@ -182,7 +182,11 @@ class DashboardController extends Controller
         /** @var \App\Models\User $user */
         $user = \App\Models\User::find(Auth::id());
         if (($user->user_type ?? null) === 'employer') {
-            return view('employer.settings', compact('user'));
+            // Include validation for displaying verification badge
+            $validation = \App\Models\DocumentValidation::where('user_id', $user->id)
+                ->where('document_type', 'business_permit')
+                ->first();
+            return view('employer.settings', compact('user', 'validation'));
         }
         return view('settings', compact('user'));
     }

@@ -7,813 +7,240 @@
 <title>Employer Dashboard - Job Portal Mandaluyong</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+@include('employer.partials.unified-styles')
+
 <style>
+/* Dashboard-specific styles */
   * { box-sizing: border-box; margin:0; padding:0; }
-  body {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%);
-    padding: 88px 20px 20px 20px;
-    gap: 20px;
-  }
-
-  /* Sidebar */
-  .sidebar {
-    position: fixed;
-    left: 20px;
-    top: 88px;
-    width: 250px;
-    height: calc(100vh - 108px);
-    border-radius: 8px;
-    background: #FFF;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .sidebar .profile-ellipse {
-    align-self: center;
-  }
-
-  .profile-name {
-    align-self: center;
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: #000;
-    margin-bottom: 20px;
-  }
-
-  .company-name {
-    align-self: center;
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: #506B81;
-    background: #eaf2fb;
-    border: 1px solid #cddff2;
-    border-radius: 999px;
-    padding: 5px 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    letter-spacing: 0.3px;
-    margin-bottom: 4px;
-  }
-
-  .company-badge {
-    align-self: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 16px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #2B4053;
-    margin-bottom: 20px;
-  }
-
-  /* Verification Status Badge */
-  .verification-badge {
-    align-self: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 20px;
-    margin-bottom: 12px;
-    border: 2px solid;
-    animation: fadeIn 0.5s ease-in;
-  }
+  body { width:100vw; min-height:100vh; display:flex; font-family:'Roboto', sans-serif; background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%); padding:88px 20px 20px 20px; gap:20px; }
   
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .verification-approved {
-    background: #d4edda;
-    color: #155724;
-    border-color: #c3e6cb;
-  }
-  
-  .verification-pending {
-    background: #fff3cd;
-    color: #856404;
-    border-color: #ffeaa7;
-  }
-  
-  .verification-rejected {
-    background: #f8d7da;
-    color: #721c24;
-    border-color: #f5c6cb;
-  }
-  
-  .verification-none {
-    background: #e2e3e5;
-    color: #383d41;
-    border-color: #d6d8db;
-  }
-
-  .sidebar .sidebar-btn {
-    align-self: flex-start;
-  }
-
-  .profile-ellipse {
-    width: 62px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .profile-icon {
-    width: 62px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-radius: 50%;
-  }
-
-  .profile-icon i {
-    font-size: 30px;
-    color: #FFF;
-  }
-
-  .profile-icon img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    border: none;
-    outline: none;
-    box-shadow: none;
-    display: block;
-  }
-
-  .sidebar-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    height: 39px;
-    padding: 0 10px;
-    border-radius: 8px;
-    background: transparent;
-    box-shadow: none;
-    color: #000;
-    font-size: 20px;
-    font-weight: 400;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s ease;
-  }
-
-  .sidebar-btn:hover {
-    background: #e8f0f7;
-  }
-
-  .sidebar-btn.active {
-    background: #648EB5;
-    box-shadow: 0 7px 4px rgba(0,0,0,0.25);
-    color: #000;
-    width: 100%;
-  }
-
-  .sidebar-btn-icon {
-    margin-right: 10px;
-  }
-
-  /* Main content */
-  .main {
-    margin-left: 290px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .top-navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 68px;
-    background: #2B4053;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    color: #FFF;
-    font-family: 'Poppins', sans-serif;
-    font-size: 24px;
-    font-weight: 800;
-    z-index: 1000;
-    justify-content: space-between;
-  }
-
-  .navbar-left {
-    display: flex;
-    align-items: center;
-  }
-
-  .hamburger {
-    margin-right: 20px;
-    color: #FFF;
-  }
-
-  .logout-btn {
-    background: transparent;
-    border: 1px solid #FFF;
-    color: #FFF;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s ease;
-  }
-
-  .logout-btn:hover {
-    background: #FFF;
-    color: #2B4053;
-  }
-
-  .welcome {
-    font-family: 'Poppins', sans-serif;
-    font-size: 32px;
-    font-weight: 600;
-    color: #FFF;
-    margin-bottom: 10px;
-  }
-
-  /* Stats Cards */
-  .stats-cards {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-
-  .stat-card {
-    flex: 1;
-    background: #FFF;
-    border-radius: 8px;
-    box-shadow: 0 8px 4px 0 rgba(144, 141, 141, 0.3);
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-
-  .stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #648EB5, #334A5E);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .stat-icon i {
-    font-size: 28px;
-    color: #FFF;
-  }
-
-  .stat-content h3 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 28px;
-    font-weight: 700;
-    color: #334A5E;
-    margin: 0;
-  }
-
-  .stat-content p {
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-  }
-
-  /* Job Postings Section */
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-
-  .section-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: 24px;
-    font-weight: 600;
-    color: #FFF;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #648EB5, #334A5E);
-    color: #FFF;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-  }
-
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
-
-  /* Job Cards */
-  .jobs-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
-    overflow-y: auto;
-    max-height: calc(100vh - 350px);
-    padding-right: 10px;
-  }
-
-  .job-card {
-    background: #FFF;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    padding: 20px;
-    transition: all 0.3s ease;
-  }
-
-  .job-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-  }
-
-  .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-
-  .job-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: #334A5E;
-    margin: 0 0 5px 0;
-  }
-
-  .job-department {
-    font-size: 13px;
-    color: #666;
-  }
-
-  .job-status {
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .status-active {
-    background: #d4edda;
-    color: #155724;
-  }
-
-  .status-closed {
-    background: #f8d7da;
-    color: #721c24;
-  }
-
-  .job-details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
-  }
-
-  .job-detail-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: #555;
-  }
-
-  .job-detail-item i {
-    width: 16px;
-    color: #648EB5;
-  }
-
-  .job-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px solid #e9ecef;
-  }
-
-  .applications-count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    color: #648EB5;
-    font-weight: 500;
-  }
-
-  .job-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .btn-icon {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 6px;
-    background: #f8f9fa;
-    color: #555;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .btn-icon:hover {
-    background: #648EB5;
-    color: #FFF;
-  }
-
-  /* Scrollbar styling */
-  .jobs-container::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .jobs-container::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
-  }
-
-  .jobs-container::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.3);
-    border-radius: 4px;
-  }
-
-  .jobs-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.5);
-  }
+  .main { margin-left:270px; flex:1; display:flex; flex-direction:column; gap:20px; padding-bottom: 40px; }
+  .welcome { font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 600; color: #FFF; margin-bottom: 10px; }
+  .stats-cards { display:flex; gap:20px; margin-bottom:20px; }
+  .stat-card { flex:1; background:#FFF; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); padding:24px; display:flex; align-items:center; gap:18px; transition:all .3s cubic-bezier(.4,0,.2,1); border:1px solid rgba(100,142,181,.1); position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg,#648EB5 0%, #4E8EA2 100%); transform:scaleX(0); transform-origin:left; transition:transform .4s ease; }
+  .stat-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(100,142,181,.15); border-color:rgba(100,142,181,.3); }
+  .stat-card:hover::before { transform:scaleX(1); }
+  .stat-icon { width:64px; height:64px; border-radius:12px; background:linear-gradient(135deg,#648EB5 0%, #4E8EA2 100%); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(100,142,181,.25); transition:all .3s ease; }
+  .stat-card:hover .stat-icon { transform:scale(1.05) rotate(-5deg); box-shadow:0 6px 16px rgba(100,142,181,.35); }
+  .stat-icon i { font-size:30px; color:#FFF; transition:transform .3s ease; }
+  .stat-card:hover .stat-icon i { transform:scale(1.1); }
+  .stat-content h3 { font-family:'Poppins', sans-serif; font-size:32px; font-weight:700; color:#334A5E; margin:0 0 4px 0; line-height:1; }
+  .stat-content p { font-family:'Roboto', sans-serif; font-size:14px; color:#6B7280; margin:0; font-weight:500; letter-spacing:.3px; }
+  .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+  .section-title { font-family:'Poppins', sans-serif; font-size:24px; font-weight:600; color:#FFF; }
+  .btn-primary { background:linear-gradient(135deg,#648EB5,#334A5E); color:#FFF; border:none; padding:10px 20px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:8px; transition:all .3s ease; text-decoration:none; }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.2); }
+  .jobs-container { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:20px; padding-right:10px; }
+  .job-card { background:#FFF; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); padding:24px; transition:all .3s cubic-bezier(.4,0,.2,1); border:1px solid rgba(100,142,181,.1); position:relative; overflow:hidden; }
+  .job-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:linear-gradient(180deg,#648EB5 0%, #4E8EA2 100%); transform:scaleY(0); transform-origin:top; transition:transform .3s ease; }
+  .job-card:hover { transform:translateY(-6px); box-shadow:0 12px 28px rgba(100,142,181,.18); border-color:rgba(100,142,181,.3); }
+  .job-card:hover::before { transform:scaleY(1); }
+  .job-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; gap:12px; }
+  .job-title { font-family:'Poppins', sans-serif; font-size:19px; font-weight:600; color:#334A5E; margin:0 0 6px 0; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .job-department { font-size:13px; color:#6B7280; font-weight:500; display:flex; align-items:center; gap:6px; }
+  .job-department i { font-size:12px; color:#648EB5; }
+  .job-status { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; flex-shrink:0; }
+  .status-active { background:linear-gradient(135deg,#d4edda 0%,#c3e6cb 100%); color:#155724; border:1px solid #c3e6cb; }
+  .status-closed { background:linear-gradient(135deg,#f8d7da 0%,#f5c6cb 100%); color:#721c24; border:1px solid #f5c6cb; }
+  .status-draft { background:linear-gradient(135deg,#fff3cd 0%,#ffeaa7 100%); color:#856404; border:1px solid #ffeaa7; }
+  .job-details { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+  .job-detail-item { display:flex; align-items:center; gap:10px; font-size:14px; color:#4B5563; padding:4px 0; }
+  .job-detail-item i { width:18px; color:#648EB5; font-size:14px; text-align:center; }
+  .job-footer { display:flex; justify-content:space-between; align-items:center; padding-top:16px; border-top:2px solid #F3F4F6; gap:12px; }
+  .applications-count { display:flex; align-items:center; gap:8px; font-size:14px; color:#648EB5; font-weight:600; padding:6px 12px; background:linear-gradient(135deg,#f0f7fc 0%,#e8f4fd 100%); border-radius:8px; border:1px solid rgba(100,142,181,.2); }
+  .applications-count i { font-size:16px; }
+  .job-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-icon { width:36px; height:36px; border:none; border-radius:8px; background:#F3F4F6; color:#6B7280; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s cubic-bezier(.4,0,.2,1); position:relative; overflow:hidden; }
+  .btn-icon:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.15); background:linear-gradient(135deg,#648EB5 0%, #4E8EA2 100%); color:#FFF; }
+  @media (max-width:1024px){ .stats-cards{flex-wrap:wrap;} .stat-card{min-width:calc(50% - 10px);} .jobs-container{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));} }
+  @media (max-width:768px){ .stats-cards{flex-direction:column; gap:12px;} .stat-card{min-width:100%; padding:18px;} .stat-icon{width:56px; height:56px;} .stat-icon i{font-size:26px;} .stat-content h3{font-size:28px;} .jobs-container{grid-template-columns:1fr; gap:16px;} .job-card{padding:20px;} .job-header{flex-direction:column; gap:10px;} .job-status{align-self:flex-start;} .job-footer{flex-direction:column; align-items:flex-start; gap:12px;} .applications-count{width:100%; justify-content:center;} .job-actions{width:100%; justify-content:space-between;} .btn-icon{flex:1; min-width:44px;} .welcome{font-size:24px;} .section-title{font-size:20px;} .btn-primary{font-size:13px; padding:8px 16px;} }
+  @media (max-width:480px){ .stat-content h3{font-size:24px;} .stat-content p{font-size:13px;} .job-title{font-size:17px;} .job-detail-item{font-size:13px;} }
 </style>
 </head>
 <body>
-  <!-- Top Navbar -->
-  <div class="top-navbar">
-    <div class="navbar-left">
-      <span>EMPLOYER DASHBOARD</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:16px;">
-      @include('partials.notifications')
-    </div>
-  </div>
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="profile-ellipse">
-      <div class="profile-icon">
-        @if($user->profile_picture)
-          <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="Profile Picture" style="cursor:pointer;" onclick="showEmpProfilePictureModal()">
-        @else
-          <i class="fa fa-building" style="cursor:pointer;" onclick="showEmpProfilePictureModal()"></i>
-        @endif
-      </div>
-    </div>
-  <div class="company-name" title="{{ $user->company_name }}"><i class="fas fa-building"></i> {{ $user->company_name ?? 'Company Name' }}</div>
-  
-  {{-- Business Permit Verification Status Badge --}}
+@include('employer.partials.navbar')
+@include('employer.partials.sidebar')
+
+<div class="main">
+  <div class="welcome">Welcome, {{ $user->company_name ?? $user->first_name }}! 👋</div>
+
+  {{-- Personal Email Verification Notice Component --}}
+  <x-personal-email-notice />
+
+  {{-- Validation Status Alerts --}}
   @if($validation)
-    @if($validation->validation_status === 'approved')
-      <div class="verification-badge verification-approved" title="Verified by {{ ucfirst($validation->validated_by) }} - {{ $validation->confidence_score }}% confidence">
-        <i class="fas fa-check-circle"></i> Verified by AI
+    @php
+      $approvedCompanyName = $validation->ai_analysis['approved_company_name'] ?? null;
+      $companyNameMismatch = ($approvedCompanyName && $user->company_name !== $approvedCompanyName);
+    @endphp
+
+    @if($companyNameMismatch)
+      <div style="background:#fff3cd;color:#856404;padding:18px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #ffc107;display:flex;align-items:start;gap:12px;">
+        <i class="fas fa-exclamation-triangle" style="font-size:24px;margin-top:2px;"></i>
+        <div style="flex:1;">
+          <strong style="display:block;margin-bottom:6px;font-size:17px;">⚠️ Business Name Mismatch</strong>
+          <p style="margin:0;line-height:1.6;font-size:14px;">Your verified business permit is registered to <strong style="background:#fff;padding:2px 6px;border-radius:4px;">{{ $approvedCompanyName }}</strong>, but your current Company Name is <strong style="background:#fff;padding:2px 6px;border-radius:4px;">{{ $user->company_name }}</strong>.</p>
+          <p style="margin:8px 0 0 0;line-height:1.6;font-size:14px;"><strong>Policy:</strong> Each employer account is tied to <strong>one verified business permit only</strong> for legal compliance.</p>
+        </div>
       </div>
-    @elseif($validation->validation_status === 'pending_review')
-      <div class="verification-badge verification-pending" title="{{ $validation->reason }}">
-        <i class="fas fa-clock"></i> Under Review
+    @endif
+
+    @if($validation->validation_status === 'pending_review')
+      <div style="background:#fff3cd;color:#856404;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #ffc107;display:flex;align-items:start;gap:12px;">
+        <i class="fas fa-hourglass-half" style="font-size:24px;margin-top:2px;"></i>
+        <div style="flex:1;">
+          <strong style="display:block;margin-bottom:6px;font-size:16px;">⚠️ Business Permit Under Review</strong>
+          <p style="margin:0;line-height:1.5;font-size:14px;">Your business permit is currently being reviewed. You'll receive an email notification once the review is complete.</p>
+          @if($validation->reason)
+            <p style="margin:8px 0 0 0;font-size:13px;opacity:.9;"><strong>Reason:</strong> {{ $validation->reason }}</p>
+          @endif
+        </div>
       </div>
     @elseif($validation->validation_status === 'rejected')
-      <div class="verification-badge verification-rejected" title="{{ $validation->reason }}">
-        <i class="fas fa-times-circle"></i> Verification Failed
+      <div style="background:#f8d7da;color:#721c24;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #dc3545;display:flex;align-items:start;gap:12px;">
+        <i class="fas fa-times-circle" style="font-size:24px;margin-top:2px;"></i>
+        <div style="flex:1;">
+          <strong style="display:block;margin-bottom:6px;font-size:16px;">❌ Business Permit Verification Failed</strong>
+          <p style="margin:0;line-height:1.5;font-size:14px;">Please upload a valid Philippine business permit (DTI, SEC, or Barangay clearance).</p>
+          @if($validation->reason)
+            <p style="margin:8px 0 0 0;font-size:13px;opacity:.9;"><strong>Reason:</strong> {{ $validation->reason }}</p>
+          @endif
+          <button onclick="openReuploadPermitModal()" style="display:inline-block;margin-top:12px;background:#721c24;color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;border:none;cursor:pointer;"><i class="fas fa-upload"></i> Re-Upload Business Permit</button>
+        </div>
+      </div>
+    @elseif($validation->validation_status === 'approved')
+      <div style="background:#d4edda;color:#155724;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #28a745;display:flex;align-items:start;gap:12px;">
+        <i class="fas fa-check-circle" style="font-size:24px;margin-top:2px;"></i>
+        <div style="flex:1;">
+          <strong style="display:block;margin-bottom:6px;font-size:16px;">✅ Business Permit Verified!</strong>
+          <p style="margin:0;line-height:1.5;font-size:14px;">You can now post job openings and manage applications.</p>
+        </div>
       </div>
     @endif
   @else
-    <div class="verification-badge verification-none" title="Please upload your business permit">
-      <i class="fas fa-exclamation-circle"></i> Not Verified
+    <div style="background:#e2e3e5;color:#383d41;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #6c757d;display:flex;align-items:start;gap:12px;">
+      <i class="fas fa-exclamation-triangle" style="font-size:24px;margin-top:2px;"></i>
+      <div style="flex:1;">
+        <strong style="display:block;margin-bottom:6px;font-size:16px;">📄 Business Permit Required</strong>
+        <p style="margin:0;line-height:1.5;font-size:14px;">Please upload your business permit to verify your company and unlock all employer features including job posting.</p>
+        <a href="{{ route('settings') }}" style="display:inline-block;margin-top:12px;background:#6c757d;color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;"><i class="fas fa-upload"></i> Upload Business Permit</a>
+      </div>
     </div>
   @endif
-  
-  <div class="company-badge">Company</div>
-  
-  <script>
-  function showEmpProfilePictureModal() {
-    const oldModal = document.getElementById('empProfilePicModal');
-    if (oldModal) oldModal.remove();
-    const picUrl = @json($user->profile_picture ? asset('storage/' . $user->profile_picture) : null);
-    const name = @json($user->company_name ?? 'Company');
-    const modal = document.createElement('div');
-    modal.id = 'empProfilePicModal';
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; display:flex; align-items:center; justify-content:center;';
-    modal.innerHTML = `
-      <div style="background:white; border-radius:16px; padding:30px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; align-items:center; max-width:350px; width:90%; position:relative;">
-        <button onclick="document.getElementById('empProfilePicModal').remove();" style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:#333;">&times;</button>
-        <h3 style="margin-bottom:18px; color:#648EB5; font-size:20px; font-weight:600;">Company Profile</h3>
-        ${picUrl ? `<img src='${picUrl}' alt='Profile Picture' style='width:120px; height:120px; object-fit:cover; border-radius:50%; border:4px solid #648EB5; margin-bottom:12px;'>` : `<div style='width:120px; height:120px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:48px; color:#aaa; margin-bottom:12px;'><i class='fas fa-building'></i></div>`}
-        <div style="font-size:16px; color:#333; font-weight:500;">${name}</div>
-        <button onclick="document.getElementById('empProfilePicModal').remove();" style="margin-top:22px; background:#6c757d; color:white; border:none; padding:8px 22px; border-radius:8px; cursor:pointer; font-size:14px;">Close</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-  </script>
 
-    <a href="{{ route('employer.dashboard') }}" class="sidebar-btn active"><i class="fa fa-home sidebar-btn-icon"></i> Dashboard</a>
-    <a href="{{ route('employer.jobs') }}" class="sidebar-btn"><i class="fa fa-briefcase sidebar-btn-icon"></i> Job Postings</a>
-    <a href="{{ route('employer.applicants') }}" class="sidebar-btn"><i class="fa fa-users sidebar-btn-icon"></i> Applicants</a>
-    <a href="{{ route('employer.history') }}" class="sidebar-btn"><i class="fa fa-history sidebar-btn-icon"></i> History</a>
-    <a href="{{ route('employer.employees') }}" class="sidebar-btn"><i class="fa fa-user-check sidebar-btn-icon"></i> Employees</a>
-    <a href="{{ route('employer.analytics') }}" class="sidebar-btn"><i class="fa fa-chart-bar sidebar-btn-icon"></i> Analytics</a>
-    <a href="{{ route('settings') }}" class="sidebar-btn"><i class="fa fa-cog sidebar-btn-icon"></i> Settings</a>
-  <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;" onsubmit="return showLogoutModal(this);">
-      @csrf
-      <button type="submit" class="sidebar-btn"
-        style="border: none; background: #648EB5; color: #FFF; font-size: 20px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; padding: 0 10px; height: 39px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <i class="fas fa-sign-out-alt sidebar-btn-icon"></i>
-        Logout
-      </button>
-    </form>
+  @if(session('success'))
+    <div class="flash-message" style="background:#d4edda;color:#155724;padding:12px 20px;border-radius:8px;margin-bottom:20px;border:1px solid #c3e6cb;transition:opacity .3s ease;"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+  @endif
+
+  @if($errors->has('validation'))
+    <div class="flash-message" style="background:#f8d7da;color:#721c24;padding:12px 20px;border-radius:8px;margin-bottom:20px;border:1px solid #f5c6cb;"><i class="fas fa-exclamation-circle"></i> {{ $errors->first('validation') }}</div>
+  @endif
+
+  <div class="stats-cards">
+    <div class="stat-card"><div class="stat-icon"><i class="fas fa-briefcase"></i></div><div class="stat-content"><h3>{{ count($jobPostings) }}</h3><p>Active Job Postings</p></div></div>
+    <div class="stat-card"><div class="stat-icon"><i class="fas fa-file-alt"></i></div><div class="stat-content"><h3>{{ $jobPostings->sum('applications_count') }}</h3><p>Total Applications</p></div></div>
+    <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-check"></i></div><div class="stat-content"><h3>{{ $hiredCount ?? 0 }}</h3><p>Candidates Hired</p></div></div>
   </div>
 
-  @include('partials.logout-confirm')
-
-  <!-- Main Content -->
-  <div class="main">
-    <div class="welcome">Welcome, {{ $user->company_name ?? $user->first_name }}! 👋</div>
-
-    {{-- Validation Status Alerts --}}
-    @if($validation)
-      @if($validation->validation_status === 'pending_review')
-        <div style="background: #fff3cd; color: #856404; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107; display: flex; align-items: start; gap: 12px;">
-          <i class="fas fa-hourglass-half" style="font-size: 24px; margin-top: 2px;"></i>
-          <div style="flex: 1;">
-            <strong style="display: block; margin-bottom: 6px; font-size: 16px;">⚠️ Business Permit Under Review</strong>
-            <p style="margin: 0; line-height: 1.5; font-size: 14px;">
-              Your business permit is currently being reviewed. 
-              @if($validation->validated_by === 'ai')
-                Our AI system flagged your document for manual verification by our team.
-              @endif
-              You'll receive an email notification once the review is complete (typically within 24-48 hours).
-            </p>
-            @if($validation->reason)
-              <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">
-                <strong>Reason:</strong> {{ $validation->reason }}
-              </p>
-            @endif
-            <p style="margin: 8px 0 0 0; font-size: 13px;">
-              <strong>Note:</strong> You cannot post jobs until your business permit is approved.
-            </p>
-          </div>
-        </div>
-      @elseif($validation->validation_status === 'rejected')
-        <div style="background: #f8d7da; color: #721c24; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #dc3545; display: flex; align-items: start; gap: 12px;">
-          <i class="fas fa-times-circle" style="font-size: 24px; margin-top: 2px;"></i>
-          <div style="flex: 1;">
-            <strong style="display: block; margin-bottom: 6px; font-size: 16px;">❌ Business Permit Verification Failed</strong>
-            <p style="margin: 0; line-height: 1.5; font-size: 14px;">
-              Unfortunately, your business permit could not be verified. Please upload a valid Philippine business permit (DTI, SEC, or Barangay clearance).
-            </p>
-            @if($validation->reason)
-              <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">
-                <strong>Reason:</strong> {{ $validation->reason }}
-              </p>
-            @endif
-            <a href="{{ route('settings') }}" style="display: inline-block; margin-top: 12px; background: #721c24; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">
-              <i class="fas fa-upload"></i> Re-upload Business Permit
-            </a>
-          </div>
-        </div>
-      @elseif($validation->validation_status === 'approved')
-        <div style="background: #d4edda; color: #155724; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #28a745; display: flex; align-items: start; gap: 12px; animation: slideDown 0.5s ease-out;">
-          <i class="fas fa-check-circle" style="font-size: 24px; margin-top: 2px;"></i>
-          <div style="flex: 1;">
-            <strong style="display: block; margin-bottom: 6px; font-size: 16px;">✅ Business Permit Verified!</strong>
-            <p style="margin: 0; line-height: 1.5; font-size: 14px;">
-              Your business permit has been successfully verified 
-              @if($validation->validated_by === 'ai')
-                by our AI system
-              @else
-                by our {{ $validation->validated_by }} team
-              @endif
-              with {{ $validation->confidence_score }}% confidence. You can now post job openings and manage applications.
-            </p>
-          </div>
-          <button onclick="this.parentElement.style.display='none'" style="background: transparent; border: none; color: #155724; cursor: pointer; font-size: 20px; padding: 0; margin-left: auto;">
-            &times;
-          </button>
-        </div>
-      @endif
+  <div class="section-header">
+    <h2 class="section-title">Your Job Postings</h2>
+    @php
+      $canPostJobs = $validation && $validation->validation_status === 'approved';
+      if ($canPostJobs) {
+        $approvedCompanyName = $validation->ai_analysis['approved_company_name'] ?? null;
+        if ($approvedCompanyName && $user->company_name !== $approvedCompanyName) { $canPostJobs = false; }
+      }
+    @endphp
+    @if($canPostJobs)
+      <a href="{{ route('employer.jobs.create') }}" class="btn-primary"><i class="fas fa-plus"></i> Post New Job</a>
     @else
-      <div style="background: #e2e3e5; color: #383d41; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #6c757d; display: flex; align-items: start; gap: 12px;">
-        <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-top: 2px;"></i>
-        <div style="flex: 1;">
-          <strong style="display: block; margin-bottom: 6px; font-size: 16px;">📄 Business Permit Required</strong>
-          <p style="margin: 0; line-height: 1.5; font-size: 14px;">
-            Please upload your business permit to verify your company and unlock all employer features including job posting.
-          </p>
-          <a href="{{ route('settings') }}" style="display: inline-block; margin-top: 12px; background: #6c757d; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">
-            <i class="fas fa-upload"></i> Upload Business Permit
-          </a>
-        </div>
-      </div>
+      <a href="#" class="btn-primary" style="background:#6c757d;cursor:not-allowed;" title="You cannot post jobs until your business permit is approved." onclick="return false;"><i class="fas fa-lock"></i> Post New Job</a>
     @endif
+  </div>
 
-    @if(session('success'))
-      <div class="flash-message" style="background: #d4edda; color: #155724; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb; transition: opacity 0.3s ease;">
-        <i class="fas fa-check-circle"></i> {{ session('success') }}
-      </div>
-    @endif
-
-    @if($errors->has('validation'))
-      <div class="flash-message" style="background: #f8d7da; color: #721c24; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
-        <i class="fas fa-exclamation-circle"></i> {{ $errors->first('validation') }}
-      </div>
-    @endif
-
-    <!-- Stats Cards -->
-    <div class="stats-cards">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-briefcase"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ count($jobPostings) }}</h3>
-          <p>Active Job Postings</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-file-alt"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ $jobPostings->sum('applications_count') }}</h3>
-          <p>Total Applications</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-user-check"></i>
-        </div>
-        <div class="stat-content">
-          <h3>{{ $hiredCount ?? 0 }}</h3>
-          <p>Candidates Hired</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Job Postings Section -->
-    <div class="section-header">
-      <h2 class="section-title">Your Job Postings</h2>
-      <a href="{{ route('employer.jobs.create') }}" class="btn-primary" style="text-decoration:none;">
-        <i class="fas fa-plus"></i>
-        Post New Job
-      </a>
-    </div>
-
-    <div class="jobs-container">
-      @forelse($jobPostings as $job)
-        <div class="job-card">
-          <div class="job-header">
-            <div>
-              <h3 class="job-title">{{ $job->title }}</h3>
-              <p class="job-department">{{ $job->type }}</p>
-            </div>
-            <span class="job-status status-{{ strtolower($job->status) }}">
-              {{ ucfirst($job->status) }}
-            </span>
+  <div class="jobs-container">
+    @forelse($jobPostings as $job)
+      <div class="job-card">
+        <div class="job-header">
+          <div>
+            <h3 class="job-title">{{ $job->title }}</h3>
+            <p class="job-department"><i class="fas fa-briefcase"></i> {{ $job->type }}</p>
           </div>
+          <span class="job-status status-{{ strtolower($job->status) }}">{{ ucfirst($job->status) }}</span>
+        </div>
 
-          <div class="job-details">
-            <div class="job-detail-item">
-              <i class="fas fa-clock"></i>
-              <span>{{ $job->type }}</span>
-            </div>
-            <div class="job-detail-item">
-              <i class="fas fa-money-bill-wave"></i>
-              <span>{{ $job->salary }}</span>
-            </div>
-            <div class="job-detail-item">
-              <i class="fas fa-calendar"></i>
-              <span>Posted: {{ $job->created_at->format('M d, Y') }}</span>
-            </div>
-          </div>
+        <div class="job-details">
+          <div class="job-detail-item"><i class="fas fa-clock"></i><span>{{ $job->type }}</span></div>
+          <div class="job-detail-item"><i class="fas fa-money-bill-wave"></i><span>{{ $job->salary }}</span></div>
+          <div class="job-detail-item"><i class="fas fa-calendar-alt"></i><span>Posted {{ $job->created_at->format('M d, Y') }}</span></div>
+          @if($job->location)
+            <div class="job-detail-item"><i class="fas fa-map-marker-alt"></i><span>{{ $job->location }}</span></div>
+          @endif
+        </div>
 
-          <div class="job-footer">
-            <div class="applications-count">
-              <i class="fas fa-users"></i>
-              <span>{{ $job->applications_count }} Applications</span>
-            </div>
-            <div class="job-actions">
-              <a href="{{ route('employer.jobs.edit', $job) }}" class="btn-icon" title="Edit Job">
-                <i class="fas fa-edit"></i>
-              </a>
-              
-              @if($job->status === 'active')
-                <form method="POST" action="{{ route('employer.jobs.updateStatus', $job) }}" style="display:inline; margin:0;">
-                  @csrf
-                  @method('PATCH')
-                  <input type="hidden" name="status" value="closed">
-                  <button type="submit" class="btn-icon" title="Close Job (Position Filled)" style="background:#ffc107; color:#000;">
-                    <i class="fas fa-lock"></i>
-                  </button>
-                </form>
-              @elseif($job->status === 'closed')
-                <form method="POST" action="{{ route('employer.jobs.updateStatus', $job) }}" style="display:inline; margin:0;">
-                  @csrf
-                  @method('PATCH')
-                  <input type="hidden" name="status" value="active">
-                  <button type="submit" class="btn-icon" title="Reopen Job" style="background:#28a745;">
-                    <i class="fas fa-unlock"></i>
-                  </button>
-                </form>
-              @endif
-              
-              <form method="POST" action="{{ route('employer.jobs.destroy', $job) }}" onsubmit="return handleDeleteJob(event, this);" style="display:inline; margin:0;">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn-icon" title="Delete Job" style="background:#dc3545;">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </form>
-            </div>
+        <div class="job-footer">
+          <div class="applications-count"><i class="fas fa-users"></i><span>{{ $job->applications_count }} {{ Str::plural('Application', $job->applications_count) }}</span></div>
+          <div class="job-actions">
+            <a href="{{ route('employer.jobs.edit', $job) }}" class="btn-icon" title="Edit Job"><i class="fas fa-edit"></i></a>
+            @if($job->status === 'active')
+              <form method="POST" action="{{ route('employer.jobs.updateStatus', $job) }}" style="display:inline;margin:0;">@csrf @method('PATCH')<input type="hidden" name="status" value="closed"><button type="submit" class="btn-icon" title="Close Job" style="background:#ffc107;color:#000;"><i class="fas fa-lock"></i></button></form>
+            @elseif($job->status === 'closed')
+              <form method="POST" action="{{ route('employer.jobs.updateStatus', $job) }}" style="display:inline;margin:0;">@csrf @method('PATCH')<input type="hidden" name="status" value="active"><button type="submit" class="btn-icon" title="Reopen Job" style="background:#28a745;"><i class="fas fa-unlock"></i></button></form>
+            @endif
+            <form method="POST" action="{{ route('employer.jobs.destroy', $job) }}" onsubmit="return handleDeleteJob(event, this);" style="display:inline;margin:0;">@csrf @method('DELETE')<button type="submit" class="btn-icon" title="Delete Job" style="background:#dc3545;"><i class="fas fa-trash-alt"></i></button></form>
           </div>
         </div>
-      @empty
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: #FFF; border-radius: 8px;">
-          <i class="fas fa-briefcase" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
-          <p style="color: #666; font-size: 16px;">No job postings yet. Click "Post New Job" to get started!</p>
-        </div>
-      @endforelse
-    </div>
+      </div>
+    @empty
+      <div style="grid-column:1 / -1; text-align:center; padding:40px; background:#FFF; border-radius:8px;">
+        <i class="fas fa-briefcase" style="font-size:48px; color:#ccc; margin-bottom:15px;"></i>
+        <p style="color:#666; font-size:16px;">No job postings yet. Click "Post New Job" to get started!</p>
+      </div>
+    @endforelse
   </div>
 
   <script>
-    // Auto-hide flash messages after 2 seconds
     document.addEventListener('DOMContentLoaded', function() {
       const flashMessage = document.querySelector('.flash-message');
       if (flashMessage) {
-        setTimeout(() => {
-          flashMessage.style.opacity = '0';
-          setTimeout(() => flashMessage.remove(), 300);
-        }, 2000);
+        setTimeout(() => { flashMessage.style.opacity = '0'; setTimeout(() => flashMessage.remove(), 300); }, 2000);
       }
     });
-
-    // Handle delete job
     async function handleDeleteJob(event, form) {
       event.preventDefault();
-      
-      const confirmed = await customConfirm(
-        'Are you sure you want to delete this job posting? This action cannot be undone.',
-        'Delete Job Posting',
-        'Yes, Delete'
-      );
-      
-      if (confirmed) {
-        form.submit();
-      }
-      
+      const confirmed = await customConfirm('Are you sure you want to delete this job posting? This action cannot be undone.','Delete Job Posting','Yes, Delete');
+      if (confirmed) { form.submit(); }
       return false;
     }
+    function openReuploadPermitModal(){ document.getElementById('reuploadPermitModal').style.display='flex'; }
+    function closeReuploadPermitModal(){ document.getElementById('reuploadPermitModal').style.display='none'; }
   </script>
 
-  @include('partials.custom-modals')
+  <!-- Re-Upload Business Permit Modal -->
+  <div id="reuploadPermitModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:24px; width:90%; max-width:520px; box-shadow:0 10px 40px rgba(0,0,0,0.25);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; color:#334A5E;">Re-Upload Business Permit</h3>
+        <button onclick="closeReuploadPermitModal()" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:#334A5E;">&times;</button>
+      </div>
+      <p style="margin:0 0 12px 0; color:#666;">Upload your corrected business permit for re-verification. Accepted formats: PDF, JPG, PNG. Max 5MB.</p>
+      <form method="POST" action="{{ route('employer.permit.reupload') }}" enctype="multipart/form-data">
+        @csrf
+        <input type="file" name="business_permit" accept=".pdf,.jpg,.jpeg,.png" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+          <button type="button" onclick="closeReuploadPermitModal()" class="btn" style="background:#6c757d; color:white;">Cancel</button>
+          <button type="submit" class="btn" style="background:#648EB5; color:white;">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+@include('partials.logout-confirm')
+
 </body>
 </html>

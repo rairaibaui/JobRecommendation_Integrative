@@ -27,6 +27,7 @@ class EmployerDashboardController extends Controller
         // Get business permit validation status
         $validation = DocumentValidation::where('user_id', $user->id)
             ->where('document_type', 'business_permit')
+            ->orderByDesc('created_at')
             ->first();
 
         return view('employer.dashboard', compact('jobPostings', 'user', 'hiredCount', 'validation'));

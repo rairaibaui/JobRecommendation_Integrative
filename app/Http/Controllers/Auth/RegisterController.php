@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AdminNotificationService;
 use App\Services\DocumentValidationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -49,6 +50,7 @@ class RegisterController extends Controller
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'company_name' => 'required|string|max:255',
                 'job_title' => 'nullable|string|max:255',
+                'employer_phone_number' => 'nullable|string|max:20',
                 'business_permit' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'password' => [
                     'required',
@@ -74,8 +76,10 @@ class RegisterController extends Controller
                 Storage::disk('public')->move($permitPath, $finalPath);
                 $permitPath = $finalPath;
 
-                // Generate placeholder phone/location to satisfy schema constraints
-                $generatedPhone = strval(random_int(10000000000, 99999999999));
+                // Generate placeholder phone/location to satisfy schema constraints (if phone not provided)
+                $phoneNumber = $validated['employer_phone_number']
+                    ? preg_replace('/\D/', '', $validated['employer_phone_number']) // Remove formatting
+                    : strval(random_int(10000000000, 99999999999)); // Fallback to random
                 $location = 'Unknown';
 
                 $user = User::create([
@@ -85,7 +89,7 @@ class RegisterController extends Controller
                     'company_name' => $validated['company_name'],
                     'job_title' => $validated['job_title'] ?? null,
                     'business_permit_path' => $permitPath,
-                    'phone_number' => $generatedPhone,
+                    'phone_number' => $phoneNumber,
                     'location' => $location,
                     'user_type' => 'employer',
                     'password' => Hash::make($validated['password']),
@@ -111,6 +115,11 @@ class RegisterController extends Controller
                             'is_personal_email' => $isPersonalEmail, // Flag for stricter validation
                         ]
                     )->delay(now()->addSeconds($delay));
+                }
+
+                // Notify admins about the new business permit upload
+                if ($user) {
+                    AdminNotificationService::notifyPermitUploaded($user);
                 }
             } catch (\Throwable $e) {
                 // Clean up uploaded file if it exists

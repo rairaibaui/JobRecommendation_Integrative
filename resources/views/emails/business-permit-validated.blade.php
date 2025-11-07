@@ -94,10 +94,10 @@
             color: #6c757d;
             border-top: 1px solid #e9ecef;
         }
-        .ai-badge {
+        .verified-badge {
             display: inline-block;
-            background: #e3f2fd;
-            color: #1976d2;
+            background: #e3f8ef;
+            color: #0f5132;
             padding: 4px 12px;
             border-radius: 12px;
             font-size: 11px;
@@ -151,7 +151,9 @@
 
             <p style="color: #6c757d; line-height: 1.6;">
                 We have completed the verification of your business permit for <strong>{{ $user->company_name }}</strong>.
-                <span class="ai-badge">🤖 AI-Verified</span>
+                @if($isApproved)
+                    <span class="verified-badge">✔ Verified</span>
+                @endif
             </p>
 
             <!-- Status Badge -->
@@ -162,7 +164,7 @@
 
                 <div class="info-box">
                     <strong>🎉 Congratulations!</strong>
-                    Your business permit has been verified and approved by our AI system. You can now:
+                    Your business permit has been verified and approved. You can now:
                     <ul>
                         <li>Post job openings</li>
                         <li>Manage applications</li>
@@ -192,7 +194,7 @@
 
                 <div class="info-box">
                     <strong>⚠️ Verification Failed</strong>
-                    Unfortunately, our AI system could not verify your business permit. 
+                    Unfortunately, we could not verify your business permit. 
                     
                     @if($validation->reason)
                         <p style="margin-top: 10px; color: #721c24;">
@@ -232,7 +234,7 @@
 
                 @if($validation->confidence_score)
                     <p style="font-size: 13px; color: #6c757d; margin-top: 15px;">
-                        <strong>AI Confidence Score:</strong>
+                        <strong>Confidence Score:</strong>
                     </p>
                     <div class="confidence-bar">
                         <div class="confidence-fill" style="width: {{ $validation->confidence_score }}%; background: linear-gradient(90deg, #ffc107, #ff9800);">
@@ -260,7 +262,7 @@
                 <p style="font-size: 13px; color: #6c757d;">
                     <strong>Validation Details:</strong><br>
                     Document Type: Business Permit<br>
-                    Validated By: {{ ucfirst($validation->validated_by) }}<br>
+                    Validated By: {{ $validation->validated_by === 'ai' ? 'Automated System' : ucfirst($validation->validated_by) }}<br>
                     Validation Date: {{ $validation->validated_at ? $validation->validated_at->format('F d, Y \a\t g:i A') : 'Pending' }}
                 </p>
             </div>

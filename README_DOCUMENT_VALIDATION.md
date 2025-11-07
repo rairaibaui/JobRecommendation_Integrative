@@ -4,6 +4,12 @@
 
 Your job recommendation system now has **AI-powered business permit validation** using OpenAI GPT-4o Vision API!
 
+In addition, the platform now supports:
+- 🔎 Automatic role detection during registration (uploading a business permit auto-classifies as Employer; otherwise Job Seeker)
+- ⏳ Background AI verification (account creation is instant; document validation runs asynchronously)
+- 📧 Email notifications on completion (Approved / Rejected / Requires Manual Review)
+- 🏷️ Dashboard verification badge beside the company name (Verified, Under Review, Failed, or Not Verified)
+
 ---
 
 ## 🎯 What Problem Did This Solve?
@@ -99,10 +105,15 @@ The `document_validations` table has been created.
 
 ### 3. Test It!
 
-**Try uploading a business permit:**
-- Go to employer registration
-- Upload a real business permit → ✅ Should be auto-approved
-- Upload a random photo → ❌ Should be rejected
+Background validation is enabled. Account creation is instant; verification runs asynchronously.
+
+- Go to employer registration and upload a business permit
+- Submit the form → Account is created immediately
+- Start a queue worker to process the validation job (required):
+   - Run: php artisan queue:work (PowerShell)
+- Watch the employer dashboard badge: it should show Under Review, then update to Verified or Failed
+- You’ll receive an email when validation completes
+- Employers cannot post jobs until the permit is Approved
 
 ---
 
@@ -111,10 +122,12 @@ The `document_validations` table has been created.
 ### Business Permit Validation
 
 ```
-User uploads file
-      ↓
-AI analyzes content (GPT-4o Vision)
-      ↓
+User uploads file (during registration/profile update)
+   ↓
+Account created immediately (if registering)
+   ↓
+Background job runs AI (GPT-4o Vision)
+   ↓
 AI checks:
   • Is it a business permit? ✓
   • Has official seals? ✓
@@ -122,13 +135,15 @@ AI checks:
   • Company name matches? ✓
   • Appears authentic? ✓
   • Not expired? ✓
-      ↓
+   ↓
 AI returns confidence score (0-100)
-      ↓
+   ↓
 System decides:
-  • ≥85% → ✅ Auto-approve
-  • <50% → ❌ Auto-reject  
-  • 50-84% → ⚠️ Manual review
+  • ≥85% → ✅ Approved (email sent; dashboard: Verified)
+  • <50% → ❌ Rejected (email sent; dashboard: Failed)
+  • 50-84% → ⚠️ Pending Review (email sent; dashboard: Under Review)
+
+Note: Employers cannot post jobs until status is Approved.
 ```
 
 ### What AI Accepts
@@ -317,7 +332,16 @@ tail -f storage/logs/laravel.log
 AI_DOCUMENT_VALIDATION=false
 ```
 
-**4. High costs**
+**4. Validation never completes / status stuck at Under Review**
+```bash
+# Ensure the queue worker is running
+php artisan queue:work
+
+# Or process a single job for debugging
+php artisan queue:work --once
+```
+
+**5. High costs**
 ```bash
 # Monitor usage at platform.openai.com
 # Or disable for testing
@@ -341,19 +365,20 @@ AI_VALIDATE_BUSINESS_PERMIT=false
 
 ### For Employers
 
-**Registration:**
-1. Fill in company details
-2. Upload business permit (PDF/JPG/PNG)
-3. AI validates in 2-5 seconds
-4. If valid → Account created ✅
-5. If invalid → Error shown, must re-upload ❌
+**Registration (auto role detection):**
+1. Fill in details; if you upload a business permit, you’re auto-classified as Employer (otherwise Job Seeker)
+2. Submit the form → Account is created instantly
+3. AI validation runs in the background via queue
+4. Dashboard shows a badge: Under Review → Verified or Failed when done
+5. You’ll receive an email when the result is ready
+6. You cannot post jobs until your business permit is Approved
 
 **Profile Update:**
 1. Go to Settings
-2. Upload new business permit
-3. AI validates
-4. If valid → Permit updated ✅
-5. If invalid → Error shown, old permit kept ❌
+2. Upload a new business permit (PDF/JPG/PNG)
+3. AI validation runs in the background
+4. You’ll get an email upon completion; dashboard badge updates
+5. If Rejected, the previous permit (if any) remains and posting stays blocked
 
 ---
 
@@ -364,6 +389,9 @@ AI_VALIDATE_BUSINESS_PERMIT=false
 - Auto-approve/reject logic
 - Manual review flagging
 - Database logging
+- Email notifications on completion
+- Dashboard verification badges and alerts
+- Job posting enforcement (requires Approved status)
 - Cost optimization
 - Fallback system
 
@@ -372,7 +400,7 @@ AI_VALIDATE_BUSINESS_PERMIT=false
 - Resume validation integration
 - OCR text extraction
 - Batch processing
-- Email notifications
+- Real-time updates (WebSockets) for status
 - Analytics dashboard
 
 ---
@@ -430,6 +458,6 @@ Then try registering an employer with a real business permit! 🚀
 
 **Status:** ✅ Production Ready  
 **Version:** 1.0.0  
-**Date:** November 3, 2025  
+**Date:** November 4, 2025  
 **Framework:** Laravel 12.35.0  
 **AI Provider:** OpenAI GPT-4o

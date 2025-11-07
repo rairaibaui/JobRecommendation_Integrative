@@ -98,10 +98,11 @@ return [
     */
 
     'features' => [
-        'job_matching' => env('AI_JOB_MATCHING', true),
-        'resume_analysis' => env('AI_RESUME_ANALYSIS', true),
-        'skill_suggestions' => env('AI_SKILL_SUGGESTIONS', true),
-        'career_insights' => env('AI_CAREER_INSIGHTS', true),
+        // Keep only document validation enabled by default
+        'job_matching' => env('AI_JOB_MATCHING', false),
+        'resume_analysis' => env('AI_RESUME_ANALYSIS', false),
+        'skill_suggestions' => env('AI_SKILL_SUGGESTIONS', false),
+        'career_insights' => env('AI_CAREER_INSIGHTS', false),
         'document_validation' => env('AI_DOCUMENT_VALIDATION', true),
     ],
 
@@ -127,7 +128,7 @@ return [
             'personal_email_domains' => ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'], // Personal email providers
         ],
         'resume' => [
-            'enabled' => env('AI_VALIDATE_RESUME', true),
+            'enabled' => env('AI_VALIDATE_RESUME', false),
             'min_confidence' => env('AI_RESUME_MIN_CONFIDENCE', 70),
             'auto_approve_threshold' => 80,
             'auto_reject_threshold' => 40,

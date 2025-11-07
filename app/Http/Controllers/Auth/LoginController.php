@@ -15,14 +15,27 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
+        // Allow 'admin' username without @ symbol for admin account
+        $emailRules = $request->input('email') === 'admin'
+            ? 'required|string'
+            : 'required|email';
+
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email' => $emailRules,
             'password' => 'required',
         ]);
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
+
+            // Redirect admins to admin panel
+            if ($user && $user->is_admin) {
+                return response()->view('auth.post-login', [
+                    'target' => route('admin.dashboard'),
+                ]);
+            }
+
             // Decide destination based on role, but show a smooth loader first
             return response()->view('auth.post-login', [
                 'target' => $user && $user->user_type === 'employer'
@@ -41,6 +54,7 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }

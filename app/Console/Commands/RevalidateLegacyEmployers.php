@@ -60,7 +60,9 @@ class RevalidateLegacyEmployers extends Command
                 return $this->markForReview($legacyValidations);
 
             case 'ai-validate':
-                return $this->runAIValidation($legacyValidations);
+                $this->error('AI revalidation has been disabled in this deployment.');
+                $this->line('Use --action=review to mark for manual review, or --action=revoke to revoke approvals.');
+                return 1;
 
             case 'revoke':
                 return $this->revokeApproval($legacyValidations);
