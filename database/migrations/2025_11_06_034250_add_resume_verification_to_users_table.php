@@ -32,14 +32,15 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'resume_verification_status',
-                'verification_flags',
-                'verification_score',
-                'verified_at',
-                'verification_notes',
-            ]);
-        });
+        // No columns were created in up(), so nothing to drop
+        // Schema::table('users', function (Blueprint $table) {
+        //     $table->dropColumn([
+        //         'resume_verification_status',
+        //         'verification_flags',
+        //         'verification_score',
+        //         'verified_at',
+        //         'verification_notes',
+        //     ]);
+        // });
     }
 };
