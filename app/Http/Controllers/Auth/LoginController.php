@@ -16,14 +16,28 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         // Allow 'admin' username without @ symbol for admin account
+        $emailInput = $request->input('email');
+        
+        // Convert 'admin' to full email address
+        if ($emailInput === 'admin') {
+            $emailInput = 'admin@jobrecommendation.ph';
+        }
+        
+        // Validate the original input (allow 'admin' as string, others as email)
         $emailRules = $request->input('email') === 'admin'
             ? 'required|string'
             : 'required|email';
 
-        $credentials = $request->validate([
+        $request->validate([
             'email' => $emailRules,
             'password' => 'required',
         ]);
+
+        // Use the converted email for authentication
+        $credentials = [
+            'email' => $emailInput,
+            'password' => $request->input('password'),
+        ];
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();

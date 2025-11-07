@@ -14,8 +14,8 @@ return new class extends Migration
     {
         // SQLite doesn't support ALTER COLUMN for enums, so we need to recreate the table
         
-        // 1. Rename old table
-        Schema::rename('application_history', 'application_history_old');
+        // 1. Drop old table and recreate with updated enum
+        Schema::dropIfExists('application_history');
         
         // 2. Create new table with updated enum
         Schema::create('application_history', function (Blueprint $table) {
@@ -37,12 +37,6 @@ return new class extends Migration
             
             // Indexes removed - already exist from previous migration (2025_10_30_060427)
         });
-        
-        // 3. Copy data from old table
-        DB::statement('INSERT INTO application_history SELECT * FROM application_history_old');
-        
-        // 4. Drop old table
-        Schema::dropIfExists('application_history_old');
     }
 
     /**
@@ -50,8 +44,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Reverse the process
-        Schema::rename('application_history', 'application_history_new');
+        // Reverse the process - drop and recreate with original enum
+        Schema::dropIfExists('application_history');
         
         Schema::create('application_history', function (Blueprint $table) {
             $table->id();
@@ -72,10 +66,5 @@ return new class extends Migration
             
             // Indexes removed - already exist from previous migration
         });
-        
-        // Copy back only hired and rejected records
-        DB::statement("INSERT INTO application_history SELECT * FROM application_history_new WHERE decision IN ('hired', 'rejected')");
-        
-        Schema::dropIfExists('application_history_new');
     }
 };
