@@ -111,10 +111,10 @@ class ProfileController extends Controller
             $user->location = $request->location;
             $user->address = $request->address;
 
-            // Explicitly set date_of_birth to ensure it's saved
+            // Explicitly set birthday to ensure it's saved (use the 'birthday' column on User)
             if ($request->has('birthday') && $request->birthday) {
-                $user->date_of_birth = $request->birthday;
-                Log::info('Date of birth explicitly set:', ['date_of_birth' => $user->date_of_birth]);
+                $user->birthday = $request->birthday;
+                Log::info('Birthday explicitly set for user', ['user_id' => $user->id, 'birthday' => $user->birthday]);
             }
 
             // Always mark as updated since we're handling arrays
@@ -281,6 +281,34 @@ class ProfileController extends Controller
                     }
 
                     // Notify admins if resume needs review
+                    if ($verificationResult['status'] === 'rejected') {
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'type' => 'error',
+                            'title' => 'Resume Rejected',
+                            'message' => 'Your resume was automatically rejected by our verification system. Please review your document and re-upload a resume that matches your profile information.',
+                            'read' => false,
+                            'data' => $jobSeekerNotificationData,
+                        ]);
+
+                        // Notify admins for manual confirmation
+                        $admins = User::where('is_admin', true)->get();
+                        foreach ($admins as $admin) {
+                            \App\Models\Notification::create([
+                                'user_id' => $admin->id,
+                                'type' => 'warning',
+                                'title' => 'Resume Rejected Automatically',
+                                'message' => "Job seeker {$user->email} had a resume rejected automatically by AI. Please review.",
+                                'read' => false,
+                                'data' => [
+                                    'job_seeker_id' => $user->id,
+                                    'email' => $user->email,
+                                    'verification_score' => $verificationResult['score'],
+                                    'flags' => $verificationResult['flags'],
+                                ],
+                            ]);
+                        }
+                    }
                     if ($verificationResult['status'] === 'needs_review') {
                         $admins = User::where('is_admin', true)->get();
                         foreach ($admins as $admin) {
@@ -344,6 +372,35 @@ class ProfileController extends Controller
 
             try {
                 $user->save();
+
+                // If the user already has an uploaded resume, re-run verification
+                try {
+                    if ($user->resume_file) {
+                        $reverify = $this->resumeVerification->verify($user->resume_file, $user);
+                        // Persist verification summary back to user record
+                        $user->resume_verification_status = $reverify['status'] ?? $user->resume_verification_status;
+                        $user->verification_flags = isset($reverify['flags']) ? json_encode($reverify['flags']) : $user->verification_flags;
+                        $user->verification_score = $reverify['score'] ?? $user->verification_score;
+                        $user->verified_at = $reverify['verified_at'] ?? $user->verified_at;
+                        $user->verification_notes = $reverify['notes'] ?? $user->verification_notes;
+                        $user->save();
+
+                        // Notify user about re-verification status change
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'type' => $reverify['status'] === 'verified' ? 'success' : 'warning',
+                            'title' => $reverify['status'] === 'verified' ? 'Resume Verified' : 'Resume Re-Verification Complete',
+                            'message' => 'We re-checked your uploaded resume after your profile update. Status: '.($reverify['status'] ?? 'pending'),
+                            'read' => false,
+                            'data' => [
+                                'verification_status' => $reverify['status'] ?? null,
+                                'verification_score' => $reverify['score'] ?? null,
+                            ],
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to re-run resume verification after profile update: '.$e->getMessage());
+                }
 
                 // Prepare message
                 if ($pictureUpdated && $detailsUpdated) {
