@@ -22,14 +22,31 @@
         .btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
         .btn-approve { background:#10b981; color:white; }
         .btn-reject { background:#ef4444; color:white; }
+        /* Disabled button visual style */
+        .btn[disabled], .btn[disabled] i {
+            opacity: 0.55;
+            cursor: not-allowed;
+            filter: grayscale(30%);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div>
-                <h2>Resume Verification — {{ $user->first_name }} {{ $user->last_name }}</h2>
-                <div style="color:#64748b; font-size:13px;">Email: {{ $user->email }} • Uploaded: {{ $user->resume_file ? $user->updated_at->format('M d, Y') : 'N/A' }}</div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#cbd5e1; display:flex; align-items:center; justify-content:center;">
+                        @if(!empty($user->profile_picture) && file_exists(storage_path('app/public/' . $user->profile_picture)))
+                            <img src="{{ asset('storage/' . $user->profile_picture) }}" alt="{{ $user->first_name }}" style="width:48px; height:48px; object-fit:cover;" />
+                        @else
+                            <span style="font-weight:700; color:#fff;">{{ strtoupper(substr($user->first_name ?? $user->email, 0, 1)) }}</span>
+                        @endif
+                    </div>
+                    <div>
+                        <h2 style="margin:0;">Resume Verification — {{ $user->first_name }} {{ $user->last_name }}</h2>
+                        <div style="color:#64748b; font-size:13px;">Email: {{ $user->email }} • Uploaded: {{ $user->resume_file ? $user->updated_at->format('M d, Y') : 'N/A' }}</div>
+                    </div>
+                </div>
             </div>
             <div>
                 @php $status = $user->resume_verification_status ?? 'pending'; @endphp
@@ -100,13 +117,25 @@
             <div>
                 <div class="box">
                     <h3 style="margin-top:0;">Admin Actions</h3>
+                    @php
+                        $isRejected = ($status === 'rejected');
+                        $isVerified = ($status === 'verified');
+                    @endphp
+
+                    @if($isRejected)
+                        <div style="background:#fff7f7; border:1px solid #fecaca; color:#7f1d1d; padding:12px; border-radius:6px; margin-bottom:12px;">
+                            <strong>Waiting for new upload:</strong> Resume rejected. Waiting for new upload before review.
+                        </div>
+                    @endif
 
                     <form method="POST" action="{{ route('admin.resumes.approve', $user->id) }}">
                         @csrf
                         <label>Admin notes (optional)</label>
                         <textarea name="admin_notes" style="width:100%; height:80px; margin-bottom:8px;">Approved by admin</textarea>
                         <div class="actions">
-                            <button class="btn btn-approve" type="submit"><i class="fas fa-check"></i> Approve</button>
+                            <button class="btn btn-approve" type="submit" @if($isRejected) disabled title="Resume rejected. Waiting for new upload before review." @else onclick="return confirm('Are you sure you want to approve this resume?')" @endif>
+                                <i class="fas fa-check"></i> Approve
+                            </button>
                         </div>
                     </form>
 
@@ -116,8 +145,20 @@
                         @csrf
                         <label>Rejection reason (required)</label>
                         <textarea name="rejection_reason" required style="width:100%; height:80px; margin-bottom:8px;">Please provide the reason for rejection</textarea>
+                        @php
+                            $disableReject = $isRejected || $isVerified;
+                            if ($isRejected) {
+                                $rejectTitle = 'Resume rejected. Waiting for new upload before review.';
+                            } elseif ($isVerified) {
+                                $rejectTitle = 'Resume already verified. Reject disabled.';
+                            } else {
+                                $rejectTitle = 'Reject this resume';
+                            }
+                        @endphp
                         <div class="actions">
-                            <button class="btn btn-reject" type="submit"><i class="fas fa-times"></i> Reject</button>
+                            <button class="btn btn-reject" type="submit" @if($disableReject) disabled title="{{ $rejectTitle }}" @endif>
+                                <i class="fas fa-times"></i> Reject
+                            </button>
                         </div>
                     </form>
 

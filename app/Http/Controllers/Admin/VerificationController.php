@@ -584,6 +584,23 @@ class VerificationController extends Controller
         $user = User::findOrFail($userId);
         $admin = Auth::user();
 
+        // Prevent approving a resume that was previously rejected and hasn't been replaced.
+        if ($user->resume_verification_status === 'rejected') {
+            // Try to detect which file was rejected (stored in verification_notes as a marker)
+            $rejectedFile = null;
+            if (!empty($user->verification_notes) && strpos($user->verification_notes, '||rejected_file:') !== false) {
+                $parts = explode('||rejected_file:', $user->verification_notes);
+                $rejectedFile = trim($parts[1] ?? '');
+            }
+
+            // If the rejected file matches the current resume file, block admin action.
+            if ($rejectedFile !== null && $rejectedFile === ($user->resume_file ?? '')) {
+                return redirect()->route('admin.verifications.index', ['tab' => 'resumes'])
+                    ->with('error', 'Resume rejected. Waiting for new upload before review.');
+            }
+            // Otherwise allow (the job seeker uploaded a different file)
+        }
+
         // Update resume verification status
         $user->resume_verification_status = 'verified';
         $user->verification_score = 100;
@@ -650,10 +667,29 @@ class VerificationController extends Controller
         $user = User::findOrFail($userId);
         $admin = Auth::user();
 
-        // Update resume verification status
-        $user->resume_verification_status = 'rejected';
-        $user->verification_score = 0;
-        $user->verification_notes = 'Rejected by admin: '.$request->rejection_reason;
+        // Prevent rejecting a resume that was already rejected (until a new upload exists)
+        if ($user->resume_verification_status === 'rejected') {
+            // If the previously rejected file is the same as current, block double-rejects.
+            $rejectedFile = null;
+            if (!empty($user->verification_notes) && strpos($user->verification_notes, '||rejected_file:') !== false) {
+                $parts = explode('||rejected_file:', $user->verification_notes);
+                $rejectedFile = trim($parts[1] ?? '');
+            }
+
+            if ($rejectedFile !== null && $rejectedFile === ($user->resume_file ?? '')) {
+                return redirect()->route('admin.verifications.index', ['tab' => 'resumes'])
+                    ->with('error', 'Resume already rejected. Waiting for new upload before review.');
+            }
+            // Otherwise continue and allow rejection of the new upload
+        }
+
+    // Update resume verification status
+    $user->resume_verification_status = 'rejected';
+    $user->verification_score = 0;
+    // Persist the rejected file path inside notes so we can detect if a new upload occurred later
+    $baseNote = 'Rejected by admin: '.$request->rejection_reason;
+    $rejectedFileMarker = '||rejected_file:'.($user->resume_file ?? '');
+    $user->verification_notes = $baseNote . $rejectedFileMarker;
 
         $user->save();
 

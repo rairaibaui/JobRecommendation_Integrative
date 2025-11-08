@@ -468,6 +468,44 @@ class ProfileController extends Controller
                     $message = 'Profile details updated successfully.';
                 }
 
+                // Notify admins when a job seeker uploads or changes their profile picture
+                try {
+                    if ($pictureUpdated) {
+                        $admins = User::where('is_admin', true)->get();
+                        foreach ($admins as $admin) {
+                            \App\Models\Notification::create([
+                                'user_id' => $admin->id,
+                                'type' => 'info',
+                                'title' => 'Job Seeker Updated Profile Picture',
+                                'message' => trim(($user->first_name.' '.$user->last_name)) ?: $user->email . ' updated their profile picture.',
+                                'read' => false,
+                                'data' => [
+                                    'job_seeker_id' => $user->id,
+                                    'email' => $user->email,
+                                    'profile_picture' => $user->profile_picture ? asset('storage/'.$user->profile_picture) : null,
+                                ],
+                            ]);
+                        }
+
+                        // Audit log entry for admin traceability
+                        try {
+                            \App\Models\AuditLog::create([
+                                'user_id' => $user->id,
+                                'event' => 'profile_picture_updated',
+                                'title' => 'Profile Picture Updated',
+                                'message' => "User {$user->email} updated their profile picture.",
+                                'data' => json_encode(['user_id' => $user->id, 'profile_picture' => $user->profile_picture]),
+                                'ip_address' => request()->ip(),
+                                'user_agent' => request()->userAgent(),
+                            ]);
+                        } catch (\Throwable $__auditEx) {
+                            // best-effort
+                        }
+                    }
+                } catch (\Throwable $__notifyEx) {
+                    Log::warning('Failed to notify admins of profile picture update: '.$__notifyEx->getMessage());
+                }
+
                 // If the request expects JSON (AJAX), return JSON response
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json([

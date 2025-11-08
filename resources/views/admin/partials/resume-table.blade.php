@@ -15,7 +15,11 @@
                 <td>
                     <div class="user-info">
                         <div class="user-avatar">
-                            {{ strtoupper(substr($resume->first_name ?? $resume->email, 0, 1)) }}
+                            @if(!empty($resume->profile_picture) && file_exists(storage_path('app/public/' . $resume->profile_picture)))
+                                <img src="{{ asset('storage/' . $resume->profile_picture) }}" alt="{{ $resume->first_name }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />
+                            @else
+                                {{ strtoupper(substr($resume->first_name ?? $resume->email, 0, 1)) }}
+                            @endif
                         </div>
                         <div class="user-details">
                             <div class="user-name">{{ $resume->first_name }} {{ $resume->last_name }}</div>
@@ -94,22 +98,38 @@
                             <i class="fas fa-eye"></i>
                             View
                         </a>
+                        @php
+                            $isRejected = ($status === 'rejected');
+                            $isVerified = ($status === 'verified');
+                        @endphp
                         @if($status !== 'verified')
                             <form method="POST" action="{{ route('admin.resumes.approve', $resume->id) }}" style="display: inline;">
                                 @csrf
                                 <button type="submit" 
-                                        class="btn-action btn-approve"
-                                        title="Approve this resume"
-                                        onclick="return confirm('Are you sure you want to approve this resume?')">
+                                        class="btn-action btn-approve" 
+                                        title="{{ $isRejected ? 'Resume rejected. Waiting for new upload before review.' : 'Approve this resume' }}"
+                                        @if($isRejected) disabled @else onclick="return confirm('Are you sure you want to approve this resume?')" @endif>
                                     <i class="fas fa-check"></i>
                                     Approve
                                 </button>
                             </form>
                         @endif
                         @if($status !== 'needs_review')
+                            @php
+                                $disableReject = $isRejected || $isVerified;
+                                if ($isRejected) {
+                                    $rejectTitle = 'Resume rejected. Waiting for new upload before review.';
+                                } elseif ($isVerified) {
+                                    $rejectTitle = 'Resume already verified. Reject disabled.';
+                                } else {
+                                    $rejectTitle = 'Reject this resume';
+                                }
+                                $rejectOnclick = $disableReject ? 'return false' : "showRejectModal({$resume->id}, '{$resume->first_name} {$resume->last_name}')";
+                            @endphp
                             <button class="btn-action btn-reject"
-                                    title="Reject this resume"
-                                    onclick="showRejectModal({{ $resume->id }}, '{{ $resume->first_name }} {{ $resume->last_name }}')">
+                                    @if($disableReject) disabled @endif
+                                    title="{{ $rejectTitle }}"
+                                    onclick="{{ $rejectOnclick }}">
                                 <i class="fas fa-times"></i>
                                 Reject
                             </button>
@@ -158,6 +178,19 @@
 </div>
 
 <script>
+    // Additional visual styling for disabled action buttons
+    (function(){
+        var style = document.createElement('style');
+        style.innerHTML = `
+            .btn-action[disabled], .btn[disabled] {
+                opacity: 0.55 !important;
+                cursor: not-allowed !important;
+                filter: grayscale(30%);
+            }
+            .btn-action[disabled] i, .btn[disabled] i { opacity: 0.6; }
+        `;
+        document.head.appendChild(style);
+    })();
     function showRejectModal(userId, userName) {
         document.getElementById('rejectUserName').textContent = userName;
         document.getElementById('rejectForm').action = '/admin/resumes/' + userId + '/reject';
