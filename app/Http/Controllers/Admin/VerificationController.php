@@ -10,6 +10,7 @@ use App\Models\AuditTrail;
 use App\Models\DocumentValidation;
 use App\Models\Notification;
 use App\Models\User;
+use App\Jobs\AutoUnverifyResumeJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -670,6 +671,24 @@ class VerificationController extends Controller
                 ]);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Failed to notify user about resume mismatches for user '.$user->id.': '.$e->getMessage());
+            }
+
+            // Mark the resume as outdated (timestamp) so the user has a grace period to update
+            try {
+                $user->resume_outdated_at = now();
+                // Append an explanatory note so admins can see why resume was marked outdated
+                $user->verification_notes = trim(($user->verification_notes ?? '') . ' Outdated due to mismatched fields ||outdated_due:admin_approval');
+                $user->save();
+            } catch (\Throwable $__e) {
+                Log::warning('Failed to mark resume_outdated_at for user '.$user->id.': '.$__e->getMessage());
+            }
+
+            // Schedule automatic unverify if the user does not update resume within grace period
+            try {
+                $minutes = config('verification.outdated_grace_minutes', 10);
+                AutoUnverifyResumeJob::dispatch($user->id)->delay(now()->addMinutes($minutes));
+            } catch (\Throwable $__dispatchEx) {
+                Log::warning('Failed to dispatch AutoUnverifyResumeJob on admin approval', ['user_id' => $user->id, 'error' => $__dispatchEx->getMessage()]);
             }
         }
 
