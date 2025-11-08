@@ -337,66 +337,53 @@ class ResumeVerificationService
             }
         }
 
-        // Optional AI-assisted decision: if enabled, compute a weighted confidence on core fields
-        $useAiDecision = config('ai.features.document_validation', false)
-            && config('ai.document_validation.resume.enabled', false)
-            && config('ai.document_validation.resume.use_ai_decision', false);
+        // Decision rules (strict identity verification):
+        // - If the account email is NOT verified -> do NOT auto-verify; mark as 'needs_review' and flag 'email_unverified'.
+        // - If the account email IS verified -> require exact matches on all three core fields (name, email, phone).
+        //   * If ALL three match exactly -> status = 'verified'.
+        //   * If ANY of the three do NOT match -> status = 'rejected' with identity-mismatch message.
+        // This enforces that verified accounts cannot bypass identity checks.
 
-    if (!$skipFurtherDecision && $useAiDecision) {
-            // Weighted confidence: name 40%, email 40%, phone 20%
-            $weighted = (
-                ($confidences['name'] ?? 0) * 0.4 +
-                ($confidences['email'] ?? 0) * 0.4 +
-                ($confidences['phone'] ?? 0) * 0.2
-            );
-            // Interpret weighted score
-            if ($weighted >= 80) {
-                $finalStatus = 'verified';
-            } elseif ($weighted < 40) {
-                $finalStatus = 'rejected';
-            } else {
-                $finalStatus = 'needs_review';
-            }
-            $this->notes[] = 'Automated confidence: ' . round($weighted, 1) . '/100 (used to determine final status).';
-        } elseif (!$skipFurtherDecision) {
-            if ($coreMatchedCount === 3) {
-                // Require that email matches and the account has a verified email before setting verified
-                if (!empty($matches['email']) && $matches['email'] && method_exists($user, 'hasVerifiedEmail') && $user->hasVerifiedEmail()) {
-                    $finalStatus = 'verified';
-                } else {
-                    $finalStatus = 'needs_review';
-                    $this->flags[] = 'manual_review_email';
-                    if (!method_exists($user, 'hasVerifiedEmail') || !$user->hasVerifiedEmail()) {
-                        $this->flags[] = 'email_unverified';
-                        $this->notes[] = 'Account email is not verified; resume cannot be auto-verified until email is verified.';
-                    } else {
-                        $this->notes[] = 'All core fields matched but email does not appear to match the registered account; manual review required.';
-                    }
-                }
-            } elseif ($coreMatchedCount === 0) {
-                $finalStatus = 'rejected';
-                $this->flags[] = 'all_core_fields_mismatch';
-                $this->notes[] = 'Name, email and phone from resume do not match the registered profile.';
-            } else {
-                $finalStatus = 'needs_review';
-                $this->flags[] = 'partial_mismatch';
-                $this->notes[] = 'One or more core fields (name/email/phone) do not match the registered profile and require manual review.';
-            }
-        }
+        // Normalize key values for exact comparison
+        $normalizeForCompare = function ($s) {
+            return preg_replace('/[^a-z0-9]/', '', strtolower(trim((string) $s)));
+        };
+        $normProfile = $normalizeForCompare($profileName);
+        $normExtracted = $normalizeForCompare($extractedFullName);
 
-        // If account email verification state should influence final decision, apply overrides here.
-        // If the account email is verified, accept the resume as verified regardless of minor mismatches or low AI confidence.
-        if (method_exists($user, 'hasVerifiedEmail') && $user->hasVerifiedEmail()) {
-            // Add an audit flag and note so admins know reasoning
-            $this->flags[] = 'auto_verified_by_verified_email';
-            $this->notes[] = 'Account email verified; auto-approved despite minor mismatches or low confidence.';
-            $finalStatus = 'verified';
-        } else {
-            // If account email is NOT verified, skip AI-based auto-approval and flag for manual review
-            // This ensures admins explicitly confirm the resume once the user verifies their email.
+        $profileEmailNorm = isset($profileEmail) ? $profileEmail : (isset($user->email) ? strtolower(trim($user->email)) : '');
+        $extractedEmailNorm = isset($extEmail) ? $extEmail : $extractedEmail;
+
+        $onlyDigitsExtracted = $extractedPhone ? preg_replace('/[^0-9]/', '', $extractedPhone) : '';
+        $onlyDigitsProfile = $user->phone_number ? preg_replace('/[^0-9]/', '', $user->phone_number) : '';
+        $lastExtracted = $onlyDigitsExtracted ? substr($onlyDigitsExtracted, -10) : '';
+        $lastProfile = $onlyDigitsProfile ? substr($onlyDigitsProfile, -10) : '';
+
+        if (method_exists($user, 'hasVerifiedEmail') && !$user->hasVerifiedEmail()) {
+            $finalStatus = 'needs_review';
             $this->flags[] = 'email_unverified';
             $this->notes[] = 'Resume verification pending — email not verified.';
-            $finalStatus = 'needs_review';
+        } else {
+            // Account email is verified — require exact identity matches
+            $exactName = ($normProfile !== '' && $normExtracted !== '' && $normProfile === $normExtracted);
+            $exactEmail = (!empty($profileEmailNorm) && !empty($extractedEmailNorm) && $profileEmailNorm === $extractedEmailNorm);
+            $exactPhone = ($lastProfile !== '' && $lastExtracted !== '' && $lastProfile === $lastExtracted);
+
+            if ($exactName && $exactEmail && $exactPhone) {
+                $finalStatus = 'verified';
+                $this->flags[] = 'match_name_exact';
+                $this->flags[] = 'match_email';
+                $this->flags[] = 'match_phone';
+                $this->notes[] = 'All core fields match exactly; account auto-verified.';
+            } else {
+                // Reject when any core field mismatches for a verified account
+                $finalStatus = 'rejected';
+                // Clear previous flags and add identity mismatch flag
+                $this->flags = ['identity_mismatch'];
+                $this->notes = ['This resume does not belong to you. The personal information does not match your account.'];
+                // Lower the score to 0 for rejected identity mismatch
+                $this->score = 0;
+            }
         }
 
         // Apply penalties to the quality score for core-field mismatches so the score reflects
