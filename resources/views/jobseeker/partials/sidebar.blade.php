@@ -5,10 +5,21 @@
 --}}
 
 <div class="sidebar">
+  @php
+    // Resolve the user context: prefer a passed $user variable, otherwise use the
+    // currently authenticated user. Using a local $viewUser avoids undefined
+    // variable notices when $user isn't provided by the caller.
+    $viewUser = isset($user) ? $user : auth()->user();
+    $profilePic = optional($viewUser)->profile_picture;
+    $firstName = optional($viewUser)->first_name;
+    $lastName = optional($viewUser)->last_name;
+    $resumeStatus = optional($viewUser)->resume_verification_status;
+  @endphp
+
   <div class="profile-ellipse">
     <div class="profile-icon">
-      @if($user->profile_picture ?? auth()->user()->profile_picture)
-        <img src="{{ asset('storage/' . ($user->profile_picture ?? auth()->user()->profile_picture)) }}" 
+      @if($profilePic)
+        <img src="{{ asset('storage/' . $profilePic) }}" 
              alt="Profile Picture" 
              style="cursor:pointer;" 
              onclick="showProfilePictureModal()">
@@ -17,35 +28,16 @@
       @endif
     </div>
   </div>
-  
+
   <div class="profile-name">
-    {{ ($user->first_name ?? auth()->user()->first_name) }} {{ ($user->last_name ?? auth()->user()->last_name) }}
-    @if((($user->resume_verification_status ?? auth()->user()->resume_verification_status) === 'verified'))
+    {{ $firstName }} {{ $lastName }}
+    @if($resumeStatus === 'verified')
       <i class="fas fa-check-circle" title="Resume Verified" style="color: #648EB5; margin-left: 6px; font-size: 14px;"></i>
     @endif
   </div>
-  
-  <script>
-  function showProfilePictureModal() {
-    const oldModal = document.getElementById('profilePicModal');
-    if (oldModal) oldModal.remove();
-    const picUrl = @json(($user->profile_picture ?? auth()->user()->profile_picture) ? asset('storage/' . ($user->profile_picture ?? auth()->user()->profile_picture)) : null);
-    const name = @json((($user->first_name ?? auth()->user()->first_name) . ' ' . ($user->last_name ?? auth()->user()->last_name)));
-    const modal = document.createElement('div');
-    modal.id = 'profilePicModal';
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; display:flex; align-items:center; justify-content:center;';
-    modal.innerHTML = `
-      <div style="background:white; border-radius:16px; padding:30px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; align-items:center; max-width:350px; width:90%; position:relative;">
-        <button onclick="document.getElementById('profilePicModal').remove();" style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:#333;">&times;</button>
-        <h3 style="margin-bottom:18px; color:#648EB5; font-size:20px; font-weight:600;">Your Profile</h3>
-        ${picUrl ? `<img src='${picUrl}' alt='Profile Picture' style='width:120px; height:120px; object-fit:cover; border-radius:50%; border:4px solid #648EB5; margin-bottom:12px;'>` : `<div style='width:120px; height:120px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:48px; color:#aaa; margin-bottom:12px;'><i class='fas fa-user'></i></div>`}
-        <div style="font-size:16px; color:#333; font-weight:500;">${name}</div>
-        <button onclick="document.getElementById('profilePicModal').remove();" style="margin-top:22px; background:#6c757d; color:white; border:none; padding:8px 22px; border-radius:8px; cursor:pointer; font-size:14px;">Close</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-  </script>
+
+  {{-- Profile modal component (renders modal DOM and scripts) --}}
+  <x-profile-modal :pic-url="$profilePic ? asset('storage/' . $profilePic) : null" :name="trim(($firstName ?? '') . ' ' . ($lastName ?? ''))" />
   
   @php
     $currentRoute = Route::currentRouteName();
@@ -66,7 +58,7 @@
     <i class="fas fa-file-alt sidebar-btn-icon"></i> My Applications
   </a>
   
-  @if(($user->user_type ?? auth()->user()->user_type) === 'job_seeker')
+  @if(optional($viewUser)->user_type === 'job_seeker')
     <a href="{{ route('work-history') }}" 
        class="sidebar-btn {{ $currentRoute === 'work-history' ? 'active' : '' }}">
       <i class="fas fa-clock-rotate-left sidebar-btn-icon"></i> Work History

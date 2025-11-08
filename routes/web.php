@@ -60,6 +60,14 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
 
     // Validate that the URL signature is valid (protects against tampering)
     if (! URLFacade::hasValidSignature($request)) {
+        // If the link is expired or invalid, offer a friendly page that allows the
+        // recipient to request a new verification email. We avoid leaking account
+        // existence by keeping messaging generic on the resend action.
+        $user = \App\Models\User::find($id);
+        if ($user && ! $user->hasVerifiedEmail()) {
+            return response()->view('auth.verify-expired', ['user' => $user]);
+        }
+
         return redirect()->route('login')->with('error', 'Invalid or expired verification link.');
     }
 
@@ -87,17 +95,50 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
 Route::post('/email/resend', function (\Illuminate\Http\Request $request) {
     try {
         if (!$request->user()) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'You must be signed in to request a verification email.'], 401);
+            }
+
             return redirect()->route('login')->with('error', 'You must be signed in to request a verification email.');
         }
 
         $request->user()->sendEmailVerificationNotification();
+
+        // If this was called via AJAX/fetch expecting JSON, return JSON; otherwise preserve original redirect/back behavior
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Verification link sent to your email address.']);
+        }
+
         return back()->with('success', 'Verification link sent to your email address.');
     } catch (\Throwable $e) {
         // Log the failure and show a friendly message without exposing internals
         \Illuminate\Support\Facades\Log::error('Failed to resend verification email', ['user_id' => optional($request->user())->id, 'error' => $e->getMessage()]);
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Unable to send verification email right now. Please try again later or contact support.'], 500);
+        }
+
         return back()->with('error', 'Unable to send verification email right now. Please try again later or contact support.');
     }
 })->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
+
+// Public resend endpoint for expired verification links (rate limited to prevent abuse)
+Route::post('/email/resend-public', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'user_id' => 'required|integer',
+    ]);
+
+    try {
+        $user = \App\Models\User::find($request->input('user_id'));
+        if ($user && ! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+        }
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('Failed to resend verification email (public)', ['user_id' => $request->input('user_id'), 'error' => $e->getMessage()]);
+    }
+
+    // Don't reveal whether the account exists; redirect to login with a generic message
+    return redirect()->route('login')->with('success', 'If an account exists for that link, a new verification email has been sent.');
+})->middleware('throttle:3,1')->name('verification.resend.public');
 
 // 🔹 Authentication Routes
 
@@ -187,7 +228,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
         Route::post('/update-employer', [ProfileController::class, 'updateEmployer'])->name('profile.updateEmployer');
         Route::get('/resume', [ProfileController::class, 'resume'])->name('profile.resume');
-        Route::post('/change-email', [ProfileController::class, 'changeEmail'])->name('profile.changeEmail');
+    // Start email change flow: sends OTP to new email
+    Route::post('/change-email', [ProfileController::class, 'sendEmailOTP'])->middleware('throttle:6,1')->name('profile.changeEmail');
+    // Verify the OTP and complete email change
+    Route::post('/verify-email-otp', [ProfileController::class, 'verifyEmailOTP'])->middleware('throttle:6,1')->name('profile.verifyEmailOTP');
         Route::post('/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
         Route::post('/send-phone-otp', [ProfileController::class, 'sendPhoneOTP'])->name('profile.sendPhoneOTP');
         Route::post('/verify-phone-otp', [ProfileController::class, 'verifyPhoneOTP'])->name('profile.verifyPhoneOTP');

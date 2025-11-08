@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Carbon\Carbon;
+use App\Notifications\VerifyEmailNotification;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -156,5 +157,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function documentValidations()
     {
         return $this->hasMany(DocumentValidation::class);
+    }
+
+    /**
+     * Override the default email verification notification to use our
+     * custom notification which respects the configured expiry.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification());
     }
 }

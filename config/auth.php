@@ -101,6 +101,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Verification Link Expiration
+    |--------------------------------------------------------------------------
+    |
+    | This value controls the number of minutes that email verification
+    | links are considered valid. The application's verification
+    | notification will use this value when generating signed URLs.
+    |
+    */
+    'verification' => [
+        'expire' => env('AUTH_VERIFICATION_EXPIRE_MINUTES', 5),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Password Confirmation Timeout
     |--------------------------------------------------------------------------
     |

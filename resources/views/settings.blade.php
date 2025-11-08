@@ -351,27 +351,46 @@
     <div class="modal-content" style="max-width: 420px;">
         <button onclick="closeChangeEmailModal()" class="close-btn">&times;</button>
         <h2 style="color: #2C3E50; margin-bottom: 25px; font-size: 22px; font-weight: 600;">Change Email Address</h2>
-        <form method="POST" action="{{ route('profile.changeEmail') }}">
+        <form id="changeEmailForm" method="POST" action="{{ route('profile.changeEmail') }}">
             @csrf
             <div style="margin-bottom: 20px;">
-                <label for="email" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Email Address</label>
+                <label for="new_email" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Email Address</label>
                 <input type="email" 
-                       id="email" 
-                       name="email" 
-                       value="{{ Auth::user()->email }}" 
+                       id="new_email" 
+                       name="new_email" 
+                       value="{{ old('new_email', '') }}" 
                        required
+                       placeholder="Enter the new email to receive a verification code"
                        style="width: 100%; padding: 12px 15px; border: 2px solid #E0E6EB; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: border-color 0.3s;">
+                <div id="changeEmailError" style="color:#dc3545; margin-top:8px; display:none;"></div>
             </div>
             
             <div class="button-group" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
                 <button type="button" onclick="closeChangeEmailModal()" class="btn-cancel" style="padding: 12px 24px; background: #E4E9EE; color: #555; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
                     Cancel
                 </button>
-                <button type="submit" class="btn-primary" style="padding: 12px 24px; background: #5B9BD5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
-                    Change Email
+                <button type="submit" id="changeEmailSubmit" class="btn-primary" style="padding: 12px 24px; background: #5B9BD5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+                    Send Code
                 </button>
             </div>
         </form>
+
+        <!-- Verify OTP Modal (shows after sending code) -->
+        <div id="verifyEmailOtpModal" style="display:none; margin-top:18px;">
+            <div style="padding: 16px; border-radius:8px; background:#f8fafc; border:1px solid #e6eef6;">
+                <h3 style="margin-top:0; font-size:16px;">Enter Verification Code</h3>
+                <p style="margin:0 0 10px 0; color:#555; font-size:13px;">We sent a 6-digit code to <span id="verifyEmailAddress" style="font-weight:600;"></span>. Enter it below to confirm your new email.</p>
+                <input type="hidden" id="verify_new_email" name="verify_new_email" value="">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="otp_code" name="otp_code" placeholder="Enter 6-digit code" maxlength="6" style="flex:1; padding:10px; border:2px solid #E0E6EB; border-radius:8px; font-size:14px;">
+                    <button id="verifyOtpBtn" class="btn-primary" style="padding:10px 14px; background:#5B9BD5; color:#fff; border-radius:8px; border:none;">Verify</button>
+                </div>
+                <div id="verifyOtpError" style="color:#dc3545; margin-top:8px; display:none;"></div>
+                <div style="margin-top:10px; font-size:13px; color:#666;">
+                    Didn't receive a code? <button id="resendOtpBtn" type="button" class="btn-link" style="background:none; border:none; color:#5B9BD5; cursor:pointer; padding:0;">Resend</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -796,5 +815,127 @@ document.addEventListener('click', function(e) {
         closeDeleteAccountModal();
     }
 });
+
+    // AJAX flow: submit new email, then show OTP entry
+    const changeEmailForm = document.getElementById('changeEmailForm');
+    const changeEmailError = document.getElementById('changeEmailError');
+    const changeEmailSubmit = document.getElementById('changeEmailSubmit');
+    const verifyModal = document.getElementById('verifyEmailOtpModal');
+    const verifyEmailAddress = document.getElementById('verifyEmailAddress');
+    const verifyNewEmailInput = document.getElementById('verify_new_email');
+    const otpInput = document.getElementById('otp_code');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const verifyOtpError = document.getElementById('verifyOtpError');
+    const resendOtpBtn = document.getElementById('resendOtpBtn');
+
+    if (changeEmailForm) {
+        changeEmailForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            changeEmailError.style.display = 'none';
+            const newEmail = document.getElementById('new_email').value.trim();
+            if (!newEmail) {
+                changeEmailError.textContent = 'Please enter a valid email address.';
+                changeEmailError.style.display = 'block';
+                return;
+            }
+
+            changeEmailSubmit.disabled = true;
+            changeEmailSubmit.textContent = 'Sending...';
+
+            fetch("{{ route('profile.changeEmail') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ new_email: newEmail })
+            }).then(r => r.json().then(b => ({status:r.status, body:b}))).then(result => {
+                changeEmailSubmit.disabled = false;
+                changeEmailSubmit.textContent = 'Send Code';
+                if (result.status >= 200 && result.status < 300 && result.body.success) {
+                    // Show verify OTP block
+                    verifyEmailAddress.textContent = newEmail;
+                    verifyNewEmailInput.value = newEmail;
+                    verifyModal.style.display = 'block';
+                } else {
+                    changeEmailError.textContent = result.body.message || 'Unable to send verification code.';
+                    changeEmailError.style.display = 'block';
+                }
+            }).catch(err => {
+                changeEmailSubmit.disabled = false;
+                changeEmailSubmit.textContent = 'Send Code';
+                changeEmailError.textContent = 'Failed to send verification code. Please try again later.';
+                changeEmailError.style.display = 'block';
+            });
+        });
+    }
+
+    if (verifyOtpBtn) {
+        verifyOtpBtn.addEventListener('click', function() {
+            verifyOtpError.style.display = 'none';
+            const code = otpInput.value.trim();
+            const newEmailVal = verifyNewEmailInput.value;
+            if (!/^[0-9]{6}$/.test(code)) {
+                verifyOtpError.textContent = 'Enter a 6-digit code.';
+                verifyOtpError.style.display = 'block';
+                return;
+            }
+
+            verifyOtpBtn.disabled = true;
+            verifyOtpBtn.textContent = 'Verifying...';
+
+            fetch("{{ route('profile.verifyEmailOTP') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ new_email: newEmailVal, otp_code: code })
+            }).then(r => r.json().then(b => ({status:r.status, body:b}))).then(result => {
+                verifyOtpBtn.disabled = false;
+                verifyOtpBtn.textContent = 'Verify';
+                if (result.status >= 200 && result.status < 300 && result.body.success) {
+                    alert(result.body.message || 'Email updated successfully.');
+                    window.location.reload();
+                } else {
+                    verifyOtpError.textContent = result.body.message || 'Invalid code.';
+                    verifyOtpError.style.display = 'block';
+                }
+            }).catch(err => {
+                verifyOtpBtn.disabled = false;
+                verifyOtpBtn.textContent = 'Verify';
+                verifyOtpError.textContent = 'Verification failed. Please try again later.';
+                verifyOtpError.style.display = 'block';
+            });
+        });
+    }
+
+    if (resendOtpBtn) {
+        resendOtpBtn.addEventListener('click', function() {
+            const newEmailVal = verifyNewEmailInput.value;
+            resendOtpBtn.disabled = true;
+            resendOtpBtn.textContent = 'Resending...';
+
+            fetch("{{ route('profile.changeEmail') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ new_email: newEmailVal })
+            }).then(r => r.json()).then(body => {
+                resendOtpBtn.disabled = false;
+                resendOtpBtn.textContent = 'Resend';
+                alert(body.message || 'Verification code resent.');
+            }).catch(err => {
+                resendOtpBtn.disabled = false;
+                resendOtpBtn.textContent = 'Resend';
+                alert('Unable to resend code right now.');
+            });
+        });
+    }
 </script>
 @endpush

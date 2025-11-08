@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use App\Services\EmailChangeService;
 
 class ProfileController extends Controller
 {
@@ -1011,5 +1012,67 @@ class ProfileController extends Controller
             'success' => false,
             'message' => $result['message'],
         ], 400);
+    }
+
+    /**
+     * Send OTP for email change verification.
+     */
+    public function sendEmailOTP(Request $request)
+    {
+        $request->validate([
+            'new_email' => 'required|email|max:255',
+        ]);
+
+        $user = Auth::user();
+
+        /** @var EmailChangeService $svc */
+        $svc = app(EmailChangeService::class);
+
+        $result = $svc->sendOtp($user, $request->new_email);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            if ($result['success']) {
+                return response()->json(['success' => true, 'message' => $result['message']]);
+            }
+
+            return response()->json(['success' => false, 'message' => $result['message']], 400);
+        }
+
+        if ($result['success']) {
+            return redirect()->back()->with('success', $result['message']);
+        }
+
+        return redirect()->back()->withErrors(['email' => $result['message']]);
+    }
+
+    /**
+     * Verify provided OTP and perform the email change.
+     */
+    public function verifyEmailOTP(Request $request)
+    {
+        $request->validate([
+            'new_email' => 'required|email|max:255',
+            'otp_code' => 'required|string|size:6',
+        ]);
+
+        $user = Auth::user();
+        /** @var EmailChangeService $svc */
+        $svc = app(EmailChangeService::class);
+
+        $result = $svc->verifyOtp($user, $request->new_email, $request->otp_code);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            if ($result['success']) {
+                return response()->json(['success' => true, 'message' => $result['message']]);
+            }
+
+            return response()->json(['success' => false, 'message' => $result['message']], 400);
+        }
+
+        if ($result['success']) {
+            return redirect()->back()->with('success', $result['message']);
+        }
+
+        return redirect()->back()->withErrors(['otp_code' => $result['message']]);
     }
 }

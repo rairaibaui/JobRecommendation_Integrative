@@ -99,27 +99,37 @@
 <body>
     <div class="container">
         <div class="sidebar">
-            <div class="profile-ellipse">
-                <div class="profile-icon">
-                    @if(Auth::user()->profile_picture)
-                        <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture">
-                    @else
-                        <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Default Profile">
-                    @endif
+            @if(Auth::check())
+                <div class="profile-ellipse">
+                    <div class="profile-icon">
+                        @if(optional(Auth::user())->profile_picture)
+                            <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="Profile Picture">
+                        @else
+                            <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Default Profile">
+                        @endif
+                    </div>
                 </div>
-            </div>
 
-            <h3>{{ Auth::user()->first_name }} {{ Auth::user()->last_name }}</h3>
+                <h3>{{ optional(Auth::user())->first_name }} {{ optional(Auth::user())->last_name }}</h3>
 
-            <a href="{{ route('dashboard') }}"><i>🏠</i> Dashboard</a>
-            <a href="{{ route('recommendation') }}"><i>📘</i> Recommendation</a>
-            <a href="{{ route('bookmarks') }}"><i>🔖</i> Bookmarks</a>
-            <a href="{{ route('settings') }}" class="active"><i>⚙️</i> Settings</a>
+                <a href="{{ route('dashboard') }}"><i>🏠</i> Dashboard</a>
+                <a href="{{ route('recommendation') }}"><i>📘</i> Recommendation</a>
+                <a href="{{ route('bookmarks') }}"><i>🔖</i> Bookmarks</a>
+                <a href="{{ route('settings') }}" class="active"><i>⚙️</i> Settings</a>
 
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="logout">↪ Logout</button>
-            </form>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="logout">↪ Logout</button>
+                </form>
+            @else
+                <div style="padding:20px; text-align:center;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" width="64" height="64" style="border-radius:50%; margin-bottom:12px;" alt="Site Logo">
+                    <div style="margin-top:8px;">
+                        <a href="{{ route('login') }}" class="btn btn-link" style="display:block; margin-bottom:8px;">Sign in</a>
+                        <a href="{{ route('register') }}" class="btn btn-link">Create account</a>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="main-content">

@@ -166,6 +166,9 @@ class RegisterController extends Controller
             ]);
 
             try {
+                // Ensure location is normalized (trim whitespace) before storing
+                $locationValue = isset($validated['location']) ? trim($validated['location']) : null;
+
                 $user = User::create([
                     'first_name' => $validated['first_name'],
                     'last_name' => $validated['last_name'],
@@ -175,7 +178,7 @@ class RegisterController extends Controller
                     'education_level' => $validated['education_level'] ?? null,
                     'skills' => $validated['skills'] ?? null,
                     'years_of_experience' => $validated['years_of_experience'] ?? null,
-                    'location' => $validated['location'],
+                    'location' => $locationValue,
                     'user_type' => 'job_seeker',
                     'password' => Hash::make($validated['password']),
                 ]);
