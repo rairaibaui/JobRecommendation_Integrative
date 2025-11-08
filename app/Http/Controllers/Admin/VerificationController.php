@@ -724,4 +724,19 @@ class VerificationController extends Controller
             'Cache-Control' => 'private, max-age=600',
         ]);
     }
+
+    /**
+     * Show detailed resume verification information for admin review.
+     */
+    public function resumeDetails($userId)
+    {
+        $user = User::findOrFail($userId);
+
+        // Load latest verification log if available
+        $latestLog = \App\Models\ResumeVerificationLog::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->first();
+
+        return view('admin.resume-detail', compact('user', 'latestLog'));
+    }
 }

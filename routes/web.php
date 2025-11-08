@@ -36,6 +36,69 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Email verification routes (simple helpers)
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->middleware('auth')->name('verification.notice');
+
+use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\URL as URLFacade;
+
+// Verification link: allow the signed URL to verify even when the user is not currently logged in.
+Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $hash) {
+    // If user is authenticated and the ID matches, use the standard EmailVerificationRequest flow
+    if ($request->user() && intval($request->user()->id) === intval($id)) {
+        // Re-create an EmailVerificationRequest instance so ->fulfill() works as expected
+        /** @var \Illuminate\Foundation\Auth\EmailVerificationRequest $evr */
+        $evr = app(\Illuminate\Foundation\Auth\EmailVerificationRequest::class);
+        // Populate the underlying request data
+        $evr->setUserResolver(function () use ($request) { return $request->user(); });
+        $evr->merge($request->all());
+        $evr->fulfill();
+        return redirect()->route('dashboard')->with('success', 'Email verified successfully!');
+    }
+
+    // Validate that the URL signature is valid (protects against tampering)
+    if (! URLFacade::hasValidSignature($request)) {
+        return redirect()->route('login')->with('error', 'Invalid or expired verification link.');
+    }
+
+    // Find the user and verify the email hash matches
+    $user = \App\Models\User::find($id);
+    if (! $user) {
+        return redirect()->route('login')->with('error', 'Invalid verification link (user not found).');
+    }
+
+    // The hash in the link should match the SHA1 of the user's email as per Laravel's default
+    if (sha1($user->getEmailForVerification()) !== (string) $hash) {
+        return redirect()->route('login')->with('error', 'Verification link does not match user.');
+    }
+
+    // Mark as verified if not already
+    if (! $user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
+    }
+
+    // Redirect to login (user will then be able to sign in with a verified account)
+    return redirect()->route('login')->with('success', 'Your email has been verified. You may now sign in.');
+
+})->name('verification.verify');
+
+Route::post('/email/resend', function (\Illuminate\Http\Request $request) {
+    try {
+        if (!$request->user()) {
+            return redirect()->route('login')->with('error', 'You must be signed in to request a verification email.');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('success', 'Verification link sent to your email address.');
+    } catch (\Throwable $e) {
+        // Log the failure and show a friendly message without exposing internals
+        \Illuminate\Support\Facades\Log::error('Failed to resend verification email', ['user_id' => optional($request->user())->id, 'error' => $e->getMessage()]);
+        return back()->with('error', 'Unable to send verification email right now. Please try again later or contact support.');
+    }
+})->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
+
 // 🔹 Authentication Routes
 
 // Register
@@ -185,6 +248,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::post('/resumes/{userId}/approve', [App\Http\Controllers\Admin\VerificationController::class, 'approveResume'])->name('admin.resumes.approve');
     Route::post('/resumes/{userId}/reject', [App\Http\Controllers\Admin\VerificationController::class, 'rejectResume'])->name('admin.resumes.reject');
     Route::get('/resumes/{userId}/view', [App\Http\Controllers\Admin\VerificationController::class, 'viewResume'])->name('admin.resumes.view');
+    // Details page with AI extraction and mismatch details
+    Route::get('/resumes/{userId}/details', [App\Http\Controllers\Admin\VerificationController::class, 'resumeDetails'])->name('admin.resumes.details');
 
     // User Management
     Route::get('/users', [App\Http\Controllers\Admin\UserManagementController::class, 'index'])->name('admin.users.index');

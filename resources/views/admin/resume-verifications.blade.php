@@ -445,7 +445,7 @@
                             <td>{{ $user->updated_at->format('M d, Y') }}</td>
                             <td>
                                 <div class="action-buttons">
-                                    <a href="{{ route('admin.resumes.view', $user->id) }}" target="_blank" class="btn btn-info btn-sm">
+                                    <a href="{{ route('admin.resumes.details', $user->id) }}" class="btn btn-info btn-sm">
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                     @if($user->resume_verification_status !== 'verified')

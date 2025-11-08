@@ -131,6 +131,22 @@
                     {{ $notes }}
                   </p>
                 @endif
+        {{-- If resume is verified but email not verified, prompt user to verify email for additional benefits --}}
+        @if($status === 'verified' && method_exists(Auth::user(), 'hasVerifiedEmail') && !Auth::user()->hasVerifiedEmail())
+          <div style="margin-top:12px; padding:12px; background:#fff4e5; border-radius:8px; border-left:4px solid #f59e0b; color:#92400e; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="flex:1;">
+              <strong style="display:block; font-size:14px; margin-bottom:6px;">Almost there — verify your email for more benefits</strong>
+              <div style="font-size:13px;">Your resume has been approved by an administrator. Verify your email to unlock priority job matching and improved application visibility.</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <form method="POST" action="{{ route('verification.resend') }}">
+                @csrf
+                <button type="submit" class="btn btn-sm" style="background:#f59e0b; color:white; border:none; padding:8px 12px; border-radius:6px;">Resend verification email</button>
+              </form>
+              <a href="{{ route('settings') }}" class="btn btn-sm" style="background:#fff; color:#92400e; border:1px solid #f59e0b; padding:8px 12px; border-radius:6px;">Change Email</a>
+            </div>
+          </div>
+        @endif
               </div>
             
               <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">

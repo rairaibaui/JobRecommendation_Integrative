@@ -55,10 +55,11 @@ class ProfileController extends Controller
                 'availability' => 'nullable|string',
                 'resume_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
                 'years_of_experience' => 'nullable|numeric|min:0',
-                'location' => 'required|string|max:255',
+                'location' => 'nullable|string|max:255',
                 'address' => 'nullable|string|max:255',
                 'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
                 'remove_picture' => 'nullable|boolean',
+                    'remove_resume' => 'nullable|boolean',
             ]);
 
             // Track what was updated
@@ -66,6 +67,8 @@ class ProfileController extends Controller
             $detailsUpdated = false;
 
             // Update profile details using fillable fields
+            // Do not include 'location' in the bulk fill to avoid writing NULL/empty unintentionally
+            // (we handle location explicitly below only when provided/non-empty).
             $data = $request->only([
                 'first_name',
                 'last_name',
@@ -77,7 +80,6 @@ class ProfileController extends Controller
                 'education_level',
                 'skills',
                 'years_of_experience',
-                'location',
                 'address',
             ]);
 
@@ -108,7 +110,10 @@ class ProfileController extends Controller
             $user->education_level = $request->education_level;
             $user->skills = $request->skills;
             $user->years_of_experience = $request->years_of_experience;
-            $user->location = $request->location;
+            // Only update location when provided and non-empty in the request to support partial/profile-section forms
+            if ($request->has('location') && $request->filled('location')) {
+                $user->location = $request->location;
+            }
             $user->address = $request->address;
 
             // Explicitly set birthday to ensure it's saved (use the 'birthday' column on User)
@@ -138,7 +143,59 @@ class ProfileController extends Controller
                 $pictureUpdated = true;
             }
 
-            // Handle resume file upload
+            // Handle resume file upload / removal
+            // Removal: if requested and no new file uploaded, delete stored resume and reset verification metadata
+            if ($request->has('remove_resume') && $request->remove_resume && !$request->hasFile('resume_file')) {
+                try {
+                    if ($user->resume_file && Storage::disk('public')->exists($user->resume_file)) {
+                        Storage::disk('public')->delete($user->resume_file);
+                    }
+
+                    // Reset resume and verification-related fields
+                    $user->resume_file = null;
+                    // Keep a valid non-null status per DB schema (default 'pending') to avoid integrity errors
+                    $user->resume_verification_status = 'pending';
+                    $user->verification_flags = null;
+                    $user->verification_score = 0;
+                    $user->verified_at = null;
+                    $user->verification_notes = null;
+
+                    // Audit log for removal (best-effort)
+                    try {
+                        \App\Models\AuditLog::create([
+                            'user_id' => $user->id,
+                            'event' => 'resume_removed',
+                            'title' => 'Resume Removed',
+                            'message' => "User {$user->email} removed their resume from profile.",
+                            'data' => json_encode(['user_id' => $user->id, 'email' => $user->email]),
+                            'ip_address' => $request->ip(),
+                            'user_agent' => $request->userAgent(),
+                        ]);
+                    } catch (\Throwable $__e) {
+                        // best-effort
+                    }
+
+                    // Notify user of removal (best-effort)
+                    try {
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'type' => 'info',
+                            'title' => 'Resume Removed',
+                            'message' => 'You have removed your uploaded resume from your profile. You can upload a new resume anytime.',
+                            'read' => false,
+                            'data' => ['action' => 'resume_removed'],
+                        ]);
+                    } catch (\Throwable $__n) {
+                        // ignore
+                    }
+
+                    $detailsUpdated = true;
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to remove resume file for user '.$user->id.': '.$e->getMessage());
+                }
+            }
+
+            // Upload: if a new resume file is present, temporarily store and verify the file
             if ($request->hasFile('resume_file')) {
                 // First, temporarily store and verify the file
                 $tempPath = $request->file('resume_file')->store('temp_resumes', 'public');

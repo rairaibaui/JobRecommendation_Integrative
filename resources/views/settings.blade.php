@@ -21,6 +21,12 @@
     </div>
 @endif
 
+@if(session('error'))
+    <div class="alert alert-danger flash-message">
+        <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+    </div>
+@endif
+
 @if($errors->any())
     <div class="alert alert-danger">
         <i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}
@@ -147,6 +153,21 @@
                            value="{{ Auth::user()->email }}" 
                            readonly 
                            style="background: #f8f9fa; cursor: not-allowed;">
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+                        @if(method_exists(Auth::user(), 'hasVerifiedEmail') && Auth::user()->hasVerifiedEmail())
+                            <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:14px; background:#d1fae5; color:#065f46; font-weight:600; font-size:13px;">
+                                <i class="fas fa-check-circle"></i>
+                                Verified
+                            </span>
+                        @else
+                            <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:14px; background:#fff4e5; color:#92400e; font-weight:600; font-size:13px;">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Email not verified
+                            </span>
+
+                            <button type="button" class="btn btn-sm btn-secondary" style="padding:6px 10px; font-size:13px; margin-left:8px;" onclick="resendVerification()">Resend verification email</button>
+                        @endif
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -306,6 +327,10 @@
                            style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
                             <i class="fas fa-file-pdf"></i> View Current Resume
                         </a>
+                        <label style="margin-left:12px; display: inline-flex; align-items: center; gap:8px; font-weight:500; cursor: pointer;">
+                            <input type="checkbox" name="remove_resume" value="1">
+                            Remove current resume
+                        </label>
                     </div>
                 @endif
             </div>
@@ -624,6 +649,40 @@ document.addEventListener('DOMContentLoaded', function() {
         input.value = formatted;
     }
 });
+
+// Resend verification email (avoid nested forms inside the main profile form)
+function resendVerification() {
+    const url = "{{ route('verification.resend') }}";
+    const token = '{{ csrf_token() }}';
+
+    const button = event?.target || null;
+    if (button) {
+        button.disabled = true;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': token,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({})
+    }).then(resp => resp.json().then(body => ({status: resp.status, body}))).then(result => {
+        if (result.status >= 200 && result.status < 300) {
+            alert(result.body.message || 'Verification link sent.');
+            // Optionally reload to show the flash message
+            window.location.reload();
+        } else {
+            alert(result.body.message || 'Unable to send verification email.');
+            if (button) button.disabled = false;
+        }
+    }).catch(err => {
+        console.error('Resend verification failed', err);
+        alert('Unable to send verification email right now. Please try again later.');
+        if (button) button.disabled = false;
+    });
+}
 
 // Modal functions
 function showModal(modalId) {

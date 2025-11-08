@@ -94,6 +94,14 @@ class RegisterController extends Controller
                     'user_type' => 'employer',
                     'password' => Hash::make($validated['password']),
                 ]);
+                // Send email verification notification (best-effort)
+                try {
+                    if (method_exists($user, 'sendEmailVerificationNotification')) {
+                        $user->sendEmailVerificationNotification();
+                    }
+                } catch (\Throwable $e) {
+                    // best-effort: do not block registration on email failures
+                }
 
                 // Queue AI validation for background processing
                 $isDocumentValidationEnabled = config('ai.features.document_validation', false)
@@ -171,6 +179,14 @@ class RegisterController extends Controller
                     'user_type' => 'job_seeker',
                     'password' => Hash::make($validated['password']),
                 ]);
+                // Send email verification notification (best-effort)
+                try {
+                    if (method_exists($user, 'sendEmailVerificationNotification')) {
+                        $user->sendEmailVerificationNotification();
+                    }
+                } catch (\Throwable $e) {
+                    // best-effort: do not block registration on email failures
+                }
             } catch (\Throwable $e) {
                 return back()
                     ->withInput()
