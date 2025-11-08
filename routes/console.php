@@ -8,8 +8,6 @@ use App\Models\DocumentValidation;
 
 // Schedule daily check for expired permits (runs at 9:00 AM every day)
 Schedule::command('permits:check-expiry')->dailyAt('09:00');
-// Schedule revoke outdated verifications daily as a fallback when queue workers are not available
-Schedule::command('verification:revoke-outdated')->dailyAt('02:00');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

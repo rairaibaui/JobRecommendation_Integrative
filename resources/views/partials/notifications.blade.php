@@ -6,7 +6,7 @@
   <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:380px; max-height:500px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:0; z-index:1100; font-size:14px; line-height:1.35;">
     <div class="notif-header" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #f0f0f0; background:#f8f9fa;">
       <span style="font-size:20px; font-weight:700; color:#2c3e50;">Notifications</span>
-      <div style="display:flex; gap:10px;">
+      <div style="display:flex; gap:10px; margin-left:40px;">
         <button onclick="empMarkAllNotificationsRead(event)" style="background:transparent;color:#5a6c7d;border:1px solid #cbd5e0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all 0.2s;font-weight:500;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='transparent'">Mark all as read</button>
         <button onclick="empRefreshNotifications(event)" style="background:#5B9BD5; color:#fff; border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s;" onmouseover="this.style.background='#4a8bc4'" onmouseout="this.style.background='#5B9BD5'">Refresh</button>
       </div>
@@ -93,9 +93,9 @@
           <i class="fas fa-${icon}" style="color:${iconColor}; font-size:18px;"></i>
         </div>
         <div style="flex:1; min-width:0; overflow:hidden;">
-          <div style="font-weight:600; font-size:14px; color:#2c3e50; margin-bottom:5px; line-height:1.3;">${escapeHtml(n.title || '')}</div>
+          <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:5px; line-height:1.3;">${escapeHtml(n.title || '')}</div>
           <div style="color:#64748b; font-size:13px; line-height:1.5; margin-bottom:6px; word-wrap:break-word; overflow-wrap:break-word;">${escapeHtml(n.message || '')}</div>
-          <div class="meta" style="font-size:11px; color:#94a3b8;">${createdAt}</div>
+          <div class="meta" style="font-size:10px; color:#a0aec0;">${createdAt}</div>
         </div>
         ${linkIndicator}
       </li>

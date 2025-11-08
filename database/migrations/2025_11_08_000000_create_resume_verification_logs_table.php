@@ -13,11 +13,6 @@ return new class extends Migration
      */
     public function up()
     {
-        // If an earlier migration already created this table, skip creating it again
-        if (Schema::hasTable('resume_verification_logs')) {
-            return;
-        }
-
         Schema::create('resume_verification_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

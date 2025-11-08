@@ -232,9 +232,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/change-email', [ProfileController::class, 'sendEmailOTP'])->middleware('throttle:6,1')->name('profile.changeEmail');
     // Verify the OTP and complete email change
     Route::post('/verify-email-otp', [ProfileController::class, 'verifyEmailOTP'])->middleware('throttle:6,1')->name('profile.verifyEmailOTP');
-    // Phone change via email OTP
-    Route::post('/change-phone', [ProfileController::class, 'sendPhoneChangeOTP'])->middleware('throttle:6,1')->name('profile.changePhoneOTP');
-    Route::post('/verify-phone-change-otp', [ProfileController::class, 'verifyPhoneChangeOTP'])->middleware('throttle:6,1')->name('profile.verifyPhoneChangeOTP');
+        Route::post('/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
         Route::post('/send-phone-otp', [ProfileController::class, 'sendPhoneOTP'])->name('profile.sendPhoneOTP');
         Route::post('/verify-phone-otp', [ProfileController::class, 'verifyPhoneOTP'])->name('profile.verifyPhoneOTP');
         Route::post('/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');

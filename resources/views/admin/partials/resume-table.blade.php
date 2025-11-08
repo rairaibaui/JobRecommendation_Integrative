@@ -105,14 +105,10 @@
                         @if($status !== 'verified')
                             <form method="POST" action="{{ route('admin.resumes.approve', $resume->id) }}" style="display: inline;">
                                 @csrf
-                                <button type="button" 
+                                <button type="submit" 
                                         class="btn-action btn-approve" 
                                         title="{{ $isRejected ? 'Resume rejected. Waiting for new upload before review.' : 'Approve this resume' }}"
-                                        @if($isRejected)
-                                            disabled
-                                        @else
-                                            onclick="(typeof openApproveModal === 'function') ? openApproveModal({{ $resume->id }}, '{{ addslashes(trim($resume->first_name . ' ' . $resume->last_name)) }}') : this.closest('form').submit();"
-                                        @endif>
+                                        @if($isRejected) disabled @else onclick="return confirm('Are you sure you want to approve this resume?')" @endif>
                                     <i class="fas fa-check"></i>
                                     Approve
                                 </button>

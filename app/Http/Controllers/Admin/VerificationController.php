@@ -10,7 +10,6 @@ use App\Models\AuditTrail;
 use App\Models\DocumentValidation;
 use App\Models\Notification;
 use App\Models\User;
-use App\Jobs\AutoUnverifyResumeJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -586,7 +585,7 @@ class VerificationController extends Controller
         $admin = Auth::user();
 
         // Prevent approving a resume that was previously rejected and hasn't been replaced.
-        if ($user->resume_verification_status === 'rejected' || $user->resume_verification_status === 'outdated') {
+        if ($user->resume_verification_status === 'rejected') {
             // Try to detect which file was rejected (stored in verification_notes as a marker)
             $rejectedFile = null;
             if (!empty($user->verification_notes) && strpos($user->verification_notes, '||rejected_file:') !== false) {
@@ -606,91 +605,16 @@ class VerificationController extends Controller
         $user->resume_verification_status = 'verified';
         $user->verification_score = 100;
         $user->verified_at = now();
-    $user->verification_notes = $request->admin_notes ?? 'Approved by administrator';
+        $user->verification_notes = $request->admin_notes ?? 'Approved by administrator';
 
-        // Clear any rejection flags (keep other existing flags)
+        // Clear any rejection flags
         $flags = json_decode($user->verification_flags, true) ?? [];
         $flags = array_filter($flags, function ($flag) {
             return $flag !== 'not_a_resume';
         });
-
-        // If admin manually approves, surface any AI-detected mismatches to the user
-        try {
-            $latestLog = \App\Models\ResumeVerificationLog::where('user_id', $user->id)
-                ->orderByDesc('created_at')
-                ->first();
-
-            $mismatchFields = [];
-            if ($latestLog) {
-                if (isset($latestLog->match_name) && !$latestLog->match_name) {
-                    $mismatchFields[] = 'name';
-                    $flags[] = 'mismatch_name';
-                }
-                if (isset($latestLog->match_email) && !$latestLog->match_email) {
-                    $mismatchFields[] = 'email';
-                    $flags[] = 'mismatch_email';
-                }
-                if (isset($latestLog->match_phone) && !$latestLog->match_phone) {
-                    $mismatchFields[] = 'phone';
-                    $flags[] = 'mismatch_phone';
-                }
-                if (isset($latestLog->match_birthday) && !$latestLog->match_birthday) {
-                    $mismatchFields[] = 'birthday';
-                    $flags[] = 'mismatch_birthday';
-                }
-            }
-
-            // Persist flags to user record so dashboard can surface mismatch info
-            $user->verification_flags = json_encode(array_values(array_unique($flags)));
-        } catch (\Throwable $e) {
-            // If anything fails, don't block approval
-            \Illuminate\Support\Facades\Log::warning('Failed to compute resume mismatches for user '.$user->id.': '.$e->getMessage());
-        }
+        $user->verification_flags = json_encode($flags);
 
         $user->save();
-
-        // If mismatches were detected, create a notification so job seeker knows what to fix
-        if (!empty($mismatchFields)) {
-            $friendly = implode(', ', array_map(function($f){
-                return ucfirst($f);
-            }, $mismatchFields));
-
-            $message = "Your resume was approved by an administrator, but our review detected differences in the following fields: {$friendly}. Please update your resume so it matches your account profile to avoid application issues.";
-
-            try {
-                \App\Models\Notification::create([
-                    'user_id' => $user->id,
-                    'type' => 'warning',
-                    'title' => 'Resume approved — please check mismatches',
-                    'message' => $message,
-                    'read' => false,
-                    'data' => [
-                        'mismatches' => $mismatchFields,
-                        'admin_notes' => $request->admin_notes,
-                    ],
-                ]);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed to notify user about resume mismatches for user '.$user->id.': '.$e->getMessage());
-            }
-
-            // Mark the resume as outdated (timestamp) so the user has a grace period to update
-            try {
-                $user->resume_outdated_at = now();
-                // Append an explanatory note so admins can see why resume was marked outdated
-                $user->verification_notes = trim(($user->verification_notes ?? '') . ' Outdated due to mismatched fields ||outdated_due:admin_approval');
-                $user->save();
-            } catch (\Throwable $__e) {
-                Log::warning('Failed to mark resume_outdated_at for user '.$user->id.': '.$__e->getMessage());
-            }
-
-            // Schedule automatic unverify if the user does not update resume within grace period
-            try {
-                $minutes = config('verification.outdated_grace_minutes', 10);
-                AutoUnverifyResumeJob::dispatch($user->id)->delay(now()->addMinutes($minutes));
-            } catch (\Throwable $__dispatchEx) {
-                Log::warning('Failed to dispatch AutoUnverifyResumeJob on admin approval', ['user_id' => $user->id, 'error' => $__dispatchEx->getMessage()]);
-            }
-        }
 
         // Create audit log
         AuditLog::create([
@@ -744,7 +668,7 @@ class VerificationController extends Controller
         $admin = Auth::user();
 
         // Prevent rejecting a resume that was already rejected (until a new upload exists)
-        if ($user->resume_verification_status === 'rejected' || $user->resume_verification_status === 'outdated') {
+        if ($user->resume_verification_status === 'rejected') {
             // If the previously rejected file is the same as current, block double-rejects.
             $rejectedFile = null;
             if (!empty($user->verification_notes) && strpos($user->verification_notes, '||rejected_file:') !== false) {

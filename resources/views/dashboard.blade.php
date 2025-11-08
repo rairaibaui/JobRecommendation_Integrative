@@ -111,39 +111,7 @@
                   </div>
                 @endif
               
-                @php
-                  // Identify mismatch flags (set by admin/manual approval logic)
-                  $mismatchFlags = [];
-                  foreach($flags as $f) {
-                      if (is_string($f) && strpos($f, 'mismatch_') === 0) $mismatchFlags[] = $f;
-                  }
-                @endphp
-
-                @if(!empty($mismatchFlags))
-                  @php
-                    $friendly = array_map(function($f){
-                        $map = [
-                            'mismatch_name' => 'Name',
-                            'mismatch_email' => 'Email',
-                            'mismatch_phone' => 'Phone',
-                            'mismatch_birthday' => 'Birthday'
-                        ];
-                        return $map[$f] ?? ucwords(str_replace('_', ' ', str_replace('mismatch_', '', $f)));
-                    }, $mismatchFlags);
-                    $friendlyStr = implode(', ', $friendly);
-                  @endphp
-
-                  <div style="margin-bottom: 12px; padding:12px; border-radius:8px; background:#fff4e5; border-left:4px solid #f59e0b; display:flex; gap:12px; align-items:center; justify-content:space-between;">
-                    <div style="flex:1;">
-                      <strong style="display:block; color:#92400e; font-size:14px; margin-bottom:4px;"><i class="fas fa-exclamation-triangle"></i> Mismatched fields detected</strong>
-                      <div style="color:#6b4b05; font-size:13px;">Our review found differences between your account profile and your uploaded resume in the following fields: <strong>{{ $friendlyStr }}</strong>. Please update your resume so it matches your profile to avoid application issues.</div>
-                    </div>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                      <a href="{{ route('settings') }}#resumeSection" class="btn btn-warning btn-sm" style="background:#f59e0b; color:#fff; padding:8px 12px; border-radius:8px; text-decoration:none;">Update Resume</a>
-                      <a href="{{ route('settings') }}" class="btn btn-secondary btn-sm" style="background:#fff; color:#64748b; border:1px solid #e6eef6; padding:8px 12px; border-radius:8px; text-decoration:none;">Open Settings</a>
-                    </div>
-                  </div>
-                @elseif(!empty($flags))
+                @if(!empty($flags))
                   <div style="margin-bottom: 12px;">
                     <p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">Issues Detected:</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">

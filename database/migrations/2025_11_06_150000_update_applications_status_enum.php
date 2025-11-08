@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::table('applications', function (Blueprint $table) {
             $table->enum('status', [
-                'pending', 'reviewing', 'for_interview', 'accepted', 'rejected',
+                'pending', 'reviewing', 'for_interview', 'interviewed', 'accepted', 'rejected'
             ])->default('pending')->change();
         });
     }

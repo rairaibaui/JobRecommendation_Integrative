@@ -308,8 +308,8 @@ class ResumeVerificationService
         // Determine overall status using CORE fields (name, email, phone). Birthday is informational only.
         $coreMatchedCount = intval($matches['name']) + intval($matches['email']) + intval($matches['phone']);
 
-        // If the extracted full name exactly equals the profile first+last (normalized), we treat that as a strong signal
-        // but still follow the standard decision rules around email verification.
+        // If the extracted full name exactly equals the profile first+last (normalized), auto-verify immediately.
+        $skipFurtherDecision = false;
         if (!empty($extractedFullName) && !empty($profileName)) {
             $normalize = function ($s) {
                 return preg_replace('/[^a-z0-9]/', '', strtolower(trim($s)));
@@ -317,35 +317,72 @@ class ResumeVerificationService
             $normProfile = $normalize($profileName);
             $normExtracted = $normalize($extractedFullName);
             if ($normProfile !== '' && $normExtracted === $normProfile) {
-                $this->flags[] = 'match_name_exact';
-                $this->notes[] = 'Exact full name match found.';
+                // Only auto-verify if the email also matches the profile AND the user's email is verified.
+                if (!empty($matches['email']) && $matches['email'] && method_exists($user, 'hasVerifiedEmail') && $user->hasVerifiedEmail()) {
+                    $finalStatus = 'verified';
+                    $this->flags[] = 'match_name_exact';
+                    $this->notes[] = 'Exact full name match with verified email: auto-verified.';
+                } else {
+                    // Require manual review when email is not matched or account email is not yet verified
+                    $finalStatus = 'needs_review';
+                    $this->flags[] = 'manual_review_email';
+                    if (!method_exists($user, 'hasVerifiedEmail') || !$user->hasVerifiedEmail()) {
+                        $this->flags[] = 'email_unverified';
+                        $this->notes[] = 'Email address for this account is not verified; resume cannot be auto-verified until email is verified.';
+                    } else {
+                        $this->notes[] = 'Exact name match found but email does not match registered profile; requires manual review.';
+                    }
+                }
+                $skipFurtherDecision = true;
             }
         }
 
-        // Decision rules requested:
-        // - If account email is NOT verified -> status = needs_review and flag email_unverified.
-        // - If account email IS verified ->
-        //    * If all three core fields match -> verified
-        //    * If none of the three core fields match -> rejected
-        //    * Otherwise (1 or 2 matches) -> needs_review
+        // Decision rules (strict identity verification):
+        // - If the account email is NOT verified -> do NOT auto-verify; mark as 'needs_review' and flag 'email_unverified'.
+        // - If the account email IS verified -> require exact matches on all three core fields (name, email, phone).
+        //   * If ALL three match exactly -> status = 'verified'.
+        //   * If ANY of the three do NOT match -> status = 'rejected' with identity-mismatch message.
+        // This enforces that verified accounts cannot bypass identity checks.
+
+        // Normalize key values for exact comparison
+        $normalizeForCompare = function ($s) {
+            return preg_replace('/[^a-z0-9]/', '', strtolower(trim((string) $s)));
+        };
+        $normProfile = $normalizeForCompare($profileName);
+        $normExtracted = $normalizeForCompare($extractedFullName);
+
+        $profileEmailNorm = isset($profileEmail) ? $profileEmail : (isset($user->email) ? strtolower(trim($user->email)) : '');
+        $extractedEmailNorm = isset($extEmail) ? $extEmail : $extractedEmail;
+
+        $onlyDigitsExtracted = $extractedPhone ? preg_replace('/[^0-9]/', '', $extractedPhone) : '';
+        $onlyDigitsProfile = $user->phone_number ? preg_replace('/[^0-9]/', '', $user->phone_number) : '';
+        $lastExtracted = $onlyDigitsExtracted ? substr($onlyDigitsExtracted, -10) : '';
+        $lastProfile = $onlyDigitsProfile ? substr($onlyDigitsProfile, -10) : '';
+
         if (method_exists($user, 'hasVerifiedEmail') && !$user->hasVerifiedEmail()) {
             $finalStatus = 'needs_review';
             $this->flags[] = 'email_unverified';
-            $this->notes[] = 'Resume verification pending — account email not verified.';
+            $this->notes[] = 'Resume verification pending — email not verified.';
         } else {
-            if ($coreMatchedCount === 3) {
+            // Account email is verified — require exact identity matches
+            $exactName = ($normProfile !== '' && $normExtracted !== '' && $normProfile === $normExtracted);
+            $exactEmail = (!empty($profileEmailNorm) && !empty($extractedEmailNorm) && $profileEmailNorm === $extractedEmailNorm);
+            $exactPhone = ($lastProfile !== '' && $lastExtracted !== '' && $lastProfile === $lastExtracted);
+
+            if ($exactName && $exactEmail && $exactPhone) {
                 $finalStatus = 'verified';
-                $this->flags[] = 'match_all_core_fields';
-                $this->notes[] = 'All core fields match; auto-verified.';
-            } elseif ($coreMatchedCount === 0) {
-                $finalStatus = 'rejected';
-                $this->flags = ['identity_mismatch_all'];
-                $this->notes = ['All core fields (name, email, phone) differ from your account.'];
-                $this->score = 0;
+                $this->flags[] = 'match_name_exact';
+                $this->flags[] = 'match_email';
+                $this->flags[] = 'match_phone';
+                $this->notes[] = 'All core fields match exactly; account auto-verified.';
             } else {
-                $finalStatus = 'needs_review';
-                $this->flags[] = 'manual_review_needed';
-                $this->notes[] = 'One or more core fields differ; manual review required.';
+                // Reject when any core field mismatches for a verified account
+                $finalStatus = 'rejected';
+                // Clear previous flags and add identity mismatch flag
+                $this->flags = ['identity_mismatch'];
+                $this->notes = ['This resume does not belong to you. The personal information does not match your account.'];
+                // Lower the score to 0 for rejected identity mismatch
+                $this->score = 0;
             }
         }
 

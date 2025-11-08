@@ -509,11 +509,10 @@ class ProfileController extends Controller
 
                 // If the request expects JSON (AJAX), return JSON response
                 if ($request->ajax() || $request->wantsJson()) {
-                    $updated = User::where('id', $user->id)->first();
                     return response()->json([
                         'success' => true,
                         'message' => $message,
-                        'user' => $updated ?: $user,
+                        'user' => $user->fresh(),
                     ]);
                 }
 
@@ -1016,57 +1015,6 @@ class ProfileController extends Controller
     }
 
     /**
-     * Send OTP for phone change via email (uses ContactVerificationService)
-     */
-    public function sendPhoneChangeOTP(Request $request)
-    {
-        $request->validate([
-            'new_phone' => 'required|string|max:20',
-        ]);
-
-        $user = Auth::user();
-        $svc = app(\App\Services\ContactVerificationService::class);
-
-        $result = $svc->sendPhoneChangeOtp($user, $request->new_phone);
-
-        if ($request->wantsJson() || $request->ajax()) {
-            if ($result['success']) return response()->json(['success' => true, 'message' => $result['message']]);
-            return response()->json(['success' => false, 'message' => $result['message']], 400);
-        }
-
-        if ($result['success']) return redirect()->back()->with('success', $result['message']);
-        return redirect()->back()->withErrors(['new_phone' => $result['message']]);
-    }
-
-    /**
-     * Verify OTP for phone change and apply the update.
-     */
-    public function verifyPhoneChangeOTP(Request $request)
-    {
-        $request->validate([
-            'new_phone' => 'required|string|max:20',
-            'otp_code' => 'required|string|size:6',
-        ]);
-
-        $user = Auth::user();
-        $svc = app(\App\Services\ContactVerificationService::class);
-
-        $result = $svc->verifyPhoneChangeOtp($user, $request->new_phone, $request->otp_code);
-
-        if ($request->wantsJson() || $request->ajax()) {
-            if ($result['success']) {
-                // Return updated phone to allow client to update UI without a full reload
-                    $phone = User::where('id', $user->id)->value('phone_number');
-                return response()->json(['success' => true, 'message' => $result['message'], 'phone' => $phone ?: $user->phone_number]);
-            }
-            return response()->json(['success' => false, 'message' => $result['message']], 400);
-        }
-
-        if ($result['success']) return redirect()->back()->with('success', $result['message']);
-        return redirect()->back()->withErrors(['otp_code' => $result['message']]);
-    }
-
-    /**
      * Send OTP for email change verification.
      */
     public function sendEmailOTP(Request $request)
@@ -1115,9 +1063,7 @@ class ProfileController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             if ($result['success']) {
-                // Return updated email so the client can update UI without a full reload
-                    $email = User::where('id', $user->id)->value('email');
-                return response()->json(['success' => true, 'message' => $result['message'], 'email' => $email ?: $user->email]);
+                return response()->json(['success' => true, 'message' => $result['message']]);
             }
 
             return response()->json(['success' => false, 'message' => $result['message']], 400);
