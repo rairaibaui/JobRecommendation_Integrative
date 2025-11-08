@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\AutoUnverifyResumeJob;
 
 class EmailChangeService
 {
@@ -131,6 +132,35 @@ class EmailChangeService
                     ]);
                 } catch (\Throwable $e) {
                     // best effort
+                }
+                // If the user had a verified resume, mark it outdated and schedule auto-unverify
+                try {
+                    if (($user->resume_verification_status ?? null) === 'verified') {
+                        // Record resume as outdated via timestamp but keep the verified badge
+                        // visible immediately. The auto-unverify job will revoke after the
+                        // configured minutes if the resume hasn't been updated.
+                        $user->verification_notes = 'Outdated due to email change ||outdated_due:email_change';
+                        $user->resume_outdated_at = now();
+                        $user->save();
+
+                        try {
+                            \App\Models\Notification::create([
+                                'user_id' => $user->id,
+                                'type' => 'warning',
+                                'title' => 'Update your resume',
+                                'message' => 'Your resume must be updated to match your new contact information.',
+                                'read' => false,
+                                'data' => ['action' => 'upload_new_resume'],
+                            ]);
+                        } catch (\Throwable $__n) {
+                            // best-effort
+                        }
+
+                        $minutes = config('verification.outdated_grace_minutes', 10);
+                        AutoUnverifyResumeJob::dispatch($user->id)->delay(now()->addMinutes($minutes));
+                    }
+                } catch (\Throwable $__markEx) {
+                    Log::warning('Failed to mark resume outdated after email change', ['user_id' => $user->id, 'error' => $__markEx->getMessage()]);
                 }
             });
 

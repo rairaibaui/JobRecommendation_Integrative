@@ -75,11 +75,14 @@
     ">
         <h2>Change Phone Number</h2>
         <button onclick="closeChangePhoneModal()" style="position:absolute;top:10px;right:10px;font-size:20px;">&times;</button>
-    <form method="POST" action="{{ route('profile.changePhone') }}">
+    <form id="changePhoneForm">
         @csrf
         <label for="phone_number">New Phone Number</label>
-        <input type="text" id="phone_number" name="phone_number" value="{{ Auth::user()->phone_number }}" required>
-        <button type="submit">Change Phone</button>
+        <input type="text" id="phone_number" name="new_phone" value="{{ Auth::user()->phone_number }}" required>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+            <button type="button" onclick="closeChangePhoneModal()" class="btn-cancel">Cancel</button>
+            <button type="submit" id="changePhoneSubmit" class="btn-primary">Send Code</button>
+        </div>
     </form>
 
             <div style="display:flex;gap:10px;justify-content:flex-end;">
@@ -570,5 +573,143 @@ document.getElementById('settingsOverlay').addEventListener('click', function ()
     ['changePasswordModal','changeEmailModal','changePhoneModal','clearBookmarksModal','deactivateModal','deleteAccountModal'].forEach(id => {
         if(document.getElementById(id).style.display === 'flex') hideModal(id);
     });
+});
+</script>
+
+<!-- Verify Phone OTP Modal -->
+<div id="verifyPhoneOtpModal" class="modal">
+    <div class="modal-content">
+        <h2>Enter verification code</h2>
+        <button onclick="closeVerifyPhoneOtpModal()" class="close-btn">&times;</button>
+        <p id="verifyPhoneHint" style="color:#666;">We sent a 6-digit code to your email. Enter it below to confirm your phone number change.</p>
+        <div id="verifyPhoneAlert" style="display:none;margin-bottom:10px;color:#dc3545;"></div>
+        <form id="verifyPhoneForm">
+            @csrf
+            <input type="hidden" id="verify_new_phone" name="new_phone">
+            <label for="verify_otp">Verification code</label>
+            <input type="text" id="verify_otp" name="otp_code" maxlength="6" required>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                <button type="button" onclick="closeVerifyPhoneOtpModal()" class="btn-cancel">Cancel</button>
+                <button type="submit" id="verifyPhoneSubmit" class="btn-primary">Verify</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openVerifyPhoneOtpModal() { showModal('verifyPhoneOtpModal'); }
+function closeVerifyPhoneOtpModal() { hideModal('verifyPhoneOtpModal'); document.getElementById('verifyPhoneAlert').style.display = 'none'; }
+
+// AJAX handlers for change phone and verify
+document.addEventListener('DOMContentLoaded', function () {
+    const changePhoneForm = document.getElementById('changePhoneForm');
+    const changePhoneSubmit = document.getElementById('changePhoneSubmit');
+    const changePhoneError = document.getElementById('changePhoneError');
+
+    if (changePhoneForm) {
+        changePhoneForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            changePhoneError && (changePhoneError.style.display = 'none');
+            const newPhone = document.getElementById('phone_number').value.trim();
+            if (!newPhone) {
+                if (changePhoneError) { changePhoneError.textContent = 'Please enter a phone number.'; changePhoneError.style.display = 'block'; }
+                return;
+            }
+
+            changePhoneSubmit.disabled = true;
+            changePhoneSubmit.textContent = 'Sending...';
+
+            try {
+                const resp = await fetch('{{ url('/profile/change-phone') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ new_phone: newPhone })
+                });
+
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    // Open the verify modal and populate hidden field
+                    document.getElementById('verify_new_phone').value = newPhone;
+                    openVerifyPhoneOtpModal();
+                    // Optionally show a small success hint in the modal
+                    const hint = document.getElementById('verifyPhoneHint');
+                    if (hint) hint.textContent = 'A 6-digit code has been sent to your email. Enter it below.';
+                } else {
+                    if (changePhoneError) { changePhoneError.textContent = data.message || 'Failed to send verification code'; changePhoneError.style.display = 'block'; }
+                }
+            } catch (err) {
+                if (changePhoneError) { changePhoneError.textContent = 'Network error while sending code. Please try again.'; changePhoneError.style.display = 'block'; }
+            } finally {
+                changePhoneSubmit.disabled = false;
+                changePhoneSubmit.textContent = 'Send Code';
+            }
+        });
+    }
+
+    // Verify form
+    const verifyPhoneForm = document.getElementById('verifyPhoneForm');
+    const verifyPhoneSubmit = document.getElementById('verifyPhoneSubmit');
+    const verifyPhoneAlert = document.getElementById('verifyPhoneAlert');
+
+    if (verifyPhoneForm) {
+        verifyPhoneForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            verifyPhoneAlert.style.display = 'none';
+            const otp = document.getElementById('verify_otp').value.trim();
+            const newPhone = document.getElementById('verify_new_phone').value.trim();
+            if (!otp || otp.length !== 6) {
+                verifyPhoneAlert.textContent = 'Please enter the 6-digit code.';
+                verifyPhoneAlert.style.display = 'block';
+                return;
+            }
+
+            verifyPhoneSubmit.disabled = true;
+            verifyPhoneSubmit.textContent = 'Verifying...';
+
+            try {
+                const resp = await fetch('{{ url('/profile/verify-phone-change-otp') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ new_phone: newPhone, otp_code: otp })
+                });
+
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    // Success: close modal and show inline message
+                    closeVerifyPhoneOtpModal();
+                    closeChangePhoneModal();
+                    // Insert a small success banner into settings page if desired
+                    const banner = document.createElement('div');
+                    banner.style.padding = '10px';
+                    banner.style.margin = '12px 0';
+                    banner.style.background = '#e6ffed';
+                    banner.style.border = '1px solid #b7f0c6';
+                    banner.style.color = '#0b7a3d';
+                    banner.textContent = data.message || 'Phone updated successfully. Please upload a new resume reflecting your updated contact information.';
+                    document.querySelector('body').insertBefore(banner, document.querySelector('body').firstChild);
+
+                    // Mark: optionally refresh parts of the page or disable apply buttons
+                } else {
+                    verifyPhoneAlert.textContent = data.message || 'Verification failed. Please try again.';
+                    verifyPhoneAlert.style.display = 'block';
+                }
+            } catch (err) {
+                verifyPhoneAlert.textContent = 'Network error while verifying code. Please try again.';
+                verifyPhoneAlert.style.display = 'block';
+            } finally {
+                verifyPhoneSubmit.disabled = false;
+                verifyPhoneSubmit.textContent = 'Verify';
+            }
+        });
+    }
 });
 </script>

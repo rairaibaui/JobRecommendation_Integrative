@@ -85,6 +85,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'years_of_experience' => 'integer',
         'hired_date' => 'datetime',
         'is_admin' => 'boolean',
+        // Casts for verification timestamps and flags so jobs/commands get Carbon/array types
+        'resume_outdated_at' => 'datetime',
+        'verified_at' => 'datetime',
+        'verification_flags' => 'array',
     ];
 
     /**

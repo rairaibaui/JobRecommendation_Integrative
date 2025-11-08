@@ -128,16 +128,18 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('admin.resumes.approve', $user->id) }}">
+                    {{-- Approve via modal so we can customize messaging and record mismatches for job seeker --}}
+                    <form style="display:none;" id="legacyApproveForm" method="POST" action="{{ route('admin.resumes.approve', $user->id) }}">
                         @csrf
-                        <label>Admin notes (optional)</label>
-                        <textarea name="admin_notes" style="width:100%; height:80px; margin-bottom:8px;">Approved by admin</textarea>
-                        <div class="actions">
-                            <button class="btn btn-approve" type="submit" @if($isRejected) disabled title="Resume rejected. Waiting for new upload before review." @else onclick="return confirm('Are you sure you want to approve this resume?')" @endif>
-                                <i class="fas fa-check"></i> Approve
-                            </button>
-                        </div>
                     </form>
+
+                    <div class="actions">
+                        <label style="display:block; width:100%; margin-bottom:8px;">Admin notes (optional)</label>
+                        <textarea id="inlineAdminNotes" style="width:100%; height:80px; margin-bottom:8px;">Approved by admin</textarea>
+                        <button class="btn btn-approve" type="button" @if($isRejected) disabled title="Resume rejected. Waiting for new upload before review." @else onclick="openApproveModal({{ $user->id }}, '{{ addslashes(trim($user->first_name.' '.$user->last_name)) }}')" @endif>
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                    </div>
 
                     <hr>
 
@@ -176,3 +178,52 @@
     </div>
 </body>
 </html>
+
+    <!-- Approve Modal (local to this page) -->
+    <div id="approveModalLocal" style="display:none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:10px; padding:20px; max-width:600px; width:90%;">
+            <h3 style="margin-top:0;"><i class="fas fa-check-circle" style="color:#10b981;"></i> Approve Resume</h3>
+            <p>Approve resume for <strong id="approveNameLocal"></strong>?</p>
+            <form id="approveFormLocal" method="POST">
+                @csrf
+                <label>Admin notes (optional)</label>
+                <textarea name="admin_notes" id="approveModalNotes" style="width:100%; min-height:100px; margin-bottom:12px;"></textarea>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" onclick="closeApproveModalLocal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-approve"><i class="fas fa-check"></i> Approve Resume</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openApproveModal(userId, name){
+            document.getElementById('approveNameLocal').textContent = name;
+            const form = document.getElementById('approveFormLocal');
+            form.action = '/admin/resumes/' + userId + '/approve';
+            // populate modal notes from inline textarea (if available)
+            const inlineNotes = document.getElementById('inlineAdminNotes')?.value || '';
+            document.getElementById('approveModalNotes').value = inlineNotes;
+            document.getElementById('approveModalNotes').placeholder = 'Add any notes...';
+            document.getElementById('approveModalNotes').focus();
+            document.getElementById('approveModalNotes').style.minHeight = '120px';
+            document.getElementById('approveModalNotes').style.padding = '8px';
+            document.getElementById('approveModalNotes').style.border = '1px solid #e2e8f0';
+            document.getElementById('approveModalNotes').style.borderRadius = '6px';
+            document.getElementById('approveModalNotes').style.fontFamily = 'inherit';
+            document.getElementById('approveModalNotes').style.marginBottom = '12px';
+            document.getElementById('approveModalLocal').style.display = 'flex';
+        }
+        function closeApproveModalLocal(){
+            document.getElementById('approveModalLocal').style.display = 'none';
+        }
+
+        document.getElementById('approveFormLocal').addEventListener('submit', function(e){
+            // let the browser submit the POST to the route; no JS Ajax to keep CSRF simple
+        });
+
+        // Close modal when clicking on backdrop
+        document.getElementById('approveModalLocal')?.addEventListener('click', function(e){
+            if (e.target === this) closeApproveModalLocal();
+        });
+    </script>
