@@ -579,11 +579,28 @@
                             @endif
                         </td>
                         <td>
-                            <span class="action-badge action-{{ $log->action }}">
-                                {{ ucfirst($log->action) }}
+                            @php
+                                // Derive a generic action for styling based on the stored event key.
+                                $eventKey = $log->event ?? '';
+                                $actionType = 'update';
+                                if (str_contains($eventKey, 'create') || str_contains($eventKey, 'created')) {
+                                    $actionType = 'create';
+                                } elseif (str_contains($eventKey, 'delete') || str_contains($eventKey, 'deleted')) {
+                                    $actionType = 'delete';
+                                } elseif (str_contains($eventKey, 'approve') || str_contains($eventKey, 'accepted') || str_contains($eventKey, 'verified')) {
+                                    $actionType = 'approve';
+                                } elseif (str_contains($eventKey, 'reject') || str_contains($eventKey, 'rejected')) {
+                                    $actionType = 'reject';
+                                } elseif (str_contains($eventKey, 'verify')) {
+                                    $actionType = 'verify';
+                                }
+                                $label = $log->title ? $log->title : str_replace('_', ' ', $eventKey);
+                            @endphp
+                            <span class="action-badge action-{{ $actionType }}">
+                                {{ ucfirst($label) }}
                             </span>
                         </td>
-                        <td>{{ $log->description }}</td>
+                        <td>{{ $log->message ?? $log->title ?? '' }}</td>
                         <td style="font-size: 12px; color: #64748b;">{{ $log->ip_address ?? 'N/A' }}</td>
                     </tr>
                     @empty

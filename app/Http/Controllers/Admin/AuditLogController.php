@@ -11,7 +11,7 @@ class AuditLogController extends Controller
 {
     public function index(Request $request)
     {
-        $action = $request->get('action');
+    $action = $request->get('action');
         $search = $request->get('search');
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
@@ -19,9 +19,11 @@ class AuditLogController extends Controller
         // Base query
         $query = AuditLog::with('user');
 
-        // Filter by action
+        // Filter by action (matches event column substrings)
         if ($action) {
-            $query->where('action', $action);
+            // events are stored as keys (e.g. "resume_rejected", "application_created").
+            // Allow selecting broad types like 'create', 'update', 'delete', 'approve', 'reject'.
+            $query->where('event', 'like', "%{$action}%");
         }
 
         // Search filter
@@ -52,8 +54,9 @@ class AuditLogController extends Controller
         ];
 
         // Action breakdown
-        $actionBreakdown = AuditLog::select('action', DB::raw('COUNT(*) as count'))
-            ->groupBy('action')
+        // Group by event types (return top-level event keys)
+        $actionBreakdown = AuditLog::select('event', DB::raw('COUNT(*) as count'))
+            ->groupBy('event')
             ->get();
 
         // Activity timeline (last 7 days)
