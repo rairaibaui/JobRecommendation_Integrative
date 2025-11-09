@@ -288,9 +288,9 @@
         </div>
         
         <div class="d-flex justify-content-end gap-2 mt-4" style="flex-wrap: wrap; gap: 12px;">
-          <a href="{{ route('change.password') }}" class="btn btn-secondary">
+          <button type="button" onclick="openChangePasswordModal()" class="btn btn-secondary">
             <i class="fas fa-lock"></i> Change Password
-          </a>
+          </button>
           <button type="submit" class="btn btn-primary">
             <i class="fas fa-save"></i> Save Changes
           </button>
@@ -334,22 +334,25 @@
   </div>
 
   <!-- Delete Account Confirmation Modal -->
-  <div id="deleteAccountModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
-    <div class="card" style="max-width:500px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); margin: 0;">
-      <div class="card-header" style="background: #dc3545; color: white;">
-        <h3 class="card-title" style="color: white; margin: 0;">
-          <i class="fas fa-exclamation-triangle"></i> Confirm Account Deletion
-        </h3>
+  <div id="deleteAccountModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div class="card" style="max-width:500px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); margin: 0; border-radius: 16px;">
+      <div class="card-header" style="background: #fff; border-bottom: none; position: relative;">
+      <h3 class="card-title" style="color: #dc3545; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 12px; padding-right: 50px;">
+          <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 24px;"></i>
+          Confirm Account Deletion
+      </h3>  
+      <button onclick="closeDeleteAccountModal()" class ="close-btn"  style="background: transparent; color: #999; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
+    
       </div>
       
-      <div class="card-body">
-        <div class="alert alert-danger" style="margin-bottom: 20px;">
+      <div class="card-body" style="padding: 32px;">
+        <div class="alert alert-danger" style="margin-bottom: 24px; padding: 16px; border-radius: 12px;">
           <i class="fas fa-exclamation-circle"></i>
           <strong>Warning:</strong> This action cannot be undone!
         </div>
 
-        <p style="margin: 0 0 15px 0; color: #333; font-size: 15px; line-height: 1.6;">
-          You are about to permanently delete your employer account for 
+        <p style="margin: 0 0 16px 0; color: #333; font-size: 15px; line-height: 1.6;">
+          You are about to permanently delete your employer account for
           <strong>{{ Auth::user()->company_name ?? 'your company' }}</strong>.
         </p>
 
@@ -357,7 +360,7 @@
           This will immediately and permanently remove:
         </p>
 
-        <ul style="margin: 0 0 20px 20px; color: #666; font-size: 14px; line-height: 1.8;">
+        <ul style="margin: 0 0 24px 20px; color: #666; font-size: 14px; line-height: 1.8;">
           <li><strong>{{ \App\Models\JobPosting::where('employer_id', Auth::id())->count() }} job posting(s)</strong></li>
           <li><strong>{{ \App\Models\Application::whereHas('jobPosting', function($q) { $q->where('employer_id', Auth::id()); })->count() }} application(s)</strong> from job seekers</li>
           <li>Your company profile and business permit</li>
@@ -368,34 +371,81 @@
           @csrf
           @method('DELETE')
           
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label class="form-label" style="font-weight: 600; color: #333;">
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label" style="font-weight: 600; color: #333; display: block; margin-bottom: 8px; font-size: 14px;">
               Type <strong style="color: #dc3545;">DELETE</strong> to confirm:
             </label>
-            <input type="text" 
-                   id="deleteConfirmInput" 
-                   class="form-control" 
+            <input type="text"
+                   id="deleteConfirmInput"
+                   class="form-control"
                    placeholder="Type DELETE in capital letters"
                    required
                    autocomplete="off"
-                   style="border: 2px solid #dc3545;">
-            <small style="color: #6c757d; display: block; margin-top: 6px;">
+                   style="width: 100%; padding: 14px 16px; border: 2px solid #dc3545; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s;">
+            <small style="color: #6c757d; display: block; margin-top: 8px; font-size: 13px;">
               This verification step ensures you understand the consequences.
             </small>
           </div>
 
-          <div style="display:flex; gap:12px; justify-content: flex-end; flex-wrap: wrap;">
-            <button type="button" 
-                    onclick="closeDeleteAccountModal()" 
-                    class="btn btn-secondary">
-              <i class="fas fa-times"></i> Cancel
+          <div style="display:flex; gap:12px; justify-content: flex-end; margin-top: 30px; flex-wrap: wrap;">
+            <button type="button"
+                    onclick="closeDeleteAccountModal()"
+                    class="btn btn-secondary"
+                    style="padding: 14px 26px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s;">
+              Cancel
             </button>
-            <button type="submit" 
+            <button type="submit"
                     id="confirmDeleteBtn"
                     class="btn btn-danger"
                     disabled
-                    style="opacity: 0.6;">
+                    style="padding: 14px 26px; background: #dc3545; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); opacity: 0.6;">
               <i class="fas fa-trash-alt"></i> Permanently Delete Account
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div class="card" style="max-width:420px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); margin: 0; border-radius: 16px;">
+      <div class="card-header" style="background: #fff; border-bottom: none; position: relative;">
+      <h3 class="card-title" style="color: #2C3E50; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 12px; padding-right: 50px;">
+          <i class="fas fa-lock" style="color: #5B9BD5; font-size: 24px;"></i>
+          Change Password
+      </h3>
+        <button onclick="closeChangePasswordModal()" class ="close-btn" style="background: transparent; color: #999; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
+      </div>
+
+      <div class="card-body">
+        <form method="POST" action="{{ route('change.password.submit') }}">
+          @csrf
+
+          <div style="margin-bottom: 18px;">
+            <label for="current_password" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">Current Password</label>
+            <input type="password" id="current_password" name="current_password" autocomplete="current-password" required
+                   style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s;">
+          </div>
+
+          <div style="margin-bottom: 18px;">
+            <label for="password" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Password</label>
+            <input type="password" id="password" name="password" autocomplete="new-password" required
+                   style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s;">
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <label for="password_confirmation" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">Confirm New Password</label>
+            <input type="password" id="password_confirmation" name="password_confirmation" autocomplete="new-password" required
+                   style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s;">
+          </div>
+
+          <div style="display:flex; gap:12px; justify-content: flex-end; margin-top: 30px;">
+            <button type="button" onclick="closeChangePasswordModal()" class="btn btn-secondary" style="padding: 14px 26px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s;">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" style="padding: 14px 26px; background: #5B9BD5; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);">
+              Change Password
             </button>
           </div>
         </form>
@@ -636,6 +686,15 @@
     msgDiv.className = 'alert alert-' + type;
   }
 
+  // Change Password Modal Functions
+  function openChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'flex';
+  }
+
+  function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+  }
+
   // Delete Account Modal Functions
   function openDeleteAccountModal() {
     document.getElementById('deleteAccountModal').style.display = 'flex';
@@ -684,11 +743,20 @@
     }
 
     // Close modal on outside click
-    const modal = document.getElementById('deleteAccountModal');
-    if (modal) {
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
+    const deleteModal = document.getElementById('deleteAccountModal');
+    if (deleteModal) {
+      deleteModal.addEventListener('click', function(e) {
+        if (e.target === deleteModal) {
           closeDeleteAccountModal();
+        }
+      });
+    }
+
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    if (changePasswordModal) {
+      changePasswordModal.addEventListener('click', function(e) {
+        if (e.target === changePasswordModal) {
+          closeChangePasswordModal();
         }
       });
     }

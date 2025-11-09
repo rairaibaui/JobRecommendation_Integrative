@@ -112,26 +112,16 @@
         transform: translate(-50%, -50%);
         background: #fff;
         color: #000;
-        border-radius: 12px;
-        padding: 30px 40px;
-        width: 400px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        border-radius: 16px;
+        padding: 32px;
+        width: 420px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         z-index: 20;
     ">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-            <div style="
-                background: #3B6E9C;
-                color: #fff;
-                border-radius: 50%;
-                width: 35px;
-                height: 35px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            ">
-                <i class="fas fa-lock"></i>
-            </div>
-            <h2 style="font-size: 18px; color: #1E3A5F; margin: 0;">Change Password</h2>
+        <button onclick="window.history.back()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.1); color: #666; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
+            <i class="fas fa-lock" style="color: #5B9BD5; font-size: 24px;"></i>
+            <h2 style="font-size: 22px; color: #2C3E50; margin: 0; font-weight: 600;">Change Password</h2>
         </div>
 
         <p style="color: #555; font-size: 14px; margin-bottom: 20px;">
@@ -142,62 +132,62 @@
             @csrf
 
             <!-- Current Password -->
-            <div style="margin-bottom: 15px;">
-                <label for="current_password" style="display: block; font-weight: 600; margin-bottom: 5px;">Current Password</label>
+            <div style="margin-bottom: 18px;">
+                <label for="current_password" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">Current Password</label>
                 <input type="password" id="current_password" name="current_password" autocomplete="current-password" required
-                       style="width: 100%; padding: 10px; border: 1px solid #B0B8C2; border-radius: 5px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s; focus:ring-2 focus:ring-blue-500 focus:border-blue-500;">
             </div>
 
             <!-- New Password -->
-            <div style="margin-bottom: 15px;">
-                <label for="password" style="display: block; font-weight: 600; margin-bottom: 5px;">New Password</label>
+            <div style="margin-bottom: 18px;">
+                <label for="password" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Password</label>
                 <input type="password" id="password" name="password" autocomplete="new-password" required
-                       style="width: 100%; padding: 10px; border: 1px solid #B0B8C2; border-radius: 5px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s; focus:ring-2 focus:ring-blue-500 focus:border-blue-500;">
             </div>
 
             <!-- Confirm New Password -->
-            <div style="margin-bottom: 20px;">
-                <label for="password_confirmation" style="display: block; font-weight: 600; margin-bottom: 5px;">Confirm New Password</label>
+            <div style="margin-bottom: 24px;">
+                <label for="password_confirmation" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">Confirm New Password</label>
                 <input type="password" id="password_confirmation" name="password_confirmation" autocomplete="new-password" required
-                       style="width: 100%; padding: 10px; border: 1px solid #B0B8C2; border-radius: 5px; font-size: 14px;">
+                       style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s; focus:ring-2 focus:ring-blue-500 focus:border-blue-500;">
             </div>
 
             <!-- Buttons -->
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
                 <!-- Cancel Button -->
                 <a href="{{ route('settings') }}" style="
-                    background: #E4E9EE;
-                    color: #000;
-                    font-weight: 600;
-                    border: 1px solid #B0B8C2;
-                    border-radius: 6px;
-                    padding: 10px 20px;
+                    padding: 14px 26px;
+                    background: transparent;
+                    color: #64748b;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 12px;
                     cursor: pointer;
                     font-size: 14px;
+                    font-weight: 600;
                     text-decoration: none;
-                    transition: 0.2s;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+                    transition: all 0.3s;
+                    hover:bg-gray-50 hover:border-gray-300;
                 "
-                onmouseover="this.style.background='#D8E0E7'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)';"
-                onmouseout="this.style.background='#E4E9EE'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.15)';">
+                onmouseover="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e0';"
+                onmouseout="this.style.background='transparent'; this.style.borderColor='#e2e8f0';">
                     Cancel
                 </a>
 
                 <!-- Change Password Button -->
                 <button type="submit" style="
-                    background: #3B6E9C;
-                    color: #fff;
-                    font-weight: 600;
+                    padding: 14px 26px;
+                    background: #5B9BD5;
+                    color: white;
                     border: none;
-                    border-radius: 6px;
-                    padding: 10px 20px;
+                    border-radius: 12px;
                     cursor: pointer;
                     font-size: 14px;
-                    transition: 0.2s;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+                    font-weight: 600;
+                    transition: all 0.3s;
+                    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);
                 "
-                onmouseover="this.style.background='#2E5982'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)';"
-                onmouseout="this.style.background='#3B6E9C'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.15)';">
+                onmouseover="this.style.background='#4a8bc4'; this.style.boxShadow='0 6px 16px rgba(91, 155, 213, 0.4)';"
+                onmouseout="this.style.background='#5B9BD5'; this.style.boxShadow='0 4px 12px rgba(91, 155, 213, 0.3)';">
                     Change Password
                 </button>
             </div>

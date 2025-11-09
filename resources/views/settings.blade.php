@@ -349,7 +349,7 @@
 <!-- Change Email Modal -->
 <div id="changeEmailModal" class="modal" style="display:none;">
     <div class="modal-content" style="max-width: 420px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
-        <button onclick="closeChangeEmailModal()" class="close-btn" style="background: rgba(0,0,0,0.1); color: #666; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; transition: all 0.2s;">&times;</button>
+        <button onclick="closeChangeEmailModal()" class="close-btn" style="background: transparent; color: #999; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; transition: all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
         <h2 style="color: #2C3E50; margin-bottom: 25px; font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
             <i class="fas fa-envelope" style="color: #5B9BD5; font-size: 24px;"></i>
             Change Email Address
