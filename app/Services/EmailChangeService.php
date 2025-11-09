@@ -49,7 +49,8 @@ class EmailChangeService
         // Hash the OTP using HMAC with app key for secure storage
         $hashed = hash_hmac('sha256', $otp, config('app.key'));
 
-        $expiresAt = now()->addMinutes(10);
+    // OTP expiry: short-lived code (2 minutes) per product requirement
+    $expiresAt = now()->addMinutes(2);
 
         try {
             EmailChangeOtp::create([

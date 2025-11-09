@@ -46,23 +46,17 @@ use Illuminate\Support\Facades\URL as URLFacade;
 
 // Verification link: allow the signed URL to verify even when the user is not currently logged in.
 Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $hash) {
-    // If user is authenticated and the ID matches, use the standard EmailVerificationRequest flow
-    if ($request->user() && intval($request->user()->id) === intval($id)) {
-        // Re-create an EmailVerificationRequest instance so ->fulfill() works as expected
-        /** @var \Illuminate\Foundation\Auth\EmailVerificationRequest $evr */
-        $evr = app(\Illuminate\Foundation\Auth\EmailVerificationRequest::class);
-        // Populate the underlying request data
-        $evr->setUserResolver(function () use ($request) { return $request->user(); });
-        $evr->merge($request->all());
-        $evr->fulfill();
-        return redirect()->route('dashboard')->with('success', 'Email verified successfully!');
-    }
-
-    // Validate that the URL signature is valid (protects against tampering)
+    // Validate that the URL signature is valid (protects against tampering and enforces expiry)
     if (! URLFacade::hasValidSignature($request)) {
-        // If the link is expired or invalid, offer a friendly page that allows the
-        // recipient to request a new verification email. We avoid leaking account
-        // existence by keeping messaging generic on the resend action.
+        // If the link is expired or invalid, handle based on whether the visitor
+        // is currently authenticated. For unauthenticated requests we redirect
+        // back to login with a generic error. If the recipient happens to be
+        // authenticated (rare), show the friendly expired page that allows a
+        // public resend flow without leaking account existence.
+        if (! $request->user()) {
+            return redirect()->route('login')->with('error', 'Invalid or expired verification link.');
+        }
+
         $user = \App\Models\User::find($id);
         if ($user && ! $user->hasVerifiedEmail()) {
             return response()->view('auth.verify-expired', ['user' => $user]);
@@ -71,6 +65,7 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
         return redirect()->route('login')->with('error', 'Invalid or expired verification link.');
     }
 
+    // At this point the signed URL is valid and within its configured expiry window.
     // Find the user and verify the email hash matches
     $user = \App\Models\User::find($id);
     if (! $user) {
@@ -87,7 +82,13 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
         $user->markEmailAsVerified();
     }
 
-    // Redirect to login (user will then be able to sign in with a verified account)
+    // If the request came from an authenticated session that matches the
+    // verified user, keep them in the app and send them to the dashboard.
+    // Otherwise redirect to the login page so they can sign in.
+    if ($request->user() && intval($request->user()->id) === intval($id)) {
+        return redirect()->route('dashboard')->with('success', 'Your email has been verified.');
+    }
+
     return redirect()->route('login')->with('success', 'Your email has been verified. You may now sign in.');
 
 })->name('verification.verify');
@@ -136,8 +137,10 @@ Route::post('/email/resend-public', function (\Illuminate\Http\Request $request)
         \Illuminate\Support\Facades\Log::error('Failed to resend verification email (public)', ['user_id' => $request->input('user_id'), 'error' => $e->getMessage()]);
     }
 
-    // Don't reveal whether the account exists; redirect to login with a generic message
-    return redirect()->route('login')->with('success', 'If an account exists for that link, a new verification email has been sent.');
+    // Don't reveal whether the account exists; return back to the expired link page
+    // with a generic message so the visitor stays on the same page instead of being
+    // sent to the login screen (avoids signing them out or causing confusion).
+    return redirect()->back()->with('success', 'If an account exists for that link, a new verification email has been sent.');
 })->middleware('throttle:3,1')->name('verification.resend.public');
 
 // 🔹 Authentication Routes

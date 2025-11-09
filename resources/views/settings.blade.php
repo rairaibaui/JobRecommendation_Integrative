@@ -20,7 +20,26 @@
         <i class="fas fa-check-circle"></i> {{ session('success') }}
     </div>
 @endif
+<!-- Custom Alert Modal (replacement for window.alert) -->
+<div id="browserAlertModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.25); z-index:12001; align-items:center; justify-content:center; padding:24px;">
+    <div class="browser-alert-content" style="width:100%; max-width:640px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 24px 48px rgba(15,23,42,0.25);">
+        <div style="display:flex; gap:16px; align-items:flex-start; padding:20px 22px;">
+            <div style="flex-shrink:0; width:44px; height:44px; border-radius:50%; background:#eef6ff; display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-info-circle" style="color:#0b63d6; font-size:18px;"></i>
+            </div>
+            <div style="flex:1;">
+                <div id="browserAlertTitle" style="font-weight:700; font-size:16px; color:#0f172a; margin-bottom:6px;">Notice</div>
+                <div id="browserAlertMessage" style="color:#475569; font-size:14px; line-height:1.5;">Message</div>
+            </div>
+        </div>
+        <div style="border-top:1px solid #eef2f6; padding:16px 22px; display:flex; justify-content:flex-end; background:#fff;">
+            <button id="browserAlertOk" type="button" style="padding:8px 18px; border-radius:10px; background:#0b63d6; color:#fff; border:none; font-weight:700; box-shadow:0 6px 18px rgba(11,99,214,0.18);">OK</button>
+        </div>
+    </div>
+</div>
 
+<!-- Modal Overlay -->
+<div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; backdrop-filter: blur(3px);"></div>
 @if(session('error'))
     <div class="alert alert-danger flash-message">
         <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
@@ -49,14 +68,14 @@
                     }
                 @endphp
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="badge badge-success" title="{{ $employmentTitle }}" style="padding:6px 10px; border-radius:14px; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
-                        <i class="fas fa-briefcase"></i>
-                        Employed
-                    </span>
-                    <button type="button" onclick="openResignModal()" class="btn btn-danger btn-sm" title="Submit resignation" style="white-space:nowrap;">
-                        <i class="fas fa-door-open"></i> Resign
-                    </button>
-                </div>
+                            <span class="badge badge-success" title="{{ $employmentTitle }}" style="padding:6px 10px; border-radius:14px; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                                <i class="fas fa-briefcase"></i>
+                                Employed
+                            </span>
+                            <button type="button" onclick="openResignModal()" class="btn btn-danger btn-sm" title="Submit resignation" style="white-space:nowrap;">
+                                <i class="fas fa-door-open"></i> Resign
+                            </button>
+                        </div>
             @else
                 <span class="badge badge-info" title="Actively seeking opportunities" style="padding:6px 10px; border-radius:14px; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
                     <i class="fas fa-search"></i>
@@ -75,7 +94,7 @@
                     <p style="margin: 0; color: #666; font-size: 14px;">{{ Auth::user()->email }}</p>
                 </div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="openChangeEmailModal()" style="white-space: nowrap;">
+            <button class="btn btn-primary btn-sm" onclick="openChangeEmailModal()" style="white-space: nowrap; background:#5B9BD5; color:#fff; border:none;">
                 <i class="fas fa-edit"></i> Change Email
             </button>
         </div>
@@ -88,7 +107,7 @@
                     <p style="margin: 0; color: #666; font-size: 14px;">Change your password to keep your account secure</p>
                 </div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()" style="white-space: nowrap;">
+            <button class="btn btn-primary btn-sm" onclick="openChangePasswordModal()" style="white-space: nowrap; background:#5B9BD5; color:#fff; border:none;">
                 <i class="fas fa-key"></i> Change Password
             </button>
         </div>
@@ -148,15 +167,17 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Email (login)</label>
-                    <input type="email" 
-                           class="form-control" 
-                           value="{{ Auth::user()->email }}" 
-                           readonly 
-                           style="background: #f8f9fa; cursor: not-allowed;">
-                    <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <input type="email" 
+                               class="form-control" 
+                               value="{{ Auth::user()->email }}" 
+                               readonly 
+                               style="background: #f8f9fa; cursor: not-allowed; flex:1;">
+
+                        {{-- Verified badge inline beside the email input (blue) --}}
                         @if(method_exists(Auth::user(), 'hasVerifiedEmail') && Auth::user()->hasVerifiedEmail())
-                            <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:14px; background:#d1fae5; color:#065f46; font-weight:600; font-size:13px;">
-                                <i class="fas fa-check-circle"></i>
+                            <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:14px; background:#e6f0fb; color:#0f4f8a; font-weight:600; font-size:13px; border:1px solid #648EB5;">
+                                <i class="fas fa-check-circle" style="color:#648EB5;"></i>
                                 Verified
                             </span>
                         @else
@@ -165,7 +186,9 @@
                                 Email not verified
                             </span>
 
-                            <button type="button" class="btn btn-sm btn-secondary" style="padding:6px 10px; font-size:13px; margin-left:8px;" onclick="resendVerification()">Resend verification email</button>
+                            <button type="button" class="btn btn-primary btn-sm" style="padding:6px 10px; font-size:13px; background:#5B9BD5; color:#fff; border:none;" onclick="resendVerification()" title="Send verification email">
+                                Send verification email
+                            </button>
                         @endif
                     </div>
                 </div>
@@ -288,12 +311,37 @@
                 </label>
                 
                 @if(Auth::user()->resume_file)
-                    <div style="background: #d4edda; border: 1px solid #28a745; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-check-circle" style="color: #28a745; font-size: 20px;"></i>
+                    @php
+                        $rstatus = Auth::user()->resume_verification_status ?? 'pending';
+                        $rConfig = [
+                            'verified' => ['bg' => '#d4edda', 'border' => '#28a745', 'color' => '#155724', 'icon' => 'fa-check-circle', 'title' => 'Resume already uploaded', 'message' => 'Your resume is verified.'],
+                            'pending' => ['bg' => '#d1ecf1', 'border' => '#17a2b8', 'color' => '#0c5460', 'icon' => 'fa-clock', 'title' => 'Resume uploaded', 'message' => 'Verification pending — we are analyzing your resume.'],
+                            'needs_review' => ['bg' => '#fff3cd', 'border' => '#ff9800', 'color' => '#7a5200', 'icon' => 'fa-exclamation-triangle', 'title' => 'Resume requires review', 'message' => 'Your resume was flagged for manual review.'],
+                            'incomplete' => ['bg' => '#f8d7da', 'border' => '#dc3545', 'color' => '#721c24', 'icon' => 'fa-times-circle', 'title' => 'Resume incomplete', 'message' => 'Your resume is missing important information.'],
+                            'rejected' => ['bg' => '#f8d7da', 'border' => '#dc3545', 'color' => '#721c24', 'icon' => 'fa-ban', 'title' => 'Resume not verified', 'message' => 'Resume did not meet verification requirements. Please re-upload with accurate information.']
+                        ];
+                        $rc = $rConfig[$rstatus] ?? $rConfig['pending'];
+                    @endphp
+
+                    <div style="background: {{ $rc['bg'] }}; border: 1px solid {{ $rc['border'] }}; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas {{ $rc['icon'] }}" style="color: {{ $rc['border'] }}; font-size: 20px;"></i>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; color: #155724; font-size: 14px;">Resume already uploaded</div>
-                            <div style="font-size: 12px; color: #155724;">You can upload a new file to replace the current one</div>
+                            <div style="font-weight: 600; color: {{ $rc['color'] }}; font-size: 14px;">{{ $rc['title'] }}</div>
+                            <div style="font-size: 12px; color: {{ $rc['color'] }};">{{ $rc['message'] }}</div>
                         </div>
+
+                        @if($rstatus === 'verified')
+                            <div style="display:flex; align-items:center; gap:8px; padding-left:8px;">
+                                <span style="background:#e6f8ef; color:#0b6b2f; padding:6px 10px; border-radius:12px; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px; border:1px solid #28a745;">
+                                    <i class="fas fa-check" style="font-size:12px; color:#28a745;"></i> Verified
+                                </span>
+                            </div>
+                        @else
+                            <div style="display:flex; align-items:center; gap:8px; padding-left:8px;">
+                                <a href="{{ route('settings') }}" class="btn btn-sm" style="background: {{ $rc['border'] }}; color: #fff; padding:6px 10px; border-radius:8px; text-decoration:none;">Re-upload Resume</a>
+                            </div>
+                            {{-- Note: standalone "View Current Resume" link is available below the file input --}}
+                        @endif
                     </div>
                 @endif
                 
@@ -350,7 +398,7 @@
 <div id="changeEmailModal" class="modal" style="display:none;">
     <div class="modal-content" style="max-width: 420px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
         <button onclick="closeChangeEmailModal()" class="close-btn" style="background: transparent; color: #999; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; transition: all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
-        <h2 style="color: #2C3E50; margin-bottom: 25px; font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
+    <h2 style="color: #2C3E50; margin-bottom: 18px; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
             <i class="fas fa-envelope" style="color: #5B9BD5; font-size: 24px;"></i>
             Change Email Address
         </h2>
@@ -358,29 +406,25 @@
             @csrf
             <div style="margin-bottom: 24px;">
                 <label for="new_email" style="display: block; font-weight: 600; color: #2C3E50; margin-bottom: 8px; font-size: 14px;">New Email Address</label>
-                <input type="email"
-                       id="new_email"
-                       name="new_email"
-                       value="{{ old('new_email', '') }}"
-                       required
-                       placeholder="Enter the new email to receive a verification code"
-                       style="width: 100%; padding: 14px 16px; border: 2px solid #E0E6EB; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s; focus:ring-2 focus:ring-blue-500 focus:border-blue-500;">
+          <input type="email"
+              id="new_email"
+              name="new_email"
+              value="{{ old('new_email', '') }}"
+              required
+              placeholder="Enter the new email to receive a verification code"
+              style="width: 100%; padding: 12px 14px; border: 2px solid #E6EEF6; border-radius: 10px; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;">
                 <div id="changeEmailError" style="color:#dc3545; margin-top:8px; display:none;"></div>
             </div>
             
-            <div class="button-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
-                <button type="button" onclick="closeChangeEmailModal()" class="btn-cancel" style="padding: 14px 26px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; hover:bg-gray-50 hover:border-gray-300;">
-                    Cancel
-                </button>
-                <button type="submit" id="changeEmailSubmit" class="btn-primary" style="padding: 14px 26px; background: #5B9BD5; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);">
-                    Send Code
-                </button>
+            <div class="button-group" id="changeEmailActions" style="display:flex; gap:12px; justify-content:flex-end; margin-top: 10px;">
+                <button type="button" onclick="closeChangeEmailModal()" class="btn-cancel" style="padding: 10px 18px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600;">Cancel</button>
+                <button type="submit" id="changeEmailSubmit" class="btn-primary" style="padding: 10px 18px; background: #5B9BD5; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 700;">Send Code</button>
             </div>
         </form>
 
         <!-- Verify OTP Modal (shows after sending code) -->
-        <div id="verifyEmailOtpModal" style="display:none; margin-top:18px;">
-            <div style="padding: 16px; border-radius:8px; background:#f8fafc; border:1px solid #e6eef6;">
+        <div id="verifyEmailOtpModal" style="display:none; margin-top:12px;">
+            <div style="padding: 14px; border-radius:10px; background:#f6fbff; border:1px solid #e6eef6; box-shadow: 0 6px 18px rgba(13, 60, 120, 0.04);">
                 <h3 style="margin-top:0; font-size:16px;">Enter Verification Code</h3>
                 <p style="margin:0 0 10px 0; color:#555; font-size:13px;">We sent a 6-digit code to <span id="verifyEmailAddress" style="font-weight:600;"></span>. Enter it below to confirm your new email.</p>
                 <input type="hidden" id="verify_new_email" name="verify_new_email" value="">
@@ -541,6 +585,25 @@
     
 </div>
 
+    <!-- Custom Confirm Modal for destructive actions (replace browser confirm) -->
+    <div id="browserConfirmModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; max-width:640px; width:90%; margin:0 auto; box-shadow:0 20px 60px rgba(0,0,0,0.35); overflow:hidden;">
+            <div style="padding:22px 24px; background:#fff; display:flex; align-items:flex-start; gap:16px;">
+                <div style="flex-shrink:0; width:48px; height:48px; border-radius:50%; background:#f8fafc; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-exclamation-triangle" style="color:#f59e0b; font-size:20px;"></i>
+                </div>
+                <div style="flex:1;">
+                    <h3 id="browserConfirmTitle" style="margin:0 0 8px 0; font-size:18px; color:#1f2937;">Confirm action</h3>
+                    <p id="browserConfirmMessage" style="margin:0; color:#4b5563; line-height:1.5;">Are you sure?</p>
+                </div>
+            </div>
+            <div style="padding:18px 22px; border-top:1px solid #eef2f6; display:flex; gap:12px; justify-content:flex-end; background:#fff;">
+                <button id="browserConfirmCancel" type="button" style="padding:10px 18px; border-radius:10px; background:#eef2f6; color:#334155; border:none; font-weight:600;">Cancel</button>
+                <button id="browserConfirmOk" type="button" style="padding:10px 22px; border-radius:10px; background:#0b63d6; color:#fff; border:none; font-weight:700; box-shadow:0 6px 18px rgba(11,99,214,0.18);">OK</button>
+            </div>
+        </div>
+    </div>
+
 <!-- Modal Overlay -->
 <div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; backdrop-filter: blur(3px);"></div>
 
@@ -558,12 +621,12 @@
 .modal-content {
     background: #fff;
     border-radius: 16px;
-    padding: 32px;
+    padding: 24px;
     width: 90%;
     max-width: 420px;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: modalSlideIn 0.3s ease-out;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+    animation: modalSlideIn 0.28s ease-out;
 }
 
 @keyframes modalSlideIn {
@@ -627,12 +690,82 @@
         padding: 25px 20px;
     }
 }
+
+/* Browser alert modal tweaks to align with system layout */
+#browserAlertModal .browser-alert-content { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+#browserAlertModal #browserAlertTitle { font-size: 16px; }
+#browserAlertModal #browserAlertMessage { font-size: 14px; }
+#browserAlertModal button { cursor: pointer; }
 </style>
 
 @endsection
 
 @push('scripts')
 <script>
+// Promise-based replacement for window.confirm to use our custom modal.
+function showBrowserConfirm(title, message, okText = 'OK', cancelText = 'Cancel') {
+    return new Promise(function (resolve) {
+        var modal = document.getElementById('browserConfirmModal');
+        var t = document.getElementById('browserConfirmTitle');
+        var m = document.getElementById('browserConfirmMessage');
+        var ok = document.getElementById('browserConfirmOk');
+        var cancel = document.getElementById('browserConfirmCancel');
+
+        t.textContent = title || 'Confirm action';
+        m.textContent = message || 'Are you sure?';
+        ok.textContent = okText;
+        cancel.textContent = cancelText;
+
+        function cleanup() {
+            modal.style.display = 'none';
+            ok.removeEventListener('click', onOk);
+            cancel.removeEventListener('click', onCancel);
+        }
+
+        function onOk() {
+            cleanup();
+            resolve(true);
+        }
+
+        function onCancel() {
+            cleanup();
+            resolve(false);
+        }
+
+        ok.addEventListener('click', onOk);
+        cancel.addEventListener('click', onCancel);
+
+        modal.style.display = 'flex';
+    });
+}
+
+// Promise-based replacement for window.alert to use our custom alert modal.
+function showBrowserAlert(title, message, okText = 'OK') {
+    return new Promise(function (resolve) {
+        var modal = document.getElementById('browserAlertModal');
+        var t = document.getElementById('browserAlertTitle');
+        var m = document.getElementById('browserAlertMessage');
+        var ok = document.getElementById('browserAlertOk');
+
+        t.textContent = title || 'Notice';
+        m.textContent = message || '';
+        ok.textContent = okText || 'OK';
+
+        function cleanup() {
+            modal.style.display = 'none';
+            ok.removeEventListener('click', onOk);
+        }
+
+        function onOk() {
+            cleanup();
+            resolve(true);
+        }
+
+        ok.addEventListener('click', onOk);
+        modal.style.display = 'flex';
+    });
+}
+
 // Auto-hide flash messages after 2 seconds
 document.addEventListener('DOMContentLoaded', function() {
     const flashMessage = document.querySelector('.flash-message');
@@ -695,17 +828,20 @@ function resendVerification() {
         body: JSON.stringify({})
     }).then(resp => resp.json().then(body => ({status: resp.status, body}))).then(result => {
         if (result.status >= 200 && result.status < 300) {
-            alert(result.body.message || 'Verification link sent.');
-            // Optionally reload to show the flash message
-            window.location.reload();
+            showBrowserAlert('Success', result.body.message || 'Verification link sent.').then(function(){
+                // Optionally reload to show the flash message
+                window.location.reload();
+            });
         } else {
-            alert(result.body.message || 'Unable to send verification email.');
-            if (button) button.disabled = false;
+            showBrowserAlert('Error', result.body.message || 'Unable to send verification email.').then(function(){
+                if (button) button.disabled = false;
+            });
         }
     }).catch(err => {
         console.error('Resend verification failed', err);
-        alert('Unable to send verification email right now. Please try again later.');
-        if (button) button.disabled = false;
+        showBrowserAlert('Error', 'Unable to send verification email right now. Please try again later.').then(function(){
+            if (button) button.disabled = false;
+        });
     });
 }
 
@@ -723,10 +859,16 @@ function hideModal(modalId) {
 }
 
 function openChangeEmailModal() {
+    // Ensure the action buttons are visible when opening
+    var actions = document.getElementById('changeEmailActions');
+    if (actions) actions.style.display = 'flex';
     showModal('changeEmailModal');
 }
 
 function closeChangeEmailModal() {
+    // Restore action buttons for next open
+    var actions = document.getElementById('changeEmailActions');
+    if (actions) actions.style.display = 'flex';
     hideModal('changeEmailModal');
 }
 
@@ -799,16 +941,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteForm = document.getElementById('deleteAccountForm');
     if (deleteForm) {
         deleteForm.addEventListener('submit', function(e) {
-            if (deleteInput && deleteInput.value !== 'DELETE') {
+                if (deleteInput && deleteInput.value !== 'DELETE') {
                 e.preventDefault();
-                alert('Please type DELETE to confirm account deletion.');
+                showBrowserAlert('Confirmation required', 'Please type DELETE to confirm account deletion.');
                 return false;
             }
-            
-            if (!confirm('Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.')) {
-                e.preventDefault();
-                return false;
-            }
+                                // Prevent the native browser confirm and show a custom modal instead
+                                e.preventDefault();
+                                showBrowserConfirm('Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.')
+                                    .then(function(confirmed){
+                                        if (confirmed) {
+                                            // submit the form programmatically
+                                            deleteForm.submit();
+                                        } else {
+                                            // do nothing, allow user to continue editing
+                                        }
+                                    })
+                                    .catch(function(){ /* noop */ });
+                                return false;
         });
     }
 });
@@ -826,6 +976,7 @@ document.addEventListener('click', function(e) {
     const changeEmailForm = document.getElementById('changeEmailForm');
     const changeEmailError = document.getElementById('changeEmailError');
     const changeEmailSubmit = document.getElementById('changeEmailSubmit');
+    const changeEmailActions = document.getElementById('changeEmailActions');
     const verifyModal = document.getElementById('verifyEmailOtpModal');
     const verifyEmailAddress = document.getElementById('verifyEmailAddress');
     const verifyNewEmailInput = document.getElementById('verify_new_email');
@@ -860,10 +1011,11 @@ document.addEventListener('click', function(e) {
                 changeEmailSubmit.disabled = false;
                 changeEmailSubmit.textContent = 'Send Code';
                 if (result.status >= 200 && result.status < 300 && result.body.success) {
-                    // Show verify OTP block
+                    // Show verify OTP block and hide the action buttons (Cancel / Send Code)
                     verifyEmailAddress.textContent = newEmail;
                     verifyNewEmailInput.value = newEmail;
                     verifyModal.style.display = 'block';
+                    if (changeEmailActions) changeEmailActions.style.display = 'none';
                 } else {
                     changeEmailError.textContent = result.body.message || 'Unable to send verification code.';
                     changeEmailError.style.display = 'block';
@@ -903,8 +1055,9 @@ document.addEventListener('click', function(e) {
                 verifyOtpBtn.disabled = false;
                 verifyOtpBtn.textContent = 'Verify';
                 if (result.status >= 200 && result.status < 300 && result.body.success) {
-                    alert(result.body.message || 'Email updated successfully.');
-                    window.location.reload();
+                    showBrowserAlert('Success', result.body.message || 'Email updated successfully.').then(function(){
+                        window.location.reload();
+                    });
                 } else {
                     verifyOtpError.textContent = result.body.message || 'Invalid code.';
                     verifyOtpError.style.display = 'block';
@@ -935,11 +1088,11 @@ document.addEventListener('click', function(e) {
             }).then(r => r.json()).then(body => {
                 resendOtpBtn.disabled = false;
                 resendOtpBtn.textContent = 'Resend';
-                alert(body.message || 'Verification code resent.');
+                showBrowserAlert('Success', body.message || 'Verification code resent.');
             }).catch(err => {
                 resendOtpBtn.disabled = false;
                 resendOtpBtn.textContent = 'Resend';
-                alert('Unable to resend code right now.');
+                showBrowserAlert('Error', 'Unable to resend code right now.');
             });
         });
     }

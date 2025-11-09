@@ -133,7 +133,7 @@
                         <label>Admin notes (optional)</label>
                         <textarea name="admin_notes" style="width:100%; height:80px; margin-bottom:8px;">Approved by admin</textarea>
                         <div class="actions">
-                            <button class="btn btn-approve" type="submit" @if($isRejected) disabled title="Resume rejected. Waiting for new upload before review." @else onclick="return confirm('Are you sure you want to approve this resume?')" @endif>
+                            <button class="btn btn-approve" type="button" @if($isRejected) disabled title="Resume rejected. Waiting for new upload before review." @else onclick="handleApprove(this)" @endif>
                                 <i class="fas fa-check"></i> Approve
                             </button>
                         </div>
@@ -175,4 +175,21 @@
         </div>
     </div>
 </body>
+@include('partials.custom-modals')
+
+<script>
+    // Use the same confirm helper used in resume-table partial
+    function handleApprove(btn) {
+        if (!btn) return;
+        const form = btn.closest('form');
+        if (!form) return console.error('Approve form not found');
+        customConfirm('Are you sure you want to approve this resume?', 'Approve Resume', 'Approve')
+            .then(function(confirmed){
+                if (confirmed) {
+                    btn.disabled = true;
+                    form.submit();
+                }
+            }).catch(function(err){ console.error(err); });
+    }
+</script>
 </html>

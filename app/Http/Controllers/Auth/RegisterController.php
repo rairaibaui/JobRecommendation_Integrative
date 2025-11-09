@@ -182,14 +182,9 @@ class RegisterController extends Controller
                     'user_type' => 'job_seeker',
                     'password' => Hash::make($validated['password']),
                 ]);
-                // Send email verification notification (best-effort)
-                try {
-                    if (method_exists($user, 'sendEmailVerificationNotification')) {
-                        $user->sendEmailVerificationNotification();
-                    }
-                } catch (\Throwable $e) {
-                    // best-effort: do not block registration on email failures
-                }
+                // NOTE: For job seekers we DO NOT send the email verification automatically on registration.
+                // The app will allow the user to sign in first and use the "Resend verification email" flow from the dashboard/settings.
+                // This reduces unexpected outbound emails and lets users verify after signing in.
             } catch (\Throwable $e) {
                 return back()
                     ->withInput()

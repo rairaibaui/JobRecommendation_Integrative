@@ -4,11 +4,21 @@
     <span id="empNotifBadge" class="badge" style="position:absolute; top:5px; right:5px; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; min-width:18px; height:18px; align-items:center; justify-content:center; display:none;">0</span>
   </div>
   <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:380px; max-height:500px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:0; z-index:1100; font-size:14px; line-height:1.35;">
-    <div class="notif-header" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #f0f0f0; background:#f8f9fa;">
-      <span style="font-size:20px; font-weight:700; color:#2c3e50;">Notifications</span>
-      <div style="display:flex; gap:10px; margin-left:40px;">
-        <button onclick="empMarkAllNotificationsRead(event)" style="background:transparent;color:#5a6c7d;border:1px solid #cbd5e0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all 0.2s;font-weight:500;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='transparent'">Mark all as read</button>
-        <button onclick="empRefreshNotifications(event)" style="background:#5B9BD5; color:#fff; border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s;" onmouseover="this.style.background='#4a8bc4'" onmouseout="this.style.background='#5B9BD5'">Refresh</button>
+    <div class="notif-header" style="padding:10px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eef2f6; background:#ffffff;">
+      <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+        <span style="font-size:16px; font-weight:700; color:#243b55; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Notifications</span>
+        <span style="font-size:12px; color:#6b7280; white-space:nowrap;">&middot; <span id="empNotifCountSummary" style="font-weight:600;">0</span> new</span>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button onclick="empMarkAllNotificationsRead(event)" aria-label="Mark all as read" class="notif-btn notif-markall" style="background:transparent;color:#334155;border:1px solid #e6eef6;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer;transition:all 0.12s;font-weight:600;display:flex;align-items:center;gap:8px;min-width:64px;">
+          <i class="fas fa-check-double" style="color:#3b82f6;font-size:12px;"></i>
+          <span class="btn-text">Mark all</span>
+        </button>
+
+        <button onclick="empRefreshNotifications(event)" aria-label="Refresh notifications" class="notif-btn notif-refresh" style="background:#3b82f6; color:#fff; border:none; border-radius:999px; padding:6px 10px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(59,130,246,0.12); transition:transform .08s ease; min-width:72px;">
+          <i class="fas fa-sync-alt" style="font-size:12px; transform:rotate(0deg);"></i>
+          <span class="btn-text">Refresh</span>
+        </button>
       </div>
     </div>
     <ul id="empNotifList" class="notif-list" style="list-style:none; margin:0; padding:0;"></ul>

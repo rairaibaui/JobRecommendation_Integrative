@@ -71,9 +71,27 @@
                 </td>
                 <td>
                     @php
-                        $flags = json_decode($resume->verification_flags, true) ?? [];
+                        // Normalize verification_flags to an array. It may be stored as
+                        // a JSON string, a JSON primitive, or already as an array.
+                        $rawFlags = $resume->verification_flags ?? '[]';
+                        if (is_string($rawFlags)) {
+                            $decoded = @json_decode($rawFlags, true);
+                            if (is_array($decoded)) {
+                                $flags = $decoded;
+                            } elseif ($decoded !== null && $decoded !== '') {
+                                $flags = (array) $decoded;
+                            } elseif (trim($rawFlags) === '') {
+                                $flags = [];
+                            } else {
+                                $flags = [$rawFlags];
+                            }
+                        } elseif (is_array($rawFlags)) {
+                            $flags = $rawFlags;
+                        } else {
+                            $flags = [];
+                        }
                     @endphp
-                    @if(count($flags) > 0)
+                    @if(is_array($flags) && count($flags) > 0)
                         <div class="flags-list">
                             @foreach(array_slice($flags, 0, 2) as $flag)
                                 <span class="flag-item">{{ str_replace('_', ' ', $flag) }}</span>
@@ -103,18 +121,18 @@
                             $isVerified = ($status === 'verified');
                         @endphp
                         @if($status !== 'verified')
-                            <form method="POST" action="{{ route('admin.resumes.approve', $resume->id) }}" style="display: inline;">
+                            <form method="POST" action="{{ route('admin.resumes.approve', $resume->id) }}" style="display: inline;" class="approve-form">
                                 @csrf
-                                <button type="submit" 
+                                <button type="button" 
                                         class="btn-action btn-approve" 
                                         title="{{ $isRejected ? 'Resume rejected. Waiting for new upload before review.' : 'Approve this resume' }}"
-                                        @if($isRejected) disabled @else onclick="return confirm('Are you sure you want to approve this resume?')" @endif>
+                                        @if($isRejected) disabled @else onclick="handleApprove(this)" @endif>
                                     <i class="fas fa-check"></i>
                                     Approve
                                 </button>
                             </form>
                         @endif
-                        @if($status !== 'needs_review')
+                        @if($status !== 'verified')
                             @php
                                 $disableReject = $isRejected || $isVerified;
                                 if ($isRejected) {
@@ -207,4 +225,29 @@
             closeRejectModal();
         }
     });
+</script>
+
+@include('partials.custom-modals')
+
+<script>
+    // Handles approve button click by showing custom confirmation modal
+    function handleApprove(btn) {
+        if (!btn) return;
+        const form = btn.closest('form');
+        if (!form) {
+            console.error('Approve form not found');
+            return;
+        }
+        // Use customConfirm provided by the partials/custom-modals.blade.php
+        customConfirm('Are you sure you want to approve this resume?', 'Approve Resume', 'Approve')
+            .then(function(confirmed) {
+                if (confirmed) {
+                    // disable button to avoid duplicate submissions
+                    btn.disabled = true;
+                    form.submit();
+                }
+            }).catch(function(err){
+                console.error('Approval confirmation failed', err);
+            });
+    }
 </script>

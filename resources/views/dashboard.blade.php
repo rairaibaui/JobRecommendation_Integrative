@@ -34,12 +34,32 @@
         @php
           $status = Auth::user()->resume_verification_status ?? 'pending';
           $score = Auth::user()->verification_score ?? 0;
-          $flags = json_decode(Auth::user()->verification_flags ?? '[]', true) ?: [];
-          
+          // Normalize verification flags coming from the model/database. The stored
+          // value can be an array, a JSON array string, or a JSON/string primitive.
+          $rawFlags = Auth::user()->verification_flags ?? '[]';
+          if (is_string($rawFlags)) {
+            $decoded = @json_decode($rawFlags, true);
+            if (is_array($decoded)) {
+              $flags = $decoded;
+            } elseif ($decoded !== null && $decoded !== '') {
+              // JSON primitive (string/number) decoded to scalar
+              $flags = (array) $decoded;
+            } elseif (trim($rawFlags) === '') {
+              $flags = [];
+            } else {
+              // Fallback: treat raw string as a single flag
+              $flags = [$rawFlags];
+            }
+          } elseif (is_array($rawFlags)) {
+            $flags = $rawFlags;
+          } else {
+            $flags = [];
+          }
+
           // Remove "Missing Resume" flag if resume file exists (safeguard against stale data)
-          $flags = array_filter($flags, function($flag) {
+          $flags = is_array($flags) ? array_filter($flags, function($flag) {
             return strtolower($flag) !== 'missing resume';
-          });
+          }) : [];
           
           $notes = Auth::user()->verification_notes ?? '';
         
@@ -87,10 +107,17 @@
           ];
         
           $config = $statusConfig[$status] ?? $statusConfig['pending'];
-        @endphp
+          @endphp
+          @php
+            // Hide quality score, flags and notes when resume is fully OK: verified, perfect score, no flags, no notes
+            $autoOk = ($status === 'verified' && intval($score) === 100 && empty($flags) && (!isset($notes) || trim($notes) === ''));
+          @endphp
 
-        <div class="card" style="border-left: 4px solid {{ $config['border'] }}; background: {{ $config['bg'] }}; margin-bottom: 20px;">
+        <div id="resumeQualityCard" class="card" style="border-left: 4px solid {{ $config['border'] }}; background: {{ $config['bg'] }}; margin-bottom: 20px; position:relative;">
           <div class="card-body" style="padding: 20px;">
+            @if($status !== 'rejected')
+              <button id="dismissResumeQuality" title="Dismiss" style="position:absolute; top:10px; right:12px; background:transparent; border:none; font-size:20px; color:rgba(0,0,0,0.45); cursor:pointer; padding:6px; border-radius:6px;">&times;</button>
+            @endif
             <div style="display: flex; justify-content: space-between; align-items: start; gap: 20px;">
               <div style="flex: 1;">
                 <h3 style="margin: 0 0 8px 0; color: {{ $config['color'] }}; display: flex; align-items: center; gap: 10px; font-size: 18px;">
@@ -99,7 +126,7 @@
                 </h3>
                 <p style="margin: 0 0 12px 0; color: #555; font-size: 14px;">{{ $config['message'] }}</p>
               
-                @if($score > 0)
+                @if(!$autoOk && $score > 0 && $status !== 'rejected')
                   <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                       <span style="font-size: 13px; color: #666; font-weight: 600;">Quality Score</span>
@@ -109,9 +136,11 @@
                       <div style="height: 100%; width: {{ $score }}%; background: linear-gradient(90deg, {{ $config['color'] }}, {{ $config['color'] }}aa); transition: width 0.3s ease;"></div>
                     </div>
                   </div>
-                @endif
-              
-                @if(!empty($flags))
+       @endif
+
+       {{-- For rejected resumes we do not show raw verification score/flags in the frontend; instead
+         show friendly messages derived from the flags below. --}}
+       @if(!$autoOk && !empty($flags) && $status !== 'rejected')
                   <div style="margin-bottom: 12px;">
                     <p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">Issues Detected:</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
@@ -124,12 +153,50 @@
                     </div>
                   </div>
                 @endif
-              
-                @if($notes)
+
+                @if(!$autoOk && $notes && $status !== 'rejected')
                   <p style="margin: 12px 0 0 0; padding: 10px; background: #fff; border-radius: 6px; font-size: 13px; color: #666; border-left: 3px solid {{ $config['color'] }};">
                     <i class="fas fa-info-circle" style="margin-right: 6px;"></i>
                     {{ $notes }}
                   </p>
+                @endif
+
+                @if($status === 'rejected')
+                  {{-- Friendly, specific reasons derived from verification flags --}}
+                  @php
+                    $flagHints = [
+                      'name_mismatch' => 'The name on the resume does not match your account name.',
+                      'email_mismatch' => 'The email address in the resume is different from your account email.',
+                      'phone_mismatch' => 'The phone number on the resume does not match your account phone number.',
+                      'not_owned' => 'This resume appears to belong to someone else.',
+                      'education_missing' => 'Education details appear incomplete or missing.',
+                      'experience_mismatch' => 'Work experience entries do not match your profile.',
+                      'malformed_pdf' => 'We could not parse the uploaded PDF. Please upload a readable PDF file.',
+                      'low_quality' => 'Resume quality is low (scanned image or unreadable text). Please re-upload a clear PDF.'
+                    ];
+                  @endphp
+
+                  <div style="margin-top:12px; padding:12px; background:#fff0f0; border-radius:8px; border:1px solid #f5c6cb;">
+
+                    @if(!empty($flags))
+                      <div style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
+                        @foreach($flags as $f)
+                          @php $hint = $flagHints[$f] ?? ucwords(str_replace('_', ' ', $f)); @endphp
+                          <div style="background:#fff; border:1px solid #f1c0c6; padding:10px; border-radius:6px; color:#6b2830;">
+                            <i class="fas fa-info-circle" style="margin-right:8px; color:#b02a37;"></i>
+                            {{ $hint }}
+                          </div>
+                        @endforeach
+                      </div>
+                    @else
+                      <p style="color:#6b2830; margin:0;">
+                        Please re-upload your resume with accurate personal details (name, email, phone) so we can re-verify it.
+                      </p>
+                    @endif
+                  </div>
+
+                  {{-- Actions are shown in the card header on the right; avoid duplicating them here. --}}
+
                 @endif
         {{-- If resume is verified but email not verified, prompt user to verify email for additional benefits --}}
         @if($status === 'verified' && method_exists(Auth::user(), 'hasVerifiedEmail') && !Auth::user()->hasVerifiedEmail())
@@ -494,6 +561,41 @@
     el.style.background = type==='success' ? '#28a745' : type==='info' ? '#648EB5' : '#dc3545';
     document.body.appendChild(el); setTimeout(()=>{ el.remove(); }, 2000);
   }
+
+  // Persist dismissal of resume quality card per user (localStorage)
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      const userId = @json(Auth::id());
+      const resumeStatus = @json($status ?? 'pending');
+      const key = 'dismissedResumeQuality_' + userId;
+      const dismissed = localStorage.getItem(key) === '1';
+      const card = document.getElementById('resumeQualityCard');
+      const btn = document.getElementById('dismissResumeQuality');
+
+      // If the resume was previously dismissed while it was verified, allow the
+      // user to keep it hidden. However, when the server-side status becomes
+      // 'rejected' (mismatch or problems), we must show the card again so the
+      // user can see issues and re-upload. Remove any local dismissal flag in
+      // that case to ensure visibility across reloads on this browser.
+      if (card) {
+        if (resumeStatus === 'rejected') {
+          try { localStorage.removeItem(key); } catch (e) { /* noop */ }
+          card.style.display = '';
+        } else if (dismissed && resumeStatus === 'verified') {
+          card.style.display = 'none';
+        } else {
+          card.style.display = '';
+        }
+      }
+
+      if (btn && card) {
+        btn.addEventListener('click', function(){
+          card.style.display = 'none';
+          try { localStorage.setItem(key, '1'); } catch(e) { /* noop */ }
+        });
+      }
+    } catch(e) { /* noop */ }
+  });
 
   // Job Seeker guide visibility
   document.addEventListener('DOMContentLoaded', function(){
