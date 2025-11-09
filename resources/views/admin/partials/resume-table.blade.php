@@ -34,18 +34,21 @@
                             'verified' => 'status-verified',
                             'needs_review' => 'status-needs-review',
                             'pending' => 'status-pending',
+                            'rejected' => 'status-rejected',
                             default => 'status-pending'
                         };
                         $statusIcon = match($status) {
                             'verified' => 'fa-check-circle',
                             'needs_review' => 'fa-exclamation-triangle',
                             'pending' => 'fa-clock',
+                            'rejected' => 'fa-ban',
                             default => 'fa-clock'
                         };
                         $tooltipText = match($status) {
                             'verified' => 'This resume has been verified by AI or manually approved. The job seeker can apply for jobs.',
                             'needs_review' => 'This resume requires manual review by an administrator due to missing sections or low AI confidence.',
                             'pending' => 'This resume is waiting for AI verification or initial review.',
+                            'rejected' => 'This resume was rejected (non-resume or failed verification). Waiting for a new upload or admin action.',
                             default => 'Status unknown'
                         };
                     @endphp

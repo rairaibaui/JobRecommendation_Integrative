@@ -134,4 +134,20 @@ return [
             'auto_reject_threshold' => 40,
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | OCR Retry Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure how many OCR retry attempts to perform and the delay between
+    | attempts when a resume appears to be a scanned/low-quality PDF. These
+    | retries are attempted before escalating the document for manual review
+    | by administrators.
+    |
+    */
+    'ocr' => [
+        'retry_attempts' => env('AI_OCR_RETRY_ATTEMPTS', 2),
+        'retry_delay_seconds' => env('AI_OCR_RETRY_DELAY', 15),
+    ],
 ];

@@ -65,45 +65,45 @@
         
           $statusConfig = [
             'verified' => [
-              'color' => '#28a745',
-              'bg' => '#d4edda',
-              'border' => '#28a745',
-              'icon' => 'fa-check-circle',
-              'title' => 'Resume Verified',
-              'message' => 'Your resume is verified.'
-            ],
-            'needs_review' => [
-              'color' => '#ff9800',
-              'bg' => '#fff3cd',
-              'border' => '#ff9800',
-              'icon' => 'fa-exclamation-triangle',
-              'title' => 'Resume Needs Review',
-              'message' => 'Your resume requires admin review before approval.'
-            ],
-            'incomplete' => [
-              'color' => '#dc3545',
-              'bg' => '#f8d7da',
-              'border' => '#dc3545',
-              'icon' => 'fa-times-circle',
-              'title' => 'Resume Incomplete',
-              'message' => 'Your resume is missing important information.'
-            ],
-            'pending' => [
-              'color' => '#17a2b8',
-              'bg' => '#d1ecf1',
-              'border' => '#17a2b8',
-              'icon' => 'fa-clock',
-              'title' => 'Verification Pending',
-              'message' => 'Your resume is being analyzed...'
-            ],
-            'rejected' => [
-              'color' => '#dc3545',
-              'bg' => '#f8d7da',
-              'border' => '#dc3545',
-              'icon' => 'fa-ban',
-              'title' => 'Resume Rejected',
-              'message' => 'Your resume did not meet verification requirements.'
-            ]
+                'color' => '#3B82F6',
+                'bg' => '#DBEAFE',
+                'border' => '#3B82F6',
+                'icon' => 'fa-check-circle',
+                'title' => 'Resume Verified',
+                'message' => 'Your resume is verified.'
+              ],
+              'needs_review' => [
+                'color' => '#7f1d25',
+                'bg' => '#FEE2E2',
+                'border' => '#EF4444',
+                'icon' => 'fa-exclamation-triangle',
+                'title' => 'Resume Needs Review',
+                'message' => 'Your resume requires admin review before approval.'
+              ],
+              'incomplete' => [
+                'color' => '#dc3545',
+                'bg' => '#f8d7da',
+                'border' => '#dc3545',
+                'icon' => 'fa-times-circle',
+                'title' => 'Resume Incomplete',
+                'message' => 'Your resume is missing important information.'
+              ],
+              'pending' => [
+                'color' => '#F59E0B',
+                'bg' => '#FFF3CD',
+                'border' => '#F59E0B',
+                'icon' => 'fa-clock',
+                'title' => 'Verification Pending',
+                'message' => 'Your resume is being analyzed...'
+              ],
+              'rejected' => [
+                'color' => '#DC143C',
+                'bg' => '#fff0f2',
+                'border' => '#DC143C',
+                'icon' => 'fa-ban',
+                'title' => 'Resume Rejected',
+                'message' => 'Your resume did not meet verification requirements.'
+              ]
           ];
         
           $config = $statusConfig[$status] ?? $statusConfig['pending'];

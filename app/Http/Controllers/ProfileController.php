@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Services\EmailChangeService;
@@ -40,10 +41,35 @@ class ProfileController extends Controller
                 return response()->json(['message' => 'User not found'], 404);
             }
 
-            // Validate all profile fields
+            // Capture original profile fields to detect critical changes that should
+            // invalidate a previously AI-verified resume (force pending manual review).
+            $watchedProfileFields = [
+                'phone_number', 'birthday', 'education_level', 'skills', 'summary',
+                'education', 'experiences', 'languages', 'portfolio_links',
+                'availability', 'years_of_experience', 'location', 'address'
+            ];
+            $originalProfileSnapshot = [];
+            foreach ($watchedProfileFields as $__wf) {
+                $val = $user->{$__wf} ?? null;
+                $originalProfileSnapshot[$__wf] = is_array($val) || is_object($val) ? json_encode($val) : $val;
+            }
+
+            // If the user attempted to change their first or last name in the form,
+            // do not save the change and show a friendly message explaining that
+            // names cannot be edited via the settings page.
+            $attemptedFirst = $request->input('first_name');
+            $attemptedLast = $request->input('last_name');
+            $firstChanged = $attemptedFirst !== null && $attemptedFirst !== $user->first_name;
+            $lastChanged = $attemptedLast !== null && $attemptedLast !== $user->last_name;
+            if ($firstChanged || $lastChanged) {
+                // Keep old input visible but show an error flash explaining immutability
+                return redirect()->back()->withInput()->with('error', 'First and last name cannot be changed via Settings. If you need to update your legal name, please contact support.');
+            }
+
+            // Validate profile fields. Note: first_name and last_name are intentionally
+            // excluded here — names are considered immutable in the system and cannot
+            // be changed via the user settings form. To change a legal name, contact support.
             $request->validate([
-                'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
                 'birthday' => 'nullable|date',
                 'phone_number' => 'nullable|string|max:20',
                 'education_level' => 'nullable|string|max:255',
@@ -54,13 +80,16 @@ class ProfileController extends Controller
                 'languages' => 'nullable|string',
                 'portfolio_links' => 'nullable|string',
                 'availability' => 'nullable|string',
-                'resume_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+                // Only check size at validation time. We perform a conservative extension
+                // whitelist after storing the uploaded file so that unexpected/misreported
+                // client MIME types don't cause the validator to fail prematurely.
+                'resume_file' => 'nullable|file|max:5120',
                 'years_of_experience' => 'nullable|numeric|min:0',
                 'location' => 'nullable|string|max:255',
                 'address' => 'nullable|string|max:255',
                 'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
                 'remove_picture' => 'nullable|boolean',
-                    'remove_resume' => 'nullable|boolean',
+                'remove_resume' => 'nullable|boolean',
             ]);
 
             // Track what was updated
@@ -70,9 +99,9 @@ class ProfileController extends Controller
             // Update profile details using fillable fields
             // Do not include 'location' in the bulk fill to avoid writing NULL/empty unintentionally
             // (we handle location explicitly below only when provided/non-empty).
+            // Build data to fill on the user model. Do NOT include first_name/last_name
+            // so that names remain immutable via this endpoint.
             $data = $request->only([
-                'first_name',
-                'last_name',
                 'phone_number',
                 'summary',
                 'languages',
@@ -125,6 +154,80 @@ class ProfileController extends Controller
 
             // Always mark as updated since we're handling arrays
             $detailsUpdated = true;
+
+            // Detect whether any critical profile fields changed compared to the
+            // snapshot taken at the start of the request. If the user had a
+            // previously-verified resume, invalidate it (mark pending) so admins
+            // can re-check the resume against updated user info.
+            $profileChanged = false;
+            $changedFields = [];
+            foreach ($watchedProfileFields as $__wf) {
+                $newVal = $user->{$__wf} ?? null;
+                $newValNorm = is_array($newVal) || is_object($newVal) ? json_encode($newVal) : $newVal;
+                $oldValNorm = $originalProfileSnapshot[$__wf] ?? null;
+                if ($newValNorm !== $oldValNorm) {
+                    $profileChanged = true;
+                    $changedFields[] = $__wf;
+                }
+            }
+
+            if ($profileChanged && $user->resume_file && ($user->resume_verification_status ?? '') === 'verified') {
+                // Invalidate the verified resume: mark pending and notify admins.
+                $user->resume_verification_status = 'pending';
+                $user->verification_flags = json_encode(array_merge((array)json_decode($user->verification_flags ?? '[]', true), ['profile_changed']));
+                $user->verification_notes = 'Profile information changed ('.implode(',', $changedFields).'). Resume set to pending for re-verification.';
+
+                // Persist change now so that later code doesn't attempt to auto-approve
+                // or re-verify until an admin has reviewed.
+                try {
+                    $user->save();
+                } catch (\Throwable $__saveEx) {
+                    Log::warning('Failed to mark resume pending after profile change for user '.$user->id.': '.$__saveEx->getMessage());
+                }
+
+                // Audit log and notify admins
+                try {
+                    \App\Models\AuditLog::create([
+                        'user_id' => $user->id,
+                        'event' => 'resume_invalidated_profile_change',
+                        'title' => 'Resume Invalidated - Profile Changed',
+                        'message' => "User {$user->email} updated profile fields (".implode(',', $changedFields).") and their previously verified resume was set to pending.",
+                        'data' => json_encode(['changed_fields' => $changedFields]),
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ]);
+                } catch (\Throwable $__auditEx) {
+                    // best-effort
+                }
+
+                try {
+                    $admins = User::where('is_admin', true)->get();
+                    foreach ($admins as $admin) {
+                        \App\Models\Notification::create([
+                            'user_id' => $admin->id,
+                            'type' => 'info',
+                            'title' => 'Resume Re-Verification Required',
+                            'message' => "User {$user->email} updated profile information and their resume requires re-verification.",
+                            'read' => false,
+                            'data' => ['user_id' => $user->id, 'changed_fields' => $changedFields],
+                        ]);
+                    }
+                } catch (\Throwable $__notifyEx) {
+                    // best-effort
+                }
+
+                try {
+                    \App\Models\Notification::create([
+                        'user_id' => $user->id,
+                        'type' => 'warning',
+                        'title' => 'Resume Verification Reset',
+                        'message' => 'We detected changes to your profile that require re-verification of your resume. Your resume has been set to Pending Review.',
+                        'read' => false,
+                    ]);
+                } catch (\Throwable $__userNotifyEx) {
+                    // best-effort
+                }
+            }
 
             // Handle profile picture
             if ($request->has('remove_picture') && $request->remove_picture) {
@@ -198,15 +301,118 @@ class ProfileController extends Controller
 
             // Upload: if a new resume file is present, temporarily store and verify the file
             if ($request->hasFile('resume_file')) {
-                // First, temporarily store and verify the file
+                // First, temporarily store the uploaded file
                 $tempPath = $request->file('resume_file')->store('temp_resumes', 'public');
 
                 try {
+                    // Perform a conservative extension whitelist after storing the file
+                    // to avoid rejecting uploads due to client-reported MIME differences.
+                    $uploaded = $request->file('resume_file');
+                    $ext = strtolower($uploaded->getClientOriginalExtension() ?? '');
+
+                    $allowedExt = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+                    if (!in_array($ext, $allowedExt)) {
+                        // Clean up temp file and return a friendly validation error
+                        if (Storage::disk('public')->exists($tempPath)) {
+                            Storage::disk('public')->delete($tempPath);
+                        }
+
+                        $errorMessage = 'The resume file field must be a file of type: pdf, doc, docx, jpeg, png, jpg.';
+                        if ($request->ajax() || $request->wantsJson()) {
+                            return response()->json(['success' => false, 'message' => $errorMessage], 422);
+                        }
+
+                        return redirect()->back()->withErrors(['resume_file' => $errorMessage])->withInput();
+                    }
+
+                    // If the uploaded file is an image (jpg/png), accept it and mark pending
+                    if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                        // Move to final location and mark pending for manual admin review
+                        $finalPath = 'resumes/'.basename($tempPath);
+                        Storage::disk('public')->move($tempPath, $finalPath);
+                        $user->resume_file = $finalPath;
+
+                        $flags = ['image_upload'];
+                        $user->resume_verification_status = 'pending';
+                        $user->verification_flags = json_encode($flags);
+                        $user->verification_score = 0;
+                        $user->verified_at = null;
+                        $user->verification_notes = 'Image resume uploaded (jpg/png). Pending manual review.';
+                        $user->save();
+
+                        // Audit log entry
+                        try {
+                            \App\Models\AuditLog::create([
+                                'user_id' => $user->id,
+                                'event' => 'resume_image_uploaded_pending',
+                                'title' => 'Resume Image Uploaded - Pending Review',
+                                'message' => "User {$user->email} uploaded an image resume and it was queued for manual review.",
+                                'data' => json_encode(['user_id' => $user->id, 'email' => $user->email, 'flags' => $flags]),
+                                'ip_address' => $request->ip(),
+                                'user_agent' => $request->userAgent(),
+                            ]);
+                        } catch (\Throwable $__auditEx) {
+                            // best-effort
+                        }
+
+                        // Notify admins to review this resume
+                        try {
+                            $admins = User::where('is_admin', true)->get();
+                            foreach ($admins as $admin) {
+                                \App\Models\Notification::create([
+                                    'user_id' => $admin->id,
+                                    'type' => 'warning',
+                                    'title' => 'Resume Requires Manual Review',
+                                    'message' => "Job seeker {$user->email} uploaded a resume image that requires manual review.",
+                                    'read' => false,
+                                    'data' => [
+                                        'job_seeker_id' => $user->id,
+                                        'email' => $user->email,
+                                        'flags' => $flags,
+                                    ],
+                                ]);
+                            }
+                        } catch (\Throwable $__notifyEx) {
+                            // best-effort
+                        }
+
+                        // Notify the job seeker that their resume is pending review
+                        try {
+                            \App\Models\Notification::create([
+                                'user_id' => $user->id,
+                                'type' => 'info',
+                                'title' => 'Resume Pending Review',
+                                'message' => 'We received your resume image and have queued it for manual review by our team. You may upload a PDF for faster automated verification.',
+                                'read' => false,
+                                'data' => ['flags' => $flags],
+                            ]);
+                        } catch (\Throwable $__userNotifyEx) {
+                            // best-effort
+                        }
+
+                        return redirect()->back()->with('success', 'Resume image uploaded and queued for manual review.');
+                    }
+
                     // Verify if this is actually a resume before accepting it
                     $verificationResult = $this->resumeVerification->verify($tempPath, $user);
 
-                    // Check if the document is not a resume
-                    if (in_array('not_a_resume', $verificationResult['flags'])) {
+                    // Normalize flags early so we can decide whether to reject or treat as scanned
+                    $flags = $verificationResult['flags'] ?? [];
+                    $normalizedFlags = [];
+                    foreach ((array)$flags as $__flag_item) {
+                        $normalizedFlags[] = is_string($__flag_item) ? strtolower($__flag_item) : $__flag_item;
+                    }
+
+                    // Detect scanned/low-quality/image-only early as well
+                    $isScannedOrLowQuality = in_array('low_quality', $normalizedFlags)
+                        || in_array('scanned_pdf', $normalizedFlags)
+                        || in_array('image_only', $normalizedFlags)
+                        || (!empty($verificationResult['is_scanned']) && $verificationResult['is_scanned'] === true);
+
+                    // If AI flagged it as not a resume AND it's not a scanned/low-quality image,
+                    // then reject it as a non-resume. If it's a scanned/blurred PDF, accept and
+                    // mark pending for manual review (handled below).
+                    if (in_array('not_a_resume', $normalizedFlags) && !$isScannedOrLowQuality) {
                         // Delete the temp file
                         Storage::disk('public')->delete($tempPath);
 
@@ -220,9 +426,9 @@ class ProfileController extends Controller
                                 'user_id' => $user->id,
                                 'email' => $user->email,
                                 'name' => trim($user->first_name.' '.$user->last_name),
-                                'verification_score' => $verificationResult['score'],
-                                'flags' => $verificationResult['flags'],
-                                'notes' => $verificationResult['notes'],
+                                'verification_score' => $verificationResult['score'] ?? null,
+                                'flags' => $verificationResult['flags'] ?? [],
+                                'notes' => $verificationResult['notes'] ?? null,
                             ]),
                             'ip_address' => $request->ip(),
                             'user_agent' => $request->userAgent(),
@@ -240,18 +446,21 @@ class ProfileController extends Controller
                                 'data' => [
                                     'job_seeker_id' => $user->id,
                                     'email' => $user->email,
-                                    'verification_score' => $verificationResult['score'],
-                                    'reason' => $verificationResult['notes'],
+                                    'verification_score' => $verificationResult['score'] ?? null,
+                                    'reason' => $verificationResult['notes'] ?? null,
                                 ],
                             ]);
                         }
 
-                        $errorMessage = 'The uploaded file does not appear to be a resume. Please upload a proper CV/Resume document with your education, experience, and contact information.';
+                        // Friendly user-facing message explaining the file was blocked by AI resume detection
+                        $errorMessage = 'Upload blocked by automated verification: the uploaded file does not appear to be a resume (for example, it may be an invoice, receipt, or unrelated document). Please upload a CV/Resume containing your education, experience, and contact information.';
 
                         if ($request->ajax() || $request->wantsJson()) {
                             return response()->json([
                                 'success' => false,
                                 'message' => $errorMessage,
+                                'blocked_by' => 'ai_verification',
+                                'reason' => 'not_a_resume',
                             ], 422);
                         }
 
@@ -268,7 +477,93 @@ class ProfileController extends Controller
                     Storage::disk('public')->move($tempPath, $finalPath);
                     $user->resume_file = $finalPath;
 
-                    // Save verification results
+                    // --- NEW: If AI detected low-quality / scanned/image-only resume,
+                    // mark it as pending for manual admin review instead of auto-approving. ---
+                    $flags = $verificationResult['flags'] ?? [];
+                    $normalizedFlags = [];
+                    foreach ((array)$flags as $__flag_item) {
+                        $normalizedFlags[] = is_string($__flag_item) ? strtolower($__flag_item) : $__flag_item;
+                    }
+
+                    $isScannedOrLowQuality = in_array('low_quality', $normalizedFlags)
+                        || in_array('scanned_pdf', $normalizedFlags)
+                        || in_array('image_only', $normalizedFlags)
+                        || (!empty($verificationResult['is_scanned']) && $verificationResult['is_scanned'] === true);
+
+                    if ($isScannedOrLowQuality) {
+                        // Keep uploaded file, mark as pending for manual admin review.
+                        $user->resume_verification_status = 'pending';
+                        $user->verification_flags = json_encode($flags);
+                        $user->verification_score = $verificationResult['score'] ?? null;
+                        $user->verified_at = null;
+                        $user->verification_notes = $verificationResult['notes'] ?? 'Detected scanned/low-quality resume; manual review required.';
+
+                        // Persist the user record now
+                        $user->save();
+
+                        // Audit log entry for admin traceability
+                        try {
+                            \App\Models\AuditLog::create([
+                                'user_id' => $user->id,
+                                'event' => 'resume_pending_manual_review',
+                                'title' => 'Resume Pending Manual Review',
+                                'message' => "User {$user->email} uploaded a scanned/low-quality resume and it was flagged for manual review.",
+                                'data' => json_encode([
+                                    'user_id' => $user->id,
+                                    'email' => $user->email,
+                                    'flags' => $flags,
+                                ]),
+                                'ip_address' => $request->ip(),
+                                'user_agent' => $request->userAgent(),
+                            ]);
+                        } catch (\Throwable $__auditEx) {
+                            // best-effort
+                        }
+
+                        // Notify all admins to review this resume
+                        try {
+                            $admins = User::where('is_admin', true)->get();
+                            foreach ($admins as $admin) {
+                                \App\Models\Notification::create([
+                                    'user_id' => $admin->id,
+                                    'type' => 'warning',
+                                    'title' => 'Resume Requires Manual Review',
+                                    'message' => "Job seeker {$user->email} uploaded a resume that requires manual review.",
+                                    'read' => false,
+                                    'data' => [
+                                        'job_seeker_id' => $user->id,
+                                        'email' => $user->email,
+                                        'flags' => $flags,
+                                    ],
+                                ]);
+                            }
+                        } catch (\Throwable $__notifyEx) {
+                            // best-effort
+                        }
+
+                        // Notify the job seeker that their resume is pending review
+                        try {
+                            \App\Models\Notification::create([
+                                'user_id' => $user->id,
+                                'type' => 'info',
+                                'title' => 'Resume Pending Review',
+                                'message' => 'We detected that your uploaded resume appears to be a scanned or low-quality PDF. It has been queued for manual review by our team. Please re-upload a clear, machine-readable PDF to speed up verification.',
+                                'read' => false,
+                                'data' => [
+                                    'flags' => $flags,
+                                ],
+                            ]);
+                        } catch (\Throwable $__userNotifyEx) {
+                            // best-effort
+                        }
+
+                        // Log admin notification and return early; do not auto-verify
+                        return redirect()->back()->with('success', 'Resume uploaded and queued for manual review by our team.');
+                    }
+
+                    // --- end NEW handling ---
+
+                    // Save verification results for normal (non-scanned) resumes
                     $user->resume_verification_status = $verificationResult['status'];
                     $user->verification_flags = json_encode($verificationResult['flags']);
                     $user->verification_score = $verificationResult['score'];
@@ -433,7 +728,7 @@ class ProfileController extends Controller
 
                 // If the user already has an uploaded resume, re-run verification
                 try {
-                    if ($user->resume_file) {
+                    if ($user->resume_file && ($user->resume_verification_status ?? '') !== 'pending') {
                         $reverify = $this->resumeVerification->verify($user->resume_file, $user);
                         // Persist verification summary back to user record
                         $user->resume_verification_status = $reverify['status'] ?? $user->resume_verification_status;

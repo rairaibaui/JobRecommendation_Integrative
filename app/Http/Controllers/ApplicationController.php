@@ -14,6 +14,14 @@ class ApplicationController extends Controller
     {
         $user = Auth::user();
 
+        // Block job applications if the job seeker does not have a verified resume
+        if ($user->user_type === 'job_seeker' && (($user->resume_verification_status ?? 'pending') !== 'verified')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You must have a verified resume before applying. Please upload and verify your resume in Settings.',
+            ], 403);
+        }
+
         // Check if job seeker is already employed
         if ($user->user_type === 'job_seeker' && $user->employment_status === 'employed') {
             return response()->json([

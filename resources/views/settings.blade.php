@@ -141,25 +141,23 @@
             @csrf
             
             <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            First Name
+                        </label>
+                        <input type="text"
+                               name="first_name"
+                               class="form-control"
+                               value="{{ old('first_name', Auth::user()->first_name) }}">
+                    </div>
+
                 <div class="form-group">
                     <label class="form-label">
-                        First Name <span class="text-danger">*</span>
+                        Last Name
                     </label>
-                    <input type="text" 
-                           name="first_name" 
-                           class="form-control" 
-                           required 
-                           value="{{ old('first_name', Auth::user()->first_name) }}">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">
-                        Last Name <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" 
-                           name="last_name" 
-                           class="form-control" 
-                           required 
+                    <input type="text"
+                           name="last_name"
+                           class="form-control"
                            value="{{ old('last_name', Auth::user()->last_name) }}">
                 </div>
             </div>
@@ -311,14 +309,14 @@
                 </label>
                 
                 @if(Auth::user()->resume_file)
-                    @php
+                        @php
                         $rstatus = Auth::user()->resume_verification_status ?? 'pending';
                         $rConfig = [
-                            'verified' => ['bg' => '#d4edda', 'border' => '#28a745', 'color' => '#155724', 'icon' => 'fa-check-circle', 'title' => 'Resume already uploaded', 'message' => 'Your resume is verified.'],
-                            'pending' => ['bg' => '#d1ecf1', 'border' => '#17a2b8', 'color' => '#0c5460', 'icon' => 'fa-clock', 'title' => 'Resume uploaded', 'message' => 'Verification pending — we are analyzing your resume.'],
-                            'needs_review' => ['bg' => '#fff3cd', 'border' => '#ff9800', 'color' => '#7a5200', 'icon' => 'fa-exclamation-triangle', 'title' => 'Resume requires review', 'message' => 'Your resume was flagged for manual review.'],
+                            'verified' => ['bg' => '#DBEAFE', 'border' => '#3B82F6', 'color' => '#1E3A8A', 'icon' => 'fa-check-circle', 'title' => 'Resume already uploaded', 'message' => 'Your resume is verified.'],
+                            'pending' => ['bg' => '#FFF3CD', 'border' => '#F59E0B', 'color' => '#F59E0B', 'icon' => 'fa-clock', 'title' => 'Resume uploaded', 'message' => 'Verification pending — we are analyzing your resume.'],
+                            'needs_review' => ['bg' => '#FEE2E2', 'border' => '#EF4444', 'color' => '#7f1d25', 'icon' => 'fa-exclamation-triangle', 'title' => 'Resume requires review', 'message' => 'Your resume was flagged for manual review.'],
                             'incomplete' => ['bg' => '#f8d7da', 'border' => '#dc3545', 'color' => '#721c24', 'icon' => 'fa-times-circle', 'title' => 'Resume incomplete', 'message' => 'Your resume is missing important information.'],
-                            'rejected' => ['bg' => '#f8d7da', 'border' => '#dc3545', 'color' => '#721c24', 'icon' => 'fa-ban', 'title' => 'Resume not verified', 'message' => 'Resume did not meet verification requirements. Please re-upload with accurate information.']
+                            'rejected' => ['bg' => '#fff0f2', 'border' => '#DC143C', 'color' => '#DC143C', 'icon' => 'fa-ban', 'title' => 'Resume not verified', 'message' => 'Resume did not meet verification requirements. Please re-upload with accurate information.']
                         ];
                         $rc = $rConfig[$rstatus] ?? $rConfig['pending'];
                     @endphp
@@ -332,8 +330,8 @@
 
                         @if($rstatus === 'verified')
                             <div style="display:flex; align-items:center; gap:8px; padding-left:8px;">
-                                <span style="background:#e6f8ef; color:#0b6b2f; padding:6px 10px; border-radius:12px; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px; border:1px solid #28a745;">
-                                    <i class="fas fa-check" style="font-size:12px; color:#28a745;"></i> Verified
+                                <span style="background:#E6F0FF; color:#0B4F99; padding:6px 10px; border-radius:12px; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px; border:1px solid #3B82F6;">
+                                    <i class="fas fa-check" style="font-size:12px; color:#3B82F6;"></i> Verified
                                 </span>
                             </div>
                         @else
@@ -361,11 +359,11 @@
                             <i class="fas fa-check-circle"></i>
                         </div>
                     @endif
-                    <input type="file" 
-                           name="resume_file" 
-                           class="form-control" 
-                           accept=".pdf"
-                           style="padding: 8px; @if(Auth::user()->resume_file) border-color: #28a745; background-color: #f0fff4; @endif">
+              <input type="file" 
+                  name="resume_file" 
+                  class="form-control" 
+                  accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  style="padding: 8px; @if(Auth::user()->resume_file) border-color: #3B82F6; background-color: #f0f6ff; @endif">
                 </div>
                 @if(Auth::user()->resume_file)
                     <div style="margin-top:8px;">
@@ -766,14 +764,14 @@ function showBrowserAlert(title, message, okText = 'OK') {
     });
 }
 
-// Auto-hide flash messages after 2 seconds
-document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide flash messages after 3 seconds
+    document.addEventListener('DOMContentLoaded', function() {
     const flashMessage = document.querySelector('.flash-message');
     if (flashMessage) {
         setTimeout(() => {
             flashMessage.style.opacity = '0';
             setTimeout(() => flashMessage.remove(), 300);
-        }, 2000);
+        }, 3000);
     }
 
     // Format phone number as user types

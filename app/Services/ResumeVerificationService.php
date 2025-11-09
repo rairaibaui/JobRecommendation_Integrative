@@ -27,8 +27,34 @@ class ResumeVerificationService
             return $this->buildResult('needs_review', 0, ['missing_resume'], 'No resume file uploaded');
         }
 
-        // Extract text from PDF
-        $resumeText = $this->extractTextFromPDF(storage_path('app/public/'.$resumePath));
+        // Extract text from the uploaded document. Support PDFs, DOCX, and DOC.
+        $fileAbsolute = storage_path('app/public/'.$resumePath);
+        $ext = strtolower(pathinfo($fileAbsolute, PATHINFO_EXTENSION));
+
+        $resumeText = '';
+        if (in_array($ext, ['pdf'])) {
+            // PDF path (existing flow)
+            $resumeText = $this->extractTextFromPDF($fileAbsolute);
+        } elseif (in_array($ext, ['docx', 'doc'])) {
+            // Try native doc/docx extraction first, then fall back to converting to PDF and reuse PDF parsing/OCR.
+            $resumeText = $this->extractTextFromDocOrDocx($fileAbsolute, $ext);
+        } else {
+            // Unknown extension --- attempt PDF parsing anyway (some files may be mislabelled)
+            $resumeText = $this->extractTextFromPDF($fileAbsolute);
+        }
+
+        if (empty($resumeText)) {
+            // Attempt OCR-based retry (pdftoppm/convert + tesseract) before giving up.
+            try {
+                $ocr = $this->attemptOcrRetry($fileAbsolute);
+                if (!empty($ocr)) {
+                    $resumeText = $ocr;
+                    Log::info('ResumeVerification: used OCR retry text for resume', ['path' => $fileAbsolute, 'chars' => strlen($ocr)]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('ResumeVerification: OCR retry attempt failed', ['path' => $fileAbsolute, 'error' => $e->getMessage()]);
+            }
+        }
 
         if (empty($resumeText)) {
             return $this->buildResult('needs_review', 0, ['unreadable_resume'], 'Resume file could not be read or is empty');
@@ -489,6 +515,150 @@ class ResumeVerificationService
     }
 
     /**
+     * Extract text from .doc or .docx files.
+     * Tries docx native parsing, then antiword for .doc, then LibreOffice/soffice conversion to PDF and parse.
+     */
+    private function extractTextFromDocOrDocx(string $filePath, string $ext): string
+    {
+        // Quick existence check
+        if (!file_exists($filePath)) return '';
+
+        // Try DOCX native parsing
+        if ($ext === 'docx') {
+            $text = $this->extractTextFromDocx($filePath);
+            if (!empty($text)) return $text;
+        }
+
+        // Try antiword for old .doc binary format
+        if ($ext === 'doc') {
+            $text = $this->extractTextFromDoc($filePath);
+            if (!empty($text)) return $text;
+        }
+
+        // Try converting to PDF using soffice/libreoffice and reuse PDF extractor (best-effort)
+        $pdf = $this->convertToPdfUsingSoffice($filePath);
+        if ($pdf && file_exists($pdf)) {
+            $txt = $this->extractTextFromPDF($pdf);
+            // cleanup the temp pdf
+            @unlink($pdf);
+            if (!empty($txt)) return $txt;
+        }
+
+        // As a last resort, attempt OCR retry on the original file (some converters accept docs)
+        try {
+            $ocr = $this->attemptOcrRetry($filePath);
+            if (!empty($ocr)) return $ocr;
+        } catch (\Throwable $e) {
+            Log::warning('ResumeVerification: OCR retry for doc/docx failed', ['path' => $filePath, 'error' => $e->getMessage()]);
+        }
+
+        return '';
+    }
+
+    /**
+     * Extract text from a .docx file by reading the document.xml from the archive.
+     */
+    private function extractTextFromDocx(string $filePath): string
+    {
+        try {
+            $zip = new \ZipArchive();
+            if ($zip->open($filePath) === true) {
+                $index = $zip->locateName('word/document.xml');
+                if ($index !== false) {
+                    $xml = $zip->getFromIndex($index);
+                    $zip->close();
+                    if ($xml) {
+                        // Strip XML tags and decode entities
+                        $text = preg_replace('/<[^>]+>/', ' ', $xml);
+                        $text = html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                        $text = trim(preg_replace('/\s+/', " ", $text));
+                        return $text;
+                    }
+                } else {
+                    $zip->close();
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ResumeVerification: docx extraction failed', ['path' => $filePath, 'error' => $e->getMessage()]);
+        }
+        return '';
+    }
+
+    /**
+     * Extract text from old binary .doc files using antiword if available.
+     */
+    private function extractTextFromDoc(string $filePath): string
+    {
+        try {
+            if (!function_exists('exec')) return '';
+            $which = PHP_OS_FAMILY === 'Windows' ? 'where' : 'which';
+            @exec($which . ' antiword 2>&1', $out, $ret);
+            if ($ret === 0) {
+                $cmd = 'antiword -m UTF-8 ' . escapeshellarg($filePath);
+                @exec($cmd, $lines, $r);
+                if ($r === 0 && is_array($lines)) {
+                    $txt = trim(implode("\n", $lines));
+                    if ($txt !== '') return $txt;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ResumeVerification: antiword extraction failed', ['path' => $filePath, 'error' => $e->getMessage()]);
+        }
+        return '';
+    }
+
+    /**
+     * Convert a document (doc/docx/other) to PDF using soffice/libreoffice if available.
+     * Returns the path to the generated PDF or empty string on failure.
+     */
+    private function convertToPdfUsingSoffice(string $filePath): string
+    {
+        try {
+            if (!function_exists('exec')) return '';
+            $which = PHP_OS_FAMILY === 'Windows' ? 'where' : 'which';
+            // Check for soffice or libreoffice
+            @exec($which . ' soffice 2>&1', $outS, $rS);
+            $cmdBin = null;
+            if ($rS === 0) {
+                $cmdBin = 'soffice';
+            } else {
+                @exec($which . ' libreoffice 2>&1', $outL, $rL);
+                if ($rL === 0) $cmdBin = 'libreoffice';
+            }
+
+            if (empty($cmdBin)) {
+                return '';
+            }
+
+            $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'resume_convert_' . uniqid();
+            @mkdir($tmpDir, 0755, true);
+            // Run conversion
+            $cmd = sprintf('%s --headless --convert-to pdf --outdir %s %s 2>&1', $cmdBin, escapeshellarg($tmpDir), escapeshellarg($filePath));
+            @exec($cmd, $out, $ret);
+            if ($ret === 0) {
+                // Look for a .pdf in the tmpDir with same base name
+                $base = pathinfo($filePath, PATHINFO_FILENAME);
+                $candidates = glob($tmpDir . DIRECTORY_SEPARATOR . $base . '*.pdf');
+                if (count($candidates) > 0) {
+                    // Return first candidate
+                    return $candidates[0];
+                }
+                // If conversion created a single PDF with different name, pick the first pdf
+                $all = glob($tmpDir . DIRECTORY_SEPARATOR . '*.pdf');
+                if (count($all) > 0) {
+                    return $all[0];
+                }
+            }
+            // Cleanup on failure
+            @array_map('unlink', glob($tmpDir . DIRECTORY_SEPARATOR . '*'));
+            @rmdir($tmpDir);
+        } catch (\Throwable $e) {
+            Log::warning('ResumeVerification: soffice conversion failed', ['path' => $filePath, 'error' => $e->getMessage()]);
+        }
+        return '';
+    }
+
+    /**
      * Extract text from PDF resume.
      */
     private function extractTextFromPDF($filePath)
@@ -798,5 +968,102 @@ class ResumeVerificationService
             'notes' => $notes,
             'verified_at' => $status === 'verified' ? now() : null,
         ];
+    }
+
+    /**
+     * Attempt OCR-based extraction using system tools (pdftoppm/convert + tesseract).
+     * Returns extracted text or empty string on failure.
+     */
+    private function attemptOcrRetry(string $filePath): string
+    {
+        try {
+            if (!file_exists($filePath)) {
+                return '';
+            }
+
+            if (!function_exists('exec')) {
+                Log::info('ResumeVerification: exec() not available, skipping OCR retry', ['path' => $filePath]);
+                return '';
+            }
+
+            $tmpBase = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'resume_ocr_' . uniqid();
+            @mkdir($tmpBase, 0755, true);
+
+            $images = [];
+            $which = PHP_OS_FAMILY === 'Windows' ? 'where' : 'which';
+
+            // Try pdftoppm first
+            @exec("$which pdftoppm 2>&1", $out, $ret);
+            if ($ret === 0 && is_array($out) && count($out) > 0) {
+                $outPrefix = $tmpBase . DIRECTORY_SEPARATOR . 'page';
+                $cmd = 'pdftoppm -png ' . escapeshellarg($filePath) . ' ' . escapeshellarg($outPrefix) . ' 2>&1';
+                @exec($cmd, $cmdOut, $cmdRet);
+                if ($cmdRet === 0) {
+                    foreach (glob($outPrefix . '-*.png') as $png) {
+                        $images[] = $png;
+                    }
+                }
+            } else {
+                // Try ImageMagick (magick or convert)
+                @exec("$which magick 2>&1", $mout, $mret);
+                $useMagick = ($mret === 0 && is_array($mout));
+                if (!$useMagick) {
+                    @exec("$which convert 2>&1", $cout, $cret);
+                    $useMagick = ($cret === 0 && is_array($cout));
+                }
+
+                if ($useMagick) {
+                    $outPattern = $tmpBase . DIRECTORY_SEPARATOR . 'page.png';
+                    $cmd = 'magick convert -density 300 ' . escapeshellarg($filePath) . ' ' . escapeshellarg($outPattern) . ' 2>&1';
+                    @exec($cmd, $cmdOut, $cmdRet);
+                    foreach (glob($tmpBase . DIRECTORY_SEPARATOR . '*.png') as $png) {
+                        $images[] = $png;
+                    }
+                }
+            }
+
+            if (empty($images)) {
+                Log::info('ResumeVerification: no image converters available or conversion produced no images; skipping OCR', ['path' => $filePath]);
+                @array_map('unlink', glob($tmpBase . DIRECTORY_SEPARATOR . '*'));
+                @rmdir($tmpBase);
+                return '';
+            }
+
+            // Ensure tesseract exists
+            @exec("$which tesseract 2>&1", $tout, $tret);
+            if ($tret !== 0) {
+                Log::info('ResumeVerification: tesseract not found; cannot OCR images', ['path' => $filePath]);
+                @array_map('unlink', glob($tmpBase . DIRECTORY_SEPARATOR . '*'));
+                @rmdir($tmpBase);
+                return '';
+            }
+
+            $fullText = '';
+            foreach ($images as $img) {
+                $cmd = 'tesseract ' . escapeshellarg($img) . ' stdout -l eng 2>&1';
+                @exec($cmd, $ocrOut, $ocrRet);
+                if ($ocrRet === 0 && is_array($ocrOut)) {
+                    $pageText = implode("\n", $ocrOut);
+                    $pageText = trim($pageText);
+                    if ($pageText !== '') {
+                        $fullText .= $pageText . "\n";
+                    }
+                }
+                unset($ocrOut);
+            }
+
+            foreach (glob($tmpBase . DIRECTORY_SEPARATOR . '*') as $f) { @unlink($f); }
+            @rmdir($tmpBase);
+
+            $fullText = trim($fullText);
+            if ($fullText !== '') {
+                Log::info('ResumeVerification: OCR retry produced text', ['path' => $filePath, 'chars' => strlen($fullText)]);
+                return $fullText;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ResumeVerification: OCR retry failed', ['path' => $filePath, 'error' => $e->getMessage()]);
+        }
+
+        return '';
     }
 }

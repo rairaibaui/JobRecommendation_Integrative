@@ -360,16 +360,44 @@ function openApplyModal(button) {
 
       document.getElementById('resumePreview').innerHTML = html.join('\n');
       
-      // Disable apply button if user is employed
+      // Disable apply button if user is employed OR resume not verified
       const applyBtn = document.getElementById('confirmApplyBtn');
+      const verificationStatus = profile.resume_verification_status || 'pending';
+
       if (profile.employment_status === 'employed') {
         applyBtn.disabled = true;
         applyBtn.style.background = '#6c757d';
         applyBtn.style.cursor = 'not-allowed';
         applyBtn.innerHTML = '<i class="fas fa-ban"></i><span>Cannot Apply - Currently Employed</span>';
+      } else if (verificationStatus !== 'verified') {
+        // Block applying if resume is not verified. Show specific messages based on status.
+        applyBtn.disabled = true;
+        applyBtn.style.cursor = 'not-allowed';
+        switch (verificationStatus) {
+          case 'pending':
+            applyBtn.style.background = '#F59E0B';
+            applyBtn.style.color = '#000';
+            applyBtn.innerHTML = '<i class="fas fa-clock"></i><span>Cannot Apply - Resume Pending</span>';
+            break;
+          case 'needs_review':
+            applyBtn.style.background = '#FEE2E2';
+            applyBtn.style.color = '#7f1d25';
+            applyBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Cannot Apply - Needs Review</span>';
+            break;
+          case 'rejected':
+            applyBtn.style.background = '#DC143C';
+            applyBtn.style.color = '#fff';
+            applyBtn.innerHTML = '<i class="fas fa-ban"></i><span>Cannot Apply - Resume Rejected</span>';
+            break;
+          default:
+            applyBtn.style.background = '#6c757d';
+            applyBtn.style.color = '#fff';
+            applyBtn.innerHTML = '<i class="fas fa-ban"></i><span>Cannot Apply - Resume Not Verified</span>';
+        }
       } else {
         applyBtn.disabled = false;
         applyBtn.style.background = 'linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%)';
+        applyBtn.style.color = '';
         applyBtn.style.cursor = 'pointer';
         applyBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Submit Application</span>';
       }

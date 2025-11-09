@@ -143,7 +143,7 @@
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            background: #EF4444;
+            background: #DC143C;
             color: white;
             font-size: 11px;
             font-weight: 700;
@@ -309,8 +309,8 @@
 
         .tab-badge {
             display: inline-block;
-            background: #FEE2E2;
-            color: #991B1B;
+            background: #fff0f2;
+            color: #7f1d25;
             padding: 3px 10px;
             border-radius: 12px;
             font-size: 11px;
@@ -505,27 +505,27 @@
         }
 
         .status-verified {
-            background: #D4EDDA;
-            color: #155724;
-            border-color: #C3E6CB;
+            background: #DBEAFE;
+            color: #1E3A8A;
+            border-color: #BFDBFE;
         }
 
         .status-pending {
             background: #FFF3CD;
-            color: #856404;
+            color: #F59E0B;
             border-color: #FFEAA7;
         }
 
         .status-needs-review {
-            background: #F8D7DA;
-            color: #721C24;
+            background: #FEE2E2;
+            color: #7f1d25;
             border-color: #F5C6CB;
         }
 
         .status-rejected {
-            background: #F8D7DA;
-            color: #721C24;
-            border-color: #F5C6CB;
+            background: #fff0f2;
+            color: #7f1d25;
+            border-color: #DC143C;
         }
 
         .status-approved {
@@ -924,7 +924,7 @@
                         <div class="stat-label">Total Resumes</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" style="color: #10b981;">{{ $resumeStats['verified'] }}</div>
+                        <div class="stat-value" style="color: #3B82F6;">{{ $resumeStats['verified'] }}</div>
                         <div class="stat-label">Verified</div>
                     </div>
                     <div class="stat-item">
@@ -935,6 +935,10 @@
                         <div class="stat-value" style="color: #6b7280;">{{ $resumeStats['pending'] }}</div>
                         <div class="stat-label">Pending</div>
                     </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: #DC143C;">{{ $resumeStats['rejected'] ?? 0 }}</div>
+                            <div class="stat-label">Rejected</div>
+                        </div>
                 @else
                     <div class="stat-item">
                         <div class="stat-value">{{ $permitStats['total'] }}</div>
@@ -969,6 +973,7 @@
                                 <option value="verified" {{ request('status') === 'verified' ? 'selected' : '' }}>Verified</option>
                                 <option value="needs_review" {{ request('status') === 'needs_review' ? 'selected' : '' }}>Needs Review</option>
                                 <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
                             @else
                                 <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
                                 <option value="pending_review" {{ request('status') === 'pending_review' ? 'selected' : '' }}>Pending Review</option>

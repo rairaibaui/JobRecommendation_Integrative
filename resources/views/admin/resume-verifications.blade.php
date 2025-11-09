@@ -90,10 +90,10 @@
             border-left: 4px solid;
         }
 
-        .stat-card.needs-review { border-left-color: #f59e0b; }
-        .stat-card.verified { border-left-color: #10b981; }
-        .stat-card.pending { border-left-color: #3b82f6; }
-        .stat-card.rejected { border-left-color: #ef4444; }
+    .stat-card.needs-review { border-left-color: #ef4444; }
+    .stat-card.verified { border-left-color: #3B82F6; }
+    .stat-card.pending { border-left-color: #F59E0B; }
+    .stat-card.rejected { border-left-color: #DC143C; }
 
         .stat-card h3 {
             font-size: 2rem;
@@ -203,10 +203,10 @@
             display: inline-block;
         }
 
-        .badge.verified { background: #d1fae5; color: #065f46; }
-        .badge.needs-review { background: #fef3c7; color: #92400e; }
-        .badge.pending { background: #dbeafe; color: #1e3a8a; }
-        .badge.rejected { background: #fee2e2; color: #991b1b; }
+    .badge.verified { background: #DBEAFE; color: #1E3A8A; }
+    .badge.needs-review { background: #FEE2E2; color: #7f1d25; }
+    .badge.pending { background: #FFF3CD; color: #F59E0B; }
+    .badge.rejected { background: #DC143C; color: #ffffff; }
 
         .action-buttons {
             display: flex;
@@ -313,8 +313,8 @@
         }
 
         .flag-badge {
-            background: #fee2e2;
-            color: #991b1b;
+            background: #fff0f2;
+            color: #7f1d25;
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
         }
@@ -380,6 +380,7 @@
                     <option value="needs_review" {{ request('status') == 'needs_review' ? 'selected' : '' }}>Needs Review</option>
                     <option value="verified" {{ request('status') == 'verified' ? 'selected' : '' }}>Verified</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All</option>
                 </select>
             </div>
@@ -418,6 +419,8 @@
                                     <span class="badge verified"><i class="fas fa-check"></i> Verified</span>
                                 @elseif($user->resume_verification_status === 'needs_review')
                                     <span class="badge needs-review"><i class="fas fa-exclamation-triangle"></i> Needs Review</span>
+                                @elseif($user->resume_verification_status === 'rejected')
+                                    <span class="badge rejected"><i class="fas fa-ban"></i> Rejected</span>
                                 @else
                                     <span class="badge pending"><i class="fas fa-clock"></i> Pending</span>
                                 @endif

@@ -211,10 +211,10 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.08);
         }
         
-        .stat-card.pending { --card-accent: #ffc107; }
-        .stat-card.approved { --card-accent: #43A047; }
-        .stat-card.rejected { --card-accent: #dc3545; }
-        .stat-card.ai { --card-accent: #648EB5; }
+    .stat-card.pending { --card-accent: #F59E0B; }
+    .stat-card.approved { --card-accent: #43A047; }
+    .stat-card.rejected { --card-accent: #DC143C; }
+    .stat-card.ai { --card-accent: #648EB5; }
     .stat-card.expiring { --card-accent: #ffc107; }
         
         .stat-top {
@@ -237,7 +237,7 @@
         
         .stat-card.pending .stat-icon { background: linear-gradient(135deg, #ffd54f, #ffc107); }
         .stat-card.approved .stat-icon { background: linear-gradient(135deg, #66bb6a, #43A047); }
-        .stat-card.rejected .stat-icon { background: linear-gradient(135deg, #e57373, #dc3545); }
+    .stat-card.rejected .stat-icon { background: linear-gradient(135deg, #e57373, #DC143C); }
         .stat-card.ai .stat-icon { background: linear-gradient(135deg, #648EB5, #334A5E); }
     .stat-card.expiring .stat-icon { background: linear-gradient(135deg, #ffd54f, #ffc107); }
         
@@ -384,7 +384,7 @@
         }
 
         .notif-badge.yellow { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
-        .notif-badge.red { background: #f8d7da; color: #842029; border: 1px solid #dc3545; }
+    .notif-badge.red { background: #fff0f2; color: #7f1d25; border: 1px solid #DC143C; }
 
         .notif-link {
             display: inline-flex;
@@ -680,9 +680,9 @@
         }
         
         .status-rejected {
-            background: #f8d7da;
-            color: #842029;
-            border: 1px solid #dc3545;
+            background: #fff0f2;
+            color: #7f1d25;
+            border: 1px solid #DC143C;
         }
         
         .status-duplicate {

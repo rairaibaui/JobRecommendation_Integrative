@@ -4,15 +4,17 @@
     <div class="custom-modal-icon custom-modal-icon-confirm">
       <i class="fas fa-question-circle"></i>
     </div>
-    <h3 class="custom-modal-title" id="confirmModalTitle">Confirm Action</h3>
-    <p class="custom-modal-message" id="confirmModalMessage">Are you sure you want to proceed?</p>
-    <div class="custom-modal-actions">
-      <button type="button" class="custom-modal-btn custom-modal-cancel" onclick="closeCustomConfirm(false)">
-        <i class="fas fa-times"></i> Cancel
-      </button>
-      <button type="button" class="custom-modal-btn custom-modal-confirm" onclick="closeCustomConfirm(true)" id="confirmModalBtn">
-        <i class="fas fa-check"></i> Confirm
-      </button>
+    <div class="custom-modal-content">
+      <h3 class="custom-modal-title" id="confirmModalTitle">Confirm Action</h3>
+      <p class="custom-modal-message" id="confirmModalMessage">Are you sure you want to proceed?</p>
+      <div class="custom-modal-actions" style="justify-content: flex-end;">
+        <button type="button" class="custom-modal-btn custom-modal-cancel" onclick="closeCustomConfirm(false)">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button type="button" class="custom-modal-btn custom-modal-confirm" onclick="closeCustomConfirm(true)" id="confirmModalBtn">
+          <i class="fas fa-check"></i> Confirm
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -21,14 +23,16 @@
 <div id="customAlertModal" class="custom-modal-overlay" style="display:none;">
   <div class="custom-modal-box">
     <div class="custom-modal-icon custom-modal-icon-alert">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-info-circle"></i>
     </div>
-    <h3 class="custom-modal-title" id="alertModalTitle">Notice</h3>
-    <p class="custom-modal-message" id="alertModalMessage">Please note this message.</p>
-    <div class="custom-modal-actions">
-      <button type="button" class="custom-modal-btn custom-modal-primary" onclick="closeCustomAlert()" style="width: 100%; max-width: 200px;">
-        <i class="fas fa-check"></i> OK
-      </button>
+    <div class="custom-modal-content">
+      <h3 class="custom-modal-title" id="alertModalTitle">Notice</h3>
+      <p class="custom-modal-message" id="alertModalMessage">Please note this message.</p>
+      <div class="custom-modal-actions" style="justify-content: flex-end;">
+        <button type="button" class="custom-modal-btn custom-modal-primary" onclick="closeCustomAlert()" style="min-width: 120px;">
+          <i class="fas fa-check"></i> OK
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -87,24 +91,26 @@
 
   .custom-modal-box {
     background: white;
-    border-radius: 16px;
-    padding: 32px;
-    max-width: 440px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    animation: customSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 640px;
+    width: 96%;
+    box-shadow: 0 18px 48px rgba(13, 60, 120, 0.12);
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    animation: customSlideUp 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .custom-modal-icon {
-    width: 70px;
-    height: 70px;
-    margin: 0 auto 20px;
-    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(13, 60, 120, 0.08);
+    flex-shrink: 0;
   }
 
   .custom-modal-icon-confirm {
@@ -124,20 +130,22 @@
     color: white;
   }
 
+  .custom-modal-content { flex: 1; }
+
   .custom-modal-title {
     font-family: 'Poppins', 'Inter', sans-serif;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 700;
-    color: #334A5E;
-    margin: 0 0 12px;
+    color: #1f2d3d;
+    margin: 0 0 8px;
   }
 
   .custom-modal-message {
     font-family: 'Roboto', 'Inter', sans-serif;
-    font-size: 15px;
-    color: #666;
-    line-height: 1.6;
-    margin: 0 0 28px;
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0 0 18px;
   }
 
   .custom-modal-input {
@@ -160,24 +168,23 @@
   .custom-modal-actions {
     display: flex;
     gap: 12px;
-    justify-content: center;
+    justify-content: flex-end;
   }
 
   .custom-modal-btn {
-    flex: 1;
-    max-width: 160px;
-    padding: 12px 20px;
+    padding: 10px 16px;
     border: none;
     border-radius: 10px;
     font-family: 'Roboto', 'Inter', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    min-width: 96px;
   }
 
   .custom-modal-cancel {
@@ -194,9 +201,9 @@
 
   .custom-modal-confirm,
   .custom-modal-primary {
-    background: linear-gradient(135deg, #648EB5, #334A5E);
+    background: linear-gradient(135deg, #5B9BD5, #0b63d6);
     color: white;
-    box-shadow: 0 4px 12px rgba(100, 142, 181, 0.3);
+    box-shadow: 0 6px 18px rgba(11,99,214,0.18);
   }
 
   .custom-modal-confirm:hover,

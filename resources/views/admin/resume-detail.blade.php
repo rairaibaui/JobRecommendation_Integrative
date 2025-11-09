@@ -10,9 +10,9 @@
         .container { max-width:1000px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06);} 
         .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
         .badge { padding:6px 10px; border-radius:6px; font-weight:600; }
-        .badge.verified { background:#d1fae5; color:#065f46; }
-        .badge.needs { background:#fef3c7; color:#92400e; }
-        .badge.rejected { background:#fee2e2; color:#991b1b; }
+    .badge.verified { background:#DBEAFE; color:#1E3A8A; }
+    .badge.needs { background:#FEE2E2; color:#7f1d25; }
+    .badge.rejected { background:#DC143C; color:#ffffff; }
         .grid { display:grid; grid-template-columns:1fr 320px; gap:16px; }
         .box { background:#fff; padding:12px; border-radius:8px; border:1px solid #eef2f7; }
         .field { margin-bottom:8px; }
@@ -123,7 +123,7 @@
                     @endphp
 
                     @if($isRejected)
-                        <div style="background:#fff7f7; border:1px solid #fecaca; color:#7f1d1d; padding:12px; border-radius:6px; margin-bottom:12px;">
+                        <div style="background:#fff0f2; border:1px solid #f5c6cb; color:#7f1d1d; padding:12px; border-radius:6px; margin-bottom:12px;">
                             <strong>Waiting for new upload:</strong> Resume rejected. Waiting for new upload before review.
                         </div>
                     @endif

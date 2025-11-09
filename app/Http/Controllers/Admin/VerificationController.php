@@ -34,6 +34,7 @@ class VerificationController extends Controller
             'verified' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'verified')->count(),
             'needs_review' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'needs_review')->count(),
             'pending' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'pending')->count(),
+            'rejected' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'rejected')->count(),
         ];
 
         // Permit statistics
@@ -264,8 +265,7 @@ class VerificationController extends Controller
             ->where('resume_verification_status', 'pending')
             ->count();
         $resumeRejectedCount = User::where('user_type', 'job_seeker')
-            ->whereNotNull('resume_file')
-            ->whereJsonContains('verification_flags', 'not_a_resume')
+            ->where('resume_verification_status', 'rejected')
             ->count();
 
         // Business permit stats for tab

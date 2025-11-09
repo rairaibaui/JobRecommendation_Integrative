@@ -27,6 +27,7 @@
             margin: 0;
         }
 
+
         /* Sidebar */
         .sidebar {
             position: fixed;
@@ -370,15 +371,31 @@
         }
 
         .badge-verified {
-            background: #D4EDDA;
-            color: #155724;
-            border-color: #C3E6CB;
+            /* Verified -> Blue */
+            background: #DBEAFE;
+            color: #1E40AF;
+            border-color: #93C5FD;
         }
 
         .badge-pending {
+            /* Pending -> Yellow */
             background: #FFF3CD;
-            color: #856404;
+            color: #F59E0B;
             border-color: #FFEAA7;
+        }
+
+        .badge-needs-review {
+            /* Needs review -> Light red */
+            background: #FEE2E2;
+            color: #7f1d25;
+            border-color: #FECACA;
+        }
+
+        .badge-rejected {
+            /* Rejected -> Crimson */
+            background: #DC143C;
+            color: #ffffff;
+            border-color: #DC143C;
         }
 
         .btn {
@@ -627,12 +644,17 @@
                         <td>{{ $user->email }}</td>
                         @if($userType === 'job_seeker')
                         <td>
-                            @if($user->resume_verification_status === 'verified')
+                            @php $rStatus = $user->resume_verification_status ?? 'pending'; @endphp
+                            @if($rStatus === 'verified')
                                 <span class="badge badge-verified">Verified</span>
-                            @elseif($user->resume_verification_status === 'pending')
+                            @elseif($rStatus === 'pending')
                                 <span class="badge badge-pending">Pending</span>
+                            @elseif($rStatus === 'needs_review')
+                                <span class="badge badge-needs-review">Needs Review</span>
+                            @elseif($rStatus === 'rejected')
+                                <span class="badge badge-rejected">Rejected</span>
                             @else
-                                <span class="badge" style="background: #F8D7DA; color: #721C24; border-color: #F5C6CB;">Needs Review</span>
+                                <span class="badge badge-pending">Pending</span>
                             @endif
                         </td>
                         @endif
