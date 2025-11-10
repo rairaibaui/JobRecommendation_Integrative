@@ -3,20 +3,20 @@
     <i class="fas fa-bell"></i>
     <span id="empNotifBadge" class="badge" style="position:absolute; top:5px; right:5px; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; min-width:18px; height:18px; align-items:center; justify-content:center; display:none;">0</span>
   </div>
-  <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:480px; max-height:600px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:16px; z-index:1100; font-size:14px; line-height:1.35;">
-    <div class="notif-header" style="padding:20px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eef2f6; background:#ffffff;">
+  <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:380px; max-height:600px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:8px; box-shadow:0 8px 16px rgba(0,0,0,0.12); padding:8px; z-index:1100; font-size:14px; line-height:1.35;">
+    <div class="notif-header" style="padding:12px 8px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eef2f6; background:#ffffff;">
       <div style="display:flex; align-items:center; gap:8px; min-width:0;">
         <span style="font-size:16px; font-weight:700; color:#243b55; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Notifications</span>
         <span style="font-size:12px; color:#6b7280; white-space:nowrap;">&middot; <span id="empNotifCountSummary" style="font-weight:600;">0</span> new</span>
       </div>
       <div style="display:flex; gap:6px; align-items:center;">
-        <button onclick="empMarkAllNotificationsRead(event)" aria-label="Mark all as read" class="notif-btn notif-markall" style="background:transparent;color:#334155;border:1px solid #e6eef6;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer;transition:all 0.12s;font-weight:600;display:flex;align-items:center;gap:8px;min-width:64px;">
-          <i class="fas fa-check-double" style="color:#3b82f6;font-size:12px;"></i>
+        <button onclick="empMarkAllNotificationsRead(event)" aria-label="Mark all as read" class="notif-btn notif-markall" style="background:transparent;color:#334155;border:1px solid #e6eef6;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;transition:all 0.12s;font-weight:600;display:flex;align-items:center;gap:6px;min-width:60px;">
+          <i class="fas fa-check-double" style="color:#3b82f6;font-size:11px;"></i>
           <span class="btn-text">Mark all</span>
         </button>
 
-        <button onclick="empRefreshNotifications(event)" aria-label="Refresh notifications" class="notif-btn notif-refresh" style="background:#3b82f6; color:#fff; border:none; border-radius:999px; padding:6px 10px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(59,130,246,0.12); transition:transform .08s ease; min-width:72px;">
-          <i class="fas fa-sync-alt" style="font-size:12px; transform:rotate(0deg);"></i>
+        <button onclick="empRefreshNotifications(event)" aria-label="Refresh notifications" class="notif-btn notif-refresh" style="background:#3b82f6; color:#fff; border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px; box-shadow:0 2px 8px rgba(59,130,246,0.12); transition:transform .08s ease; min-width:68px;">
+          <i class="fas fa-sync-alt" style="font-size:11px; transform:rotate(0deg);"></i>
           <span class="btn-text">Refresh</span>
         </button>
       </div>
@@ -57,7 +57,7 @@
         if (!list || !badge || !dd) return;
         if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread; } else { badge.style.display = 'none'; }
         dd.dataset.loaded = '1';
-        if (!notifications.length){ list.innerHTML = '<li class="notif-empty" style="padding:40px 20px; text-align:center; color:#94a3b8;"><i class="fas fa-bell-slash" style="font-size:48px; color:#cbd5e0; margin-bottom:12px; display:block;"></i><div style="font-size:16px; font-weight:500; color:#64748b;">No notifications yet</div><div style="font-size:13px; margin-top:4px;">You\'re all caught up!</div></li>'; return; }
+        if (!notifications.length){ list.innerHTML = '<li class="notif-empty" style="padding:30px 15px; text-align:center; color:#94a3b8;"><i class="fas fa-bell-slash" style="font-size:36px; color:#cbd5e0; margin-bottom:10px; display:block;"></i><div style="font-size:14px; font-weight:500; color:#64748b;">No notifications yet</div><div style="font-size:12px; margin-top:4px;">You\'re all caught up!</div></li>'; return; }
         list.innerHTML = notifications.map(n => empRenderNotifItem(n)).join('');
       })
       .catch(() => {});
@@ -102,18 +102,18 @@
   const linkIndicator = n.link ? '<i class="fas fa-chevron-right notif-link-icon"></i>' : '';
 
   return `
-    <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})" style="background:${bgColor}; display:flex; align-items:flex-start; gap:12px; padding:16px; border-bottom:1px solid #f0f0f0; cursor:pointer;">
+    <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})" style="background:${bgColor}; display:flex; align-items:flex-start; gap:10px; padding:12px; border-bottom:1px solid #f0f0f0; cursor:pointer;">
       
       <!-- Icon on the left -->
-      <div class="icon-wrapper" style="width:36px; height:36px; background:${iconColor}15; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-        <i class="fas fa-${icon}" style="color:${iconColor}; font-size:16px;"></i>
+      <div class="icon-wrapper" style="width:32px; height:32px; background:${iconColor}15; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i class="fas fa-${icon}" style="color:${iconColor}; font-size:14px;"></i>
       </div>
       
       <!-- Text stacked in column -->
       <div class="text-column" style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;">
-        <div class="title" style="font-weight:700; font-size:14px; color:#2c3e50; line-height:1.3; margin-bottom:4px;">${escapeHtml(n.title || '')}</div>
-        <div class="message" style="font-size:13px; color:#64748b; line-height:1.4; margin-bottom:6px;">${escapeHtml(n.message || '')}</div>
-        <div class="timestamp" style="font-size:11px; color:#a0aec0; text-align:left;">${createdAt}</div>
+        <div class="title" style="font-weight:700; font-size:13px; color:#2c3e50; line-height:1.3; margin-bottom:3px;">${escapeHtml(n.title || '')}</div>
+        <div class="message" style="font-size:12px; color:#64748b; line-height:1.4; margin-bottom:4px;">${escapeHtml(n.message || '')}</div>
+        <div class="timestamp" style="font-size:10px; color:#a0aec0; text-align:left;">${createdAt}</div>
       </div>
 
       ${linkIndicator}
