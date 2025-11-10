@@ -63,54 +63,63 @@
       .catch(() => {});
   }
 
-  function empRenderNotifItem(n){
-    const icon = (function(){
-      switch(n.type){
-        case 'success': return 'check-circle';
-        case 'error': return 'times-circle';
-        case 'warning': return 'exclamation-triangle';
-        case 'info': return 'info-circle';
-        case 'interview_scheduled': return 'calendar-alt';
-        case 'application_accepted': return 'check-circle';
-        case 'application_rejected': return 'times-circle';
-        case 'application_status_changed': return 'info-circle';
-        case 'new_application': return 'inbox';
-        case 'employment_terminated': return 'user-times';
-        case 'employee_terminated': return 'user-minus';
-        case 'employee_resigned': return 'user-slash';
-        default: return 'bell';
-      }
-    })();
-    
-    const iconColor = (function(){
-      switch(n.type){
-        case 'success': return '#28a745';
-        case 'error': return '#dc3545';
-        case 'warning': return '#ffa500';
-        case 'info': return '#17a2b8';
-        case 'new_application': return '#5B9BD5';
-        default: return '#648EB5';
-      }
-    })();
-    const readClass = n.read ? '' : 'unread';
-    const bgColor = n.read ? '#fff' : '#f0f7ff';
-    const createdAt = n.created_at ? new Date(n.created_at).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '';
-    const hasLink = n.link ? ' style="cursor:pointer;"' : '';
-    const linkIndicator = n.link ? '<i class="fas fa-chevron-right" style="color:#cbd5e0; font-size:14px; margin-left:auto; flex-shrink:0;"></i>' : '';
-    return `
-      <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})"${hasLink} style="padding:24px 20px; display:flex; align-items:flex-start; gap:20px; border-bottom:1px solid #f0f0f0; cursor:pointer; transition:all 0.2s; background:${bgColor}; margin-bottom:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${bgColor}'">
-        <div style="width:48px; height:48px; background:${iconColor}15; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-          <i class="fas fa-${icon}" style="color:${iconColor}; font-size:20px;"></i>
-        </div>
-        <div style="flex:1; min-width:0; overflow:hidden;">
-          <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:12px; line-height:1.3;">${escapeHtml(n.title || '')}</div>
-          <div style="color:#64748b; font-size:13px; line-height:1.5; margin-bottom:14px; word-wrap:break-word; overflow-wrap:break-word;">${escapeHtml(n.message || '')}</div>
-          <div class="meta" style="font-size:10px; color:#a0aec0;">${createdAt}</div>
-        </div>
-        ${linkIndicator}
-      </li>
-    `;
-  }
+ function empRenderNotifItem(n){
+  const icon = (function(){
+    switch(n.type){
+      case 'success': return 'check-circle';
+      case 'error': return 'times-circle';
+      case 'warning': return 'exclamation-triangle';
+      case 'info': return 'info-circle';
+      case 'interview_scheduled': return 'calendar-alt';
+      case 'application_accepted': return 'check-circle';
+      case 'application_rejected': return 'times-circle';
+      case 'application_status_changed': return 'info-circle';
+      case 'new_application': return 'inbox';
+      case 'employment_terminated': return 'user-times';
+      case 'employee_terminated': return 'user-minus';
+      case 'employee_resigned': return 'user-slash';
+      default: return 'bell';
+    }
+  })();
+
+  const iconColor = (function(){
+    switch(n.type){
+      case 'success': return '#28a745';
+      case 'error': return '#dc3545';
+      case 'warning': return '#ffa500';
+      case 'info': return '#17a2b8';
+      case 'new_application': return '#5B9BD5';
+      default: return '#648EB5';
+    }
+  })();
+
+  const readClass = n.read ? '' : 'unread';
+  const bgColor = n.read ? '#fff' : '#f0f7ff';
+  const createdAt = n.created_at ? new Date(n.created_at).toLocaleString('en-US', { 
+    month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
+  }) : '';
+
+  const linkIndicator = n.link ? '<i class="fas fa-chevron-right notif-link-icon"></i>' : '';
+
+  return `
+    <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})" style="background:${bgColor}; display:flex; align-items:flex-start; gap:12px; padding:16px; border-bottom:1px solid #f0f0f0; cursor:pointer;">
+      
+      <!-- Icon on the left -->
+      <div class="icon-wrapper" style="width:36px; height:36px; background:${iconColor}15; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i class="fas fa-${icon}" style="color:${iconColor}; font-size:16px;"></i>
+      </div>
+      
+      <!-- Text stacked in column -->
+      <div class="text-column" style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;">
+        <div class="title" style="font-weight:700; font-size:14px; color:#2c3e50; line-height:1.3; margin-bottom:4px;">${escapeHtml(n.title || '')}</div>
+        <div class="message" style="font-size:13px; color:#64748b; line-height:1.4; margin-bottom:6px;">${escapeHtml(n.message || '')}</div>
+        <div class="timestamp" style="font-size:11px; color:#a0aec0; text-align:left;">${createdAt}</div>
+      </div>
+
+      ${linkIndicator}
+    </li>
+  `;
+}
 
   function empMarkAllNotificationsRead(e){
     e.stopPropagation();
