@@ -925,7 +925,7 @@ class ProfileController extends Controller
             'rejection_reason' => $request->input('reason'),
             'applicant_snapshot' => $lastHire->applicant_snapshot ?? null,
             'job_snapshot' => $lastHire->job_snapshot ?? null,
-            'decision_date' => now(),
+            'decision_date' => \Carbon\Carbon::now(),
         ]);
 
         // Notify the employer about the resignation
@@ -1068,7 +1068,7 @@ class ProfileController extends Controller
                         'company_name' => $user->company_name ?? 'Unknown',
                         'email' => $user->email,
                     ]
-                )->delay(now()->addSeconds($delay));
+                )->delay(\Carbon\Carbon::now()->addSeconds($delay));
             } else {
                 // If AI validation is disabled or no queue worker, immediately create a pending review record
                 try {
@@ -1086,7 +1086,7 @@ class ProfileController extends Controller
                         'reason' => 'Uploaded by employer. Awaiting manual review by administrator.',
                         'ai_analysis' => null,
                         'validated_by' => 'system',
-                        'validated_at' => now(),
+                        'validated_at' => \Carbon\Carbon::now(),
                         'permit_expiry_date' => null,
                         'expiry_reminder_sent' => false,
                     ]);

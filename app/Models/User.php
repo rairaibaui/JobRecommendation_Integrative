@@ -92,7 +92,18 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getBirthdayAttribute()
     {
+        \Log::info('getBirthdayAttribute called', [
+            'date_of_birth' => $this->attributes['date_of_birth'] ?? 'not set',
+            'birthday' => $this->attributes['birthday'] ?? 'not set',
+            'date_of_birth_type' => gettype($this->attributes['date_of_birth'] ?? null),
+            'birthday_type' => gettype($this->attributes['birthday'] ?? null),
+        ]);
+
         if (!empty($this->attributes['date_of_birth'])) {
+            // If it's already a Carbon instance, return it directly
+            if ($this->attributes['date_of_birth'] instanceof Carbon) {
+                return $this->attributes['date_of_birth'];
+            }
             try {
                 return Carbon::parse($this->attributes['date_of_birth']);
             } catch (\Throwable $e) {
@@ -102,6 +113,10 @@ class User extends Authenticatable implements MustVerifyEmail
 
         // If there is an explicitly stored birthday attribute, return it (covers some older codepaths)
         if (!empty($this->attributes['birthday'])) {
+            // If it's already a Carbon instance, return it directly
+            if ($this->attributes['birthday'] instanceof Carbon) {
+                return $this->attributes['birthday'];
+            }
             try {
                 return Carbon::parse($this->attributes['birthday']);
             } catch (\Throwable $e) {
@@ -117,21 +132,35 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function setBirthdayAttribute($value)
     {
+        \Log::info('setBirthdayAttribute called', [
+            'value' => $value,
+            'value_type' => gettype($value),
+            'is_carbon' => $value instanceof Carbon,
+            'attributes_before' => $this->attributes['birthday'] ?? 'not set',
+        ]);
+
         if (empty($value)) {
             $this->attributes['date_of_birth'] = null;
             $this->attributes['birthday'] = null;
             return;
         }
 
-        try {
-            $d = Carbon::parse($value);
-            $this->attributes['date_of_birth'] = $d->format('Y-m-d');
-            // Also keep birthday attribute synchronized for consumers that expect it
-            $this->attributes['birthday'] = $d->format('Y-m-d');
-        } catch (\Throwable $e) {
-            // If parsing fails, store raw value into birthday and leave date_of_birth null
-            $this->attributes['birthday'] = $value;
+        // If value is already a Carbon instance, use it directly
+        if ($value instanceof Carbon) {
+            $d = $value;
+        } else {
+            try {
+                $d = Carbon::parse($value);
+            } catch (\Throwable $e) {
+                // If parsing fails, store raw value into birthday and leave date_of_birth null
+                $this->attributes['birthday'] = $value;
+                return;
+            }
         }
+
+        $this->attributes['date_of_birth'] = $d->format('Y-m-d');
+        // Also keep birthday attribute synchronized for consumers that expect it
+        $this->attributes['birthday'] = $d->format('Y-m-d');
     }
 
     public function bookmarks()

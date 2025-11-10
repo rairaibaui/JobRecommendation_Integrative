@@ -3,8 +3,8 @@
     <i class="fas fa-bell"></i>
     <span id="empNotifBadge" class="badge" style="position:absolute; top:5px; right:5px; background:#ff4757; color:#fff; border-radius:50%; padding:2px 6px; font-size:10px; min-width:18px; height:18px; align-items:center; justify-content:center; display:none;">0</span>
   </div>
-  <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:380px; max-height:500px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:0; z-index:1100; font-size:14px; line-height:1.35;">
-    <div class="notif-header" style="padding:10px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eef2f6; background:#ffffff;">
+  <div id="empNotifDropdown" class="notif-dropdown" style="display:none; position:absolute; top:54px; right:0; width:480px; max-height:600px; overflow-y:auto; overflow-x:hidden; background:#fff; color:#333; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.18); padding:16px; z-index:1100; font-size:14px; line-height:1.35;">
+    <div class="notif-header" style="padding:20px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eef2f6; background:#ffffff;">
       <div style="display:flex; align-items:center; gap:8px; min-width:0;">
         <span style="font-size:16px; font-weight:700; color:#243b55; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Notifications</span>
         <span style="font-size:12px; color:#6b7280; white-space:nowrap;">&middot; <span id="empNotifCountSummary" style="font-weight:600;">0</span> new</span>
@@ -98,13 +98,13 @@
     const hasLink = n.link ? ' style="cursor:pointer;"' : '';
     const linkIndicator = n.link ? '<i class="fas fa-chevron-right" style="color:#cbd5e0; font-size:14px; margin-left:auto; flex-shrink:0;"></i>' : '';
     return `
-      <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})"${hasLink} style="padding:14px 16px; display:flex; align-items:flex-start; gap:12px; border-bottom:1px solid #f0f0f0; cursor:pointer; transition:all 0.2s; background:${bgColor};" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${bgColor}'">
-        <div style="width:40px; height:40px; background:${iconColor}15; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-          <i class="fas fa-${icon}" style="color:${iconColor}; font-size:18px;"></i>
+      <li class="notif-item ${readClass}" onclick="showEmpNotificationDetail(${n.id})"${hasLink} style="padding:24px 20px; display:flex; align-items:flex-start; gap:20px; border-bottom:1px solid #f0f0f0; cursor:pointer; transition:all 0.2s; background:${bgColor}; margin-bottom:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${bgColor}'">
+        <div style="width:48px; height:48px; background:${iconColor}15; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i class="fas fa-${icon}" style="color:${iconColor}; font-size:20px;"></i>
         </div>
         <div style="flex:1; min-width:0; overflow:hidden;">
-          <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:5px; line-height:1.3;">${escapeHtml(n.title || '')}</div>
-          <div style="color:#64748b; font-size:13px; line-height:1.5; margin-bottom:6px; word-wrap:break-word; overflow-wrap:break-word;">${escapeHtml(n.message || '')}</div>
+          <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:12px; line-height:1.3;">${escapeHtml(n.title || '')}</div>
+          <div style="color:#64748b; font-size:13px; line-height:1.5; margin-bottom:14px; word-wrap:break-word; overflow-wrap:break-word;">${escapeHtml(n.message || '')}</div>
           <div class="meta" style="font-size:10px; color:#a0aec0;">${createdAt}</div>
         </div>
         ${linkIndicator}
@@ -184,8 +184,8 @@
         modal.id = 'empNotifDetailModal';
         modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
         modal.innerHTML = `
-          <div style="background:white; border-radius:16px; width:90%; max-width:600px; max-height:85vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modalSlideIn 0.3s ease;">
-            <div style="background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); padding:25px; color:white; position:relative;">
+          <div style="background:white; border-radius:16px; width:90%; max-width:700px; max-height:85vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modalSlideIn 0.3s ease;">
+            <div style="background:linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%); padding:30px; color:white; position:relative;">
               <button onclick="closeEmpNotifModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">&times;</button>
               <div style="display:flex; align-items:center; gap:15px;">
                 <div style="width:50px; height:50px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
@@ -197,12 +197,12 @@
                 </div>
               </div>
             </div>
-            <div style="padding:25px; max-height:calc(85vh - 150px); overflow-y:auto;">
+            <div style="padding:30px; max-height:calc(85vh - 150px); overflow-y:auto;">
               <h4 style="margin:0 0 10px 0; color:#333; font-size:18px;">${escapeHtml(notif.title || 'Notification')}</h4>
               <p style="color:#555; line-height:1.6; margin:0;">${escapeHtml(notif.message || '')}</p>
               ${additionalInfo}
             </div>
-            <div style="padding:20px 25px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+            <div style="padding:25px 30px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
               <button onclick="closeEmpNotifModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Close</button>
             </div>
           </div>
