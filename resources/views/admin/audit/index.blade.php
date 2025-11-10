@@ -102,34 +102,74 @@
             gap: 8px;
         }
 
+        /* Sidebar button styles (match job seeker layout) */
         .menu-item {
-            padding: 12px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #506B81;
-            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.2s;
-            font-size: 14px;
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 10px;
+            background: transparent;
+            box-shadow: none;
+            color: #334A5E;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: #648EB5;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
         }
 
         .menu-item:hover {
-            background: #F0F4F8;
+            background: linear-gradient(90deg, #e8f4fd 0%, #f0f7fc 100%);
             color: #2B4053;
+            transform: translateX(4px);
+        }
+
+        .menu-item:hover::before {
+            transform: scaleY(1);
         }
 
         .menu-item.active {
-            background: #648EB5;
-            color: white;
+            background: linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%);
+            box-shadow: 0 4px 12px rgba(100, 142, 181, 0.3);
+            color: #FFF;
             font-weight: 600;
         }
 
+        .menu-item.active::before {
+            display: none;
+        }
+
+        .menu-item.active:hover {
+            transform: translateX(0);
+            box-shadow: 0 6px 16px rgba(100, 142, 181, 0.4);
+        }
+
         .menu-item i {
-            width: 20px;
+            font-size: 18px;
+            min-width: 20px;
             text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item:hover i {
+            transform: scale(1.1);
         }
 
         .notification-badge {
@@ -306,6 +346,9 @@
             font-size: 11px;
             font-weight: 600;
             border: 2px solid;
+            white-space: nowrap;
+            display: inline-block;
+            max-width: none;
         }
 
         .action-create {
@@ -358,26 +401,182 @@
             background: #506B81;
         }
 
+        /* Pagination Styles */
         .pagination {
             display: flex;
-            gap: 5px;
             justify-content: center;
-            margin-top: 20px;
+            align-items: center;
+            gap: 8px;
+            margin: 30px 0 20px 0;
+            padding: 0;
+            list-style: none;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+
+        .pagination li {
+            display: inline-block;
         }
 
         .pagination a,
         .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
             padding: 8px 12px;
-            border: 1px solid #E5E7EB;
-            border-radius: 6px;
+            border-radius: 8px;
             text-decoration: none;
             color: #506B81;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: transparent;
+            box-shadow: none;
+            border: none !important;
+            outline: none !important;
         }
 
-        .pagination .active {
-            background: #648EB5;
+        .pagination a:hover {
+            background: transparent;
+            color: #648EB5;
+            transform: translateY(-1px);
+        }
+
+        .pagination .active a,
+        .pagination .active span,
+        .pagination strong {
+            background: linear-gradient(135deg, #648EB5, #506B81);
             color: white;
             border-color: #648EB5;
+            box-shadow: 0 2px 8px rgba(100,142,181,0.3);
+            transform: translateY(-1px);
+        }
+
+        .pagination .disabled a,
+        .pagination .disabled span {
+            opacity: 0.4;
+            pointer-events: none;
+            background: #F9FAFB;
+            border-color: #E5E7EB;
+            cursor: not-allowed;
+        }
+
+        /* Hide Previous button on first page */
+        .pagination li:first-child a[href*="page=1"],
+        .pagination li:first-child .disabled {
+            display: none;
+        }
+
+        /* Hide Next button on last page */
+        .pagination li:last-child a[href*="page="]:not([href*="page=1"]):not([href*="page=2"]):not([href*="page=3"]):not([href*="page=4"]):not([href*="page=5"]),
+        .pagination li:last-child .disabled {
+            display: none;
+        }
+
+        /* Arrow styling for Previous/Next (fixed) */
+        .pagination a[rel="prev"],
+        .pagination a[rel="next"] {
+            font-weight: 700;
+            padding: 0;
+            min-width: 0;
+            position: relative;
+        }
+
+        /* Only hide SVG icons inside the prev/next anchors if present, don't hide all children */
+        .pagination a[rel="prev"] svg,
+        .pagination a[rel="next"] svg {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* Ensure consistent page-link / page-item styling (Bootstrap / default paginator support) */
+        .pagination .page-item {
+            display: inline-block;
+            margin: 0 6px;
+        }
+
+        .pagination .page-link,
+        .pagination a,
+        .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #506B81;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.15s ease;
+            background: transparent;
+            box-shadow: none;
+            border: none;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        /* Remove redundant margins (flex gap handles spacing) and tighten prev/next anchors */
+        .pagination .page-item { margin: 0; }
+
+        .pagination a[rel="prev"],
+        .pagination a[rel="next"] {
+            min-width: 32px !important;
+            width: auto !important;
+            padding: 0 8px !important;
+            height: 40px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        /* ensure prev/next show chevrons sized correctly */
+        .pagination a[rel="prev"]:before {
+            content: "‹";
+            font-size: 18px;
+            color: #506B81;
+            display: inline-block;
+            line-height: 1;
+        }
+
+        .pagination a[rel="next"]:after {
+            content: "›";
+            font-size: 18px;
+            color: #506B81;
+            display: inline-block;
+            line-height: 1;
+        }
+
+        .pagination a[rel="prev"]:hover:before,
+        .pagination a[rel="next"]:hover:after {
+            color: #648EB5;
+        }
+
+        /* Responsive pagination tweaks */
+        @media (max-width: 768px) {
+            .pagination {
+                gap: 4px;
+                margin: 20px 0;
+            }
+
+            .pagination .page-link,
+            .pagination a,
+            .pagination span {
+                min-width: 32px;
+                height: 32px;
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+
+            .pagination a[rel="prev"]:before,
+            .pagination a[rel="next"]:after {
+                font-size: 14px;
+            }
         }
 
         .timeline-item {
@@ -615,8 +814,10 @@
             </table>
 
             <!-- Pagination -->
-            <div class="pagination">
-                {{ $logs->links() }}
+            <div style="text-align: center;">
+                <div class="pagination">
+                    {{ $logs->links() }}
+                </div>
             </div>
         </div>
     </div>

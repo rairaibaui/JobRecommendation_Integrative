@@ -434,7 +434,7 @@
         <!-- Header -->
         <div class="header">
             <h1>📬 Admin Notifications</h1>
-            <a href="{{ route('admin.verifications.index') }}" class="back-btn">← Back to Dashboard</a>
+            <a href="{{ route('admin.dashboard') }}" class="back-btn">← Back to Dashboard</a>
         </div>
 
         <!-- Stats Cards -->

@@ -188,6 +188,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(DocumentValidation::class);
     }
 
+    public function jobPostings()
+    {
+        return $this->hasMany(JobPosting::class, 'employer_id');
+    }
+
     /**
      * Override the default email verification notification to use our
      * custom notification which respects the configured expiry.

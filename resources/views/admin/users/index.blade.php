@@ -463,6 +463,119 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            width: 94%;
+            max-width: 750px; /* make modal wider to avoid cramped content */
+            position: relative;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+            animation: modalSlideIn 0.28s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            border-radius: 50%;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            background: rgba(0,0,0,0.2);
+            color: #333;
+        }
+
+        /* Make modal internal grid work without Bootstrap: two-column layout */
+        .modal .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin: 0 -8px;
+        }
+
+        .modal .col-md-6 {
+            flex: 1 1 48%;
+            min-width: 220px;
+            box-sizing: border-box;
+            padding: 0 8px;
+        }
+
+        /* Card body spacing inside modal */
+        .modal .card {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .modal .card .card-body {
+            padding: 18px;
+        }
+
+        /* Ensure modal footer and metadata have breathing room */
+        #modalUserStatus {
+            margin: 12px 0 8px 0;
+            display: inline-block;
+        }
+
+        .modal .text-center {
+            padding: 0 8px;
+        }
+
+        .btn-cancel:hover {
+            background: #D0D7DD !important;
+        }
+
+        .btn-danger:hover {
+            background: #c82333 !important;
+        }
+        /* Modal badge fixes: make status/type badges appear as neutral pills inside modal */
+        #modalUserStatus, #modalUserType {
+            display: inline-block;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 600;
+            color: #2B4053;
+            background: #F3F4F6; /* neutral light */
+            border: 1px solid #E5E7EB; /* subtle border */
+            box-shadow: none;
+            margin: 6px 0;
+        }
     </style>
 </head>
 <body>
@@ -661,19 +774,15 @@
                         <td>{{ $user->created_at->format('M d, Y') }}</td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-primary">
-                                    <i class="fas fa-eye"></i>
-                                    View
-                                </a>
+                                <button type="button" class="btn btn-primary" onclick="openUserDetailsModal({{ $user->id }}, '{{ addslashes($user->first_name ?? $user->name ?? 'N/A') }}', '{{ addslashes($user->last_name ?? '') }}', '{{ $user->user_type ?? 'job_seeker' }}', '{{ addslashes($user->email) }}', '{{ addslashes($user->phone_number ?? 'N/A') }}', '{{ addslashes($user->company_name ?? 'N/A') }}', '{{ addslashes($user->job_title ?? 'N/A') }}', '{{ $user->employment_status ?? 'unemployed' }}', '{{ $user->created_at->format('M d, Y \a\t h:i A') }}', '{{ $user->updated_at->format('M d, Y \a\t h:i A') }}')">
+                                     <i class="fas fa-eye"></i>
+                                     View
+                                 </button>
                                 @if($user->user_type !== 'admin')
-                                <form method="POST" action="{{ route('admin.users.destroy', $user->id) }}" style="display: inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                                @endif
+                                 <button type="button" class="btn btn-danger" onclick="openDeleteUserModal({{ $user->id }}, '{{ $user->name }}', '{{ $user->user_type }}')">
+                                     <i class="fas fa-trash"></i>
+                                 </button>
+                                 @endif
                             </div>
                         </td>
                     </tr>
@@ -694,5 +803,218 @@
             </div>
         </div>
     </div>
+
+    <!-- User Details Modal -->
+    <div id="userDetailsModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <button onclick="closeUserDetailsModal()" class="close-btn">&times;</button>
+
+            <!-- Modal Header with Color -->
+            <div style="background: linear-gradient(135deg, #648EB5, #506B81); color: white; padding: 20px; border-radius: 16px 16px 0 0; margin: -24px -24px 20px -24px;">
+                <div class="text-center">
+                    <h2 class="fw-bold mb-2" style="font-size: 28px; margin: 0;" id="modalUserName"></h2>
+                    <span class="badge" id="modalUserType" style="font-size: 12px; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);"></span>
+                </div>
+            </div>
+
+            <!-- Main Content: Two-Column Grid -->
+            <div class="row g-4 mb-4">
+                <!-- Column 1: Contact Info -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm" style="background: #f8f9fa;">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold mb-3" style="color: #506B81;">Contact Information</h6>
+
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-envelope" style="color: #648EB5; width: 16px;"></i>
+                                    <strong style="font-size: 14px; color: #506B81;">Email:</strong>
+                                </div>
+                                <div style="font-size: 15px; color: #2B4053; margin-left: 18px; word-break: break-all; word-wrap: break-word;" id="modalUserEmail"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-phone" style="color: #648EB5; width: 16px;"></i>
+                                    <strong style="font-size: 14px; color: #506B81;">Phone:</strong>
+                                </div>
+                                <div style="font-size: 15px; color: #2B4053; margin-left: 18px; word-break: break-all; word-wrap: break-word;" id="modalUserPhone"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: Company Info -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm" style="background: #f8f9fa;">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold mb-3" style="color: #506B81;">Company Information</h6>
+
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-building" style="color: #648EB5; width: 16px;"></i>
+                                    <strong style="font-size: 14px; color: #506B81;">Company:</strong>
+                                </div>
+                                <div style="font-size: 15px; color: #2B4053; margin-left: 18px; word-break: break-all; word-wrap: break-word;" id="modalUserCompany"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-briefcase" style="color: #648EB5; width: 16px;"></i>
+                                    <strong style="font-size: 14px; color: #506B81;">Job Title:</strong>
+                                </div>
+                                <div style="font-size: 15px; color: #2B4053; margin-left: 18px; word-break: break-all; word-wrap: break-word;" id="modalUserJobTitle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer / Metadata -->
+                <hr class="my-4" style="border-color: #E5E7EB; margin-top: 20px;">
+            <div class="text-center">
+                <div class="mb-3">
+                    <span class="badge" id="modalUserStatus" style="font-size: 12px; padding: 6px 12px;"></span>
+                </div>
+                <div style="font-size: 13px; color: #64748b;">
+                    <div><strong>Created At:</strong> <span id="modalUserCreated"></span></div>
+                    <div><strong>Last Updated:</strong> <span id="modalUserUpdated"></span></div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="button" onclick="closeUserDetailsModal()" class="btn btn-secondary" style="padding: 10px 20px;">Close</button>
+            </div>  
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div id="deleteUserModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <button onclick="closeDeleteUserModal()" class="close-btn">&times;</button>
+            <h2 style="color: #dc3545; margin-bottom: 20px; font-size: 22px; font-weight: 600;">
+                <i class="fas fa-exclamation-triangle"></i> Confirm User Deletion
+            </h2>
+
+            <div class="alert alert-danger" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: #f8d7da; border: 1px solid #f5c2c7; color: #842029;">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Warning:</strong> This action cannot be undone!
+            </div>
+
+            <p style="color: #333; margin-bottom: 15px; line-height: 1.6; font-size: 15px;">
+                You are about to permanently delete the account for
+                <strong id="deleteUserName"></strong>.
+            </p>
+
+            <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                This will immediately and permanently remove:
+            </p>
+
+            <ul style="margin: 0 0 20px 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                <li><strong>All job applications and bookmarks</strong></li>
+                <li><strong>Resume and profile information</strong></li>
+                <li><strong>All associated data and history</strong></li>
+                <li><strong>Any job postings (if employer)</strong></li>
+            </ul>
+
+            <form id="deleteUserForm" method="POST" style="display: none;">
+                @csrf
+                @method('DELETE')
+            </form>
+
+            <div class="button-group" style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
+                <button type="button" onclick="closeDeleteUserModal()" class="btn-cancel" style="padding: 14px 26px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s;">
+                    Cancel
+                </button>
+                <button type="button" id="confirmDeleteUserBtn" class="btn-danger" style="padding: 14px 26px; background: #dc3545; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);">
+                    <i class="fas fa-trash-alt"></i> Permanently Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; backdrop-filter: blur(3px);"></div>
+
+    <script>
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+            document.getElementById('modalOverlay').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.getElementById('modalOverlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function openUserDetailsModal(userId, firstName, lastName, userType, email, phone, company, jobTitle, status, created, updated) {
+            // Populate modal with user data
+            document.getElementById('modalUserName').textContent = firstName + ' ' + lastName;
+            document.getElementById('modalUserType').textContent = userType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('modalUserEmail').textContent = email;
+            document.getElementById('modalUserPhone').textContent = phone;
+            document.getElementById('modalUserCompany').textContent = company;
+            document.getElementById('modalUserJobTitle').textContent = jobTitle;
+            document.getElementById('modalUserStatus').textContent = status.replace(/\b\w/g, l => l.toUpperCase());
+
+            // Set status badge color
+            const statusBadge = document.getElementById('modalUserStatus');
+            if (status === 'employed') {
+                statusBadge.className = 'badge badge-success';
+            } else {
+                statusBadge.className = 'badge badge-info';
+            }
+
+            // Set user type badge color
+            const typeBadge = document.getElementById('modalUserType');
+            if (userType === 'employer') {
+                typeBadge.style.background = 'rgba(255,255,255,0.2)';
+                typeBadge.style.border = '1px solid rgba(255,255,255,0.3)';
+            } else if (userType === 'job_seeker') {
+                typeBadge.style.background = 'rgba(255,255,255,0.2)';
+                typeBadge.style.border = '1px solid rgba(255,255,255,0.3)';
+            } else {
+                typeBadge.style.background = 'rgba(255,255,255,0.2)';
+                typeBadge.style.border = '1px solid rgba(255,255,255,0.3)';
+            }
+
+            document.getElementById('modalUserCreated').textContent = created;
+            document.getElementById('modalUserUpdated').textContent = updated;
+
+            showModal('userDetailsModal');
+        }
+
+        function closeUserDetailsModal() {
+            hideModal('userDetailsModal');
+        }
+
+        function openDeleteUserModal(userId, userName, userType) {
+            document.getElementById('deleteUserName').textContent = userName;
+            document.getElementById('deleteUserForm').action = '{{ url("/admin/users") }}/' + userId;
+            showModal('deleteUserModal');
+        }
+
+        function closeDeleteUserModal() {
+            hideModal('deleteUserModal');
+        }
+
+        // Handle delete confirmation
+        document.getElementById('confirmDeleteUserBtn').addEventListener('click', function() {
+            if (confirm('Are you absolutely sure? This action CANNOT be undone. All user data will be permanently deleted.')) {
+                document.getElementById('deleteUserForm').submit();
+            }
+        });
+
+        // Close modal when clicking overlay
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'modalOverlay') {
+                closeUserDetailsModal();
+                closeDeleteUserModal();
+            }
+        });
+    </script>
 </body>
 </html>

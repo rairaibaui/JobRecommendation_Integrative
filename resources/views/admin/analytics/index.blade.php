@@ -132,19 +132,34 @@
             </div>
             <div class="card">
                 <h3>Bookmarks (Top Jobs)</h3>
-                <ul>
-                    @forelse($topBookmarkedJobs as $row)
-                        <li style="margin-bottom:6px;color:#2B4053;">
-                            {{ $row->title ?? 'Job' }}
-                            @if(!empty($row->company))
-                                <span style="color:#64748b;">( {{ $row->company }} )</span>
-                            @endif
-                            — <strong>{{ $row->count ?? 0 }}</strong> bookmarks
-                        </li>
-                    @empty
-                        <li style="color:#64748b;">No bookmark data</li>
-                    @endforelse
-                </ul>
+                <div style="max-height: 240px; overflow-y: auto;">
+                    @if($topBookmarkedJobs->count() > 0)
+                        @foreach($topBookmarkedJobs as $row)
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-weight: 600; color: #2B4053; font-size: 14px; margin-bottom: 2px; word-break: break-word;">
+                                        {{ $row->title ?? 'Job' }}
+                                    </div>
+                                    @if(!empty($row->company))
+                                        <div style="color: #64748b; font-size: 12px; word-break: break-word;">
+                                            {{ $row->company }}
+                                        </div>
+                                    @endif
+                                </div>
+                                <div style="margin-left: 12px; flex-shrink: 0;">
+                                    <span style="background: #648EB5; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                        {{ $row->count ?? 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div style="text-align: center; color: #64748b; padding: 20px; font-style: italic;">
+                            <i class="fas fa-bookmark" style="font-size: 24px; opacity: 0.5; display: block; margin-bottom: 8px;"></i>
+                            No bookmark data available
+                        </div>
+                    @endif
+                </div>
             </div>
             <div class="card">
                 <h3>Audit Actions</h3>
