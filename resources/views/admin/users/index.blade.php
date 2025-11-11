@@ -102,34 +102,74 @@
             gap: 8px;
         }
 
+        /* Sidebar button styles (match job seeker layout) */
         .menu-item {
-            padding: 12px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #506B81;
-            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.2s;
-            font-size: 14px;
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 10px;
+            background: transparent;
+            box-shadow: none;
+            color: #334A5E;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: #648EB5;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
         }
 
         .menu-item:hover {
-            background: #F0F4F8;
+            background: linear-gradient(90deg, #e8f4fd 0%, #f0f7fc 100%);
             color: #2B4053;
+            transform: translateX(4px);
+        }
+
+        .menu-item:hover::before {
+            transform: scaleY(1);
         }
 
         .menu-item.active {
-            background: #648EB5;
-            color: white;
+            background: linear-gradient(135deg, #648EB5 0%, #4E8EA2 100%);
+            box-shadow: 0 4px 12px rgba(100, 142, 181, 0.3);
+            color: #FFF;
             font-weight: 600;
         }
 
+        .menu-item.active::before {
+            display: none;
+        }
+
+        .menu-item.active:hover {
+            transform: translateX(0);
+            box-shadow: 0 6px 16px rgba(100, 142, 181, 0.4);
+        }
+
         .menu-item i {
-            width: 20px;
+            font-size: 18px;
+            min-width: 20px;
             text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item:hover i {
+            transform: scale(1.1);
         }
 
         .notification-badge {
@@ -621,7 +661,7 @@
         </nav>
 
             <div style="margin-top: auto; padding-top: 20px;">
-                <form method="POST" action="{{ route('logout') }}" onsubmit="return showLogoutModal(this);">
+                <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="menu-item" style="width: 100%; background: #648EB5; color: white; border: none; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
                         <i class="fas fa-sign-out-alt"></i>
@@ -1017,5 +1057,3 @@
     </script>
 </body>
 </html>
-
-@include('partials.logout-confirm')
