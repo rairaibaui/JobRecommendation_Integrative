@@ -751,5 +751,7 @@
             updateBulkActions();
         })();
     </script>
+
+@include('partials.logout-confirm')
 </body>
 </html>

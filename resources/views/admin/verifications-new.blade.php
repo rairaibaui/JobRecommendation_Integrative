@@ -660,7 +660,7 @@
                 </div>
             </div>
             
-            <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+            <form method="POST" action="{{ route('logout') }}" onsubmit="return showLogoutModal(this);" style="margin: 0;">
                 @csrf
                 <button type="submit" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i>

@@ -661,7 +661,7 @@
         </nav>
 
             <div style="margin-top: auto; padding-top: 20px;">
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" onsubmit="return showLogoutModal(this);">
                     @csrf
                     <button type="submit" class="menu-item" style="width: 100%; background: #648EB5; color: white; border: none; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
                         <i class="fas fa-sign-out-alt"></i>
@@ -1055,5 +1055,7 @@
             }
         });
     </script>
+
+@include('partials.logout-confirm')
 </body>
 </html>

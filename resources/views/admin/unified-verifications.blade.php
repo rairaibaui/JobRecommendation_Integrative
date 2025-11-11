@@ -1054,6 +1054,8 @@
     </div>
     <!-- End Main Content -->
 
+@include('partials.logout-confirm')
+
     <script>
         function switchTab(tab) {
             window.location.href = '{{ route("admin.verifications.unified") }}?tab=' + tab;
