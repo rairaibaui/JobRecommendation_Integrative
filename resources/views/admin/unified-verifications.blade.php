@@ -49,7 +49,6 @@
             flex-direction: column;
             align-items: center;
             padding-bottom: 20px;
-            border-bottom: 1px solid #E5E7EB;
         }
 
         .profile-ellipse {
@@ -84,7 +83,7 @@
 
         .profile-name {
             font-family: 'Poppins', sans-serif;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: #2B4053;
             text-align: center;
@@ -94,7 +93,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 600;
             padding: 5px 12px;
             border-radius: 20px;
@@ -876,10 +875,10 @@
             </a>
         </nav>
 
-        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-            <form method="POST" action="{{ route('logout') }}">
+        <div style="margin-top: auto; padding-top: 20px;">
+            <form method="POST" action="{{ route('logout') }}>
                 @csrf
-                <button type="submit" class="menu-item" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left;">
+                <button type="submit" class="menu-item" style="width: 100%; background: #648EB5; color: white; border: none; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -1022,3 +1021,5 @@
     </script>
 </body>
 </html>
+
+@include('partials.logout-confirm')

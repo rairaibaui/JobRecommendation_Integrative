@@ -12,12 +12,12 @@
         html { font-size: 16px; }
         body { width: 100%; min-height: 100vh; display: flex; font-family: 'Roboto', sans-serif; background: linear-gradient(180deg, #334A5E 0%, #648EB5 100%); }
         .sidebar { position: fixed; left: 20px; top: 20px; width: 250px; height: calc(100vh - 40px); border-radius: 8px; background: #FFF; padding: 20px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .profile-section { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #E5E7EB; }
+        .profile-section { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
         .profile-ellipse { width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(180deg, rgba(73,118,159,0.44) 48.29%, rgba(78,142,162,0.44) 86%); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; }
         .profile-ellipse img { width: 100%; height: 100%; object-fit: cover; }
         .profile-info { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .profile-name { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 600; color: #2B4053; text-align: center; }
-        .admin-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 20px; background: #648EB5; color: white; }
+        .profile-name { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #2B4053; text-align: center; }
+        .admin-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 5px 12px; border-radius: 20px; background: #648EB5; color: white; }
         .sidebar-menu { display: flex; flex-direction: column; gap: 8px; }
         .menu-item { padding: 12px 16px; border-radius: 8px; text-decoration: none; color: #506B81; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: all 0.2s; font-size: 14px; position: relative; }
         .menu-item:hover { background: #F0F4F8; color: #2B4053; }
@@ -78,10 +78,10 @@
                 <span>Audit Logs</span>
             </a>
         </nav>
-        <div style="margin-top:auto;padding-top:20px;border-top:1px solid #E5E7EB;">
-            <form method="POST" action="{{ route('logout') }}">
+        <div style="margin-top:auto;padding-top:20px;">
+            <form method="POST" action="{{ route('logout') }}" onsubmit="return showLogoutModal(this);">
                 @csrf
-                <button type="submit" class="menu-item" style="width:100%;background:none;border:none;cursor:pointer;text-align:left;">
+                <button type="submit" class="menu-item" style="width: 100%; background: #648EB5; color: white; border: none; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -274,3 +274,5 @@ new Chart(document.getElementById('auditChart'), {
 </script>
 </body>
 </html>
+
+@include('partials.logout-confirm')
