@@ -931,7 +931,7 @@
         <!-- Header -->
         <div class="admin-header">
             <h1>
-                <i class="fas fa-shield-check"></i>
+                <i class="fas fa-check-circle"></i>
                 Verification Management
             </h1>
         </div>

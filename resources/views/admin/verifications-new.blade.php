@@ -643,7 +643,7 @@
         <div class="nav-left">
             <div class="admin-brand">
                 <div class="brand-icon">
-                    <i class="fas fa-shield-check"></i>
+                    <i class="fas fa-check-circle"></i>
                 </div>
                 <span>System Administrator</span>
             </div>

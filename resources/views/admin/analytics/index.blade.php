@@ -91,11 +91,12 @@
         .notification-badge { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #EF4444; color: white; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 12px; min-width: 20px; text-align: center; line-height: 1.4; }
         .menu-item.active .notification-badge { background: #DC2626; }
         .main-content { margin-left: 290px; flex: 1; padding: 20px; }
-        .admin-header { background: white; border-radius: 8px; padding: 24px 28px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .admin-header h1 { color: #2B4053; font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-        .filters { background: white; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 12px; align-items: center; }
-        .filters label { font-weight: 600; color: #506B81; font-size: 13px; }
-        .filters select { padding: 10px 14px; border: 1.5px solid #D1D5DB; border-radius: 8px; font-size: 14px; }
+        .admin-container { max-width: 1400px; margin: 0 auto; }
+        .admin-header { background: white; border-radius: 8px; padding: 24px 28px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .admin-header h1 { color: #2B4053; font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 800; display: flex; align-items: center; gap: 15px; }
+        .filters { background: white; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 10px; align-items: center; height: fit-content; }
+        .filters label { font-weight: 600; color: #506B81; font-size: 12px; line-height: 1; }
+        .filters select { padding: 8px 12px; border: 1.5px solid #D1D5DB; border-radius: 6px; font-size: 13px; line-height: 1; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
         .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .card h3 { font-size: 14px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
@@ -156,79 +157,81 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="admin-header">
-            <h1><i class="fas fa-chart-line"></i> Analytics</h1>
-            <form class="filters" method="GET" action="{{ route('admin.analytics.index') }}">
-                <label for="range">Range</label>
-                <select name="range" id="range" onchange="this.form.submit()">
-                    <option value="7" {{ $range==7 ? 'selected' : '' }}>7 days</option>
-                    <option value="14" {{ $range==14 ? 'selected' : '' }}>14 days</option>
-                    <option value="30" {{ $range==30 ? 'selected' : '' }}>30 days</option>
-                    <option value="60" {{ $range==60 ? 'selected' : '' }}>60 days</option>
-                    <option value="90" {{ $range==90 ? 'selected' : '' }}>90 days</option>
-                </select>
-            </form>
-        </div>
+        <div class="admin-container">
+            <div class="admin-header">
+                <h1><i class="fas fa-chart-line"></i> Analytics</h1>
+                <form class="filters" method="GET" action="{{ route('admin.analytics.index') }}">
+                    <label for="range">Range</label>
+                    <select name="range" id="range" onchange="this.form.submit()">
+                        <option value="7" {{ $range==7 ? 'selected' : '' }}>7 days</option>
+                        <option value="14" {{ $range==14 ? 'selected' : '' }}>14 days</option>
+                        <option value="30" {{ $range==30 ? 'selected' : '' }}>30 days</option>
+                        <option value="60" {{ $range==60 ? 'selected' : '' }}>60 days</option>
+                        <option value="90" {{ $range==90 ? 'selected' : '' }}>90 days</option>
+                    </select>
+                </form>
+            </div>
 
-        <div class="grid">
-            <div class="card big">
-                <h3>User Growth ({{ $range }} days)</h3>
-                <canvas id="userGrowthChart"></canvas>
-            </div>
-            <div class="card">
-                <h3>User Distribution</h3>
-                <canvas id="userDistChart"></canvas>
-            </div>
-            <div class="card">
-                <h3>Resume Status</h3>
-                <canvas id="resumeChart"></canvas>
-            </div>
-            <div class="card">
-                <h3>Permit Status</h3>
-                <canvas id="permitChart"></canvas>
-            </div>
-            <div class="card big">
-                <h3>Applications Trend ({{ $range }} days)</h3>
-                <canvas id="applicationTrend"></canvas>
-            </div>
-            <div class="card">
-                <h3>Jobs (Active vs Inactive)</h3>
-                <canvas id="jobChart"></canvas>
-            </div>
-            <div class="card">
-                <h3>Bookmarks (Top Jobs)</h3>
-                <div style="max-height: 240px; overflow-y: auto;">
-                    @if($topBookmarkedJobs->count() > 0)
-                        @foreach($topBookmarkedJobs as $row)
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
-                                <div style="flex: 1; min-width: 0;">
-                                    <div style="font-weight: 600; color: #2B4053; font-size: 14px; margin-bottom: 2px; word-break: break-word;">
-                                        {{ $row->title ?? 'Job' }}
-                                    </div>
-                                    @if(!empty($row->company))
-                                        <div style="color: #64748b; font-size: 12px; word-break: break-word;">
-                                            {{ $row->company }}
-                                        </div>
-                                    @endif
-                                </div>
-                                <div style="margin-left: 12px; flex-shrink: 0;">
-                                    <span style="background: #648EB5; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                                        {{ $row->count ?? 0 }}
-                                    </span>
-                                </div>
-                            </div>
-                        @endforeach
-                    @else
-                        <div style="text-align: center; color: #64748b; padding: 20px; font-style: italic;">
-                            <i class="fas fa-bookmark" style="font-size: 24px; opacity: 0.5; display: block; margin-bottom: 8px;"></i>
-                            No bookmark data available
-                        </div>
-                    @endif
+            <div class="grid">
+                <div class="card big">
+                    <h3>User Growth ({{ $range }} days)</h3>
+                    <canvas id="userGrowthChart"></canvas>
                 </div>
-            </div>
-            <div class="card">
-                <h3>Audit Actions</h3>
-                <canvas id="auditChart"></canvas>
+                <div class="card">
+                    <h3>User Distribution</h3>
+                    <canvas id="userDistChart"></canvas>
+                </div>
+                <div class="card">
+                    <h3>Resume Status</h3>
+                    <canvas id="resumeChart"></canvas>
+                </div>
+                <div class="card">
+                    <h3>Permit Status</h3>
+                    <canvas id="permitChart"></canvas>
+                </div>
+                <div class="card big">
+                    <h3>Applications Trend ({{ $range }} days)</h3>
+                    <canvas id="applicationTrend"></canvas>
+                </div>
+                <div class="card">
+                    <h3>Jobs (Active vs Inactive)</h3>
+                    <canvas id="jobChart"></canvas>
+                </div>
+                <div class="card">
+                    <h3>Bookmarks (Top Jobs)</h3>
+                    <div style="max-height: 240px; overflow-y: auto;">
+                        @if($topBookmarkedJobs->count() > 0)
+                            @foreach($topBookmarkedJobs as $row)
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 600; color: #2B4053; font-size: 14px; margin-bottom: 2px; word-break: break-word;">
+                                            {{ $row->title ?? 'Job' }}
+                                        </div>
+                                        @if(!empty($row->company))
+                                            <div style="color: #64748b; font-size: 12px; word-break: break-word;">
+                                                {{ $row->company }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div style="margin-left: 12px; flex-shrink: 0;">
+                                        <span style="background: #648EB5; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                            {{ $row->count ?? 0 }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div style="text-align: center; color: #64748b; padding: 20px; font-style: italic;">
+                                <i class="fas fa-bookmark" style="font-size: 24px; opacity: 0.5; display: block; margin-bottom: 8px;"></i>
+                                No bookmark data available
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Audit Actions</h3>
+                    <canvas id="auditChart"></canvas>
+                </div>
             </div>
         </div>
     </div>

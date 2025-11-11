@@ -375,7 +375,7 @@
         @endif
 
         <div class="header">
-            <h1><i class="fas fa-shield-check"></i> Business Permit Verifications</h1>
+            <h1><i class="fas fa-check-circle"></i> Business Permit Verifications</h1>
             <p>Review and approve employer business permits</p>
         </div>
 
