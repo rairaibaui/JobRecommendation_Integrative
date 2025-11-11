@@ -619,7 +619,7 @@
                 <span>Analytics</span>
             </a>
             <a href="{{ route('admin.verifications.unified', ['tab' => 'resumes']) }}" class="menu-item">
-                <i class="fas fa-badge-check" style="color:#648EB5;"></i>
+                <i class="fas fa-check-circle"></i>
                 <span>Verifications</span>
                 @include('admin.partials.notification-badge')
             </a>

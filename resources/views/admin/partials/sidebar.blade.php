@@ -120,7 +120,7 @@
         <i>📊</i> Analytics
     </a>
     <a href="{{ route('admin.verifications.unified', ['tab' => 'resumes']) }}" class="{{ in_array($currentRoute, ['admin.verifications.unified', 'admin.verifications.index', 'admin.verifications.show', 'admin.verifications.resume-detail']) ? 'active' : '' }}">
-        <i>🛡️</i> Verifications
+        <i class="fas fa-check-circle"></i> Verifications
     </a>
     <a href="{{ route('admin.users.index') }}" class="{{ $currentRoute === 'admin.users.index' ? 'active' : '' }}">
         <i>👥</i> Users
