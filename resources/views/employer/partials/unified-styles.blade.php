@@ -91,7 +91,7 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 20px;
   z-index: 100;
 }
 
