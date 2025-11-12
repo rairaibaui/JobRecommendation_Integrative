@@ -14,8 +14,17 @@
     flex-direction: column;
     align-items: center;
     padding: 20px;
-    gap: 20px;
+    gap: 6px;
     border-right: 2px solid #648EB5;
+}
+
+/* Navigation menu container with consistent spacing */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    align-items: stretch;
 }
 
 .profile-ellipse {
@@ -160,30 +169,32 @@
 
     <div class="profile-name">System Admin</div>
 
-    <a href="{{ route('admin.dashboard') }}"
-       class="sidebar-btn {{ $currentRoute === 'admin.dashboard' ? 'active' : '' }}">
-        <i class="fas fa-home sidebar-btn-icon"></i> Dashboard
-    </a>
-    
-    <a href="{{ route('admin.analytics.index') }}"
-       class="sidebar-btn {{ $currentRoute === 'admin.analytics.index' ? 'active' : '' }}">
-        <i class="fas fa-chart-bar sidebar-btn-icon"></i> Analytics
-    </a>
-    
-    <a href="{{ route('admin.verifications.unified', ['tab' => 'resumes']) }}"
-       class="sidebar-btn {{ in_array($currentRoute, ['admin.verifications.unified', 'admin.verifications.index', 'admin.verifications.show', 'admin.verifications.resume-detail']) ? 'active' : '' }}">
-        <i class="fas fa-check-circle sidebar-btn-icon"></i> Verifications
-    </a>
-    
-    <a href="{{ route('admin.users.index') }}"
-       class="sidebar-btn {{ $currentRoute === 'admin.users.index' ? 'active' : '' }}">
-        <i class="fas fa-users sidebar-btn-icon"></i> Users
-    </a>
-    
-    <a href="{{ route('admin.audit.index') }}"
-       class="sidebar-btn {{ $currentRoute === 'admin.audit.index' ? 'active' : '' }}">
-        <i class="fas fa-clipboard-list sidebar-btn-icon"></i> Audit Logs
-    </a>
+    <div class="sidebar-nav">
+        <a href="{{ route('admin.dashboard') }}"
+           class="sidebar-btn {{ $currentRoute === 'admin.dashboard' ? 'active' : '' }}">
+            <i class="fas fa-home sidebar-btn-icon"></i> Dashboard
+        </a>
+        
+        <a href="{{ route('admin.analytics.index') }}"
+           class="sidebar-btn {{ $currentRoute === 'admin.analytics.index' ? 'active' : '' }}">
+            <i class="fas fa-chart-bar sidebar-btn-icon"></i> Analytics
+        </a>
+        
+        <a href="{{ route('admin.verifications.unified', ['tab' => 'resumes']) }}"
+           class="sidebar-btn {{ in_array($currentRoute, ['admin.verifications.unified', 'admin.verifications.index', 'admin.verifications.show', 'admin.verifications.resume-detail']) ? 'active' : '' }}">
+            <i class="fas fa-check-circle sidebar-btn-icon"></i> Verifications
+        </a>
+        
+        <a href="{{ route('admin.users.index') }}"
+           class="sidebar-btn {{ $currentRoute === 'admin.users.index' ? 'active' : '' }}">
+            <i class="fas fa-users sidebar-btn-icon"></i> Users
+        </a>
+        
+        <a href="{{ route('admin.audit.index') }}"
+           class="sidebar-btn {{ $currentRoute === 'admin.audit.index' ? 'active' : '' }}">
+            <i class="fas fa-clipboard-list sidebar-btn-icon"></i> Audit Logs
+        </a>
+    </div>
 
     <form method="POST" action="{{ route('logout') }}" style="margin-top: auto;" onsubmit="return showLogoutModal(this);">
         @csrf
