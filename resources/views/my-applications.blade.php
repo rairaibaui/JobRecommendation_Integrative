@@ -1,7 +1,7 @@
 @extends('jobseeker.layouts.base')
 
 @section('title', 'My Applications - Job Portal Mandaluyong')
-@php $pageTitle = 'MY APPLICATIONS'; @endphp
+@php $pageTitle = 'JOB SEEKER PORTAL'; @endphp
 
 @section('content')
     <!-- My Applications -->

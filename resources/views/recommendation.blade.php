@@ -1,7 +1,7 @@
 @extends('jobseeker.layouts.base')
 
 @section('title', 'Recommendations - Job Portal Mandaluyong')
-@php $pageTitle = 'RECOMMENDATION'; @endphp
+@php $pageTitle = 'JOB SEEKER PORTAL'; @endphp
 
 @section('content')
     @include('partials.trust-banner')

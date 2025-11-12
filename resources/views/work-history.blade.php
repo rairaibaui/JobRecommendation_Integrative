@@ -1,7 +1,7 @@
 @extends('jobseeker.layouts.base')
 
 @section('title', 'Work History')
-@php($pageTitle = 'Work History')
+@php($pageTitle = 'JOB SEEKER PORTAL')
 @php($hist = isset($employmentHistory) ? $employmentHistory : collect())
 
 @section('content')
