@@ -1,7 +1,7 @@
 @extends('jobseeker.layouts.base')
 
 @section('title', 'Dashboard - Job Portal Mandaluyong')
-@php $pageTitle = 'JOB SEEKER PORTAL'; @endphp
+@php $pageTitle = 'DASHBOARD'; @endphp
 
 @section('content')
   <div class="welcome">Welcome, {{ Auth::user()->first_name }}! 👋</div>
