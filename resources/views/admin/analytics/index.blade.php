@@ -277,10 +277,10 @@ new Chart(document.getElementById('userDistChart'), {
 new Chart(document.getElementById('resumeChart'), {
     type: 'doughnut',
     data: {
-        labels: ['Verified','Pending','Needs Review'],
+        labels: ['Verified','Pending','Needs Review','Rejected'],
         datasets: [{
-            data: [{{ $resumeStats['verified'] }}, {{ $resumeStats['pending'] }}, {{ $resumeStats['needs_review'] }}],
-            backgroundColor: ['#A7F3D0', '#FDE68A', '#FCA5A5'],
+            data: [{{ $resumeStats['verified'] }}, {{ $resumeStats['pending'] }}, {{ $resumeStats['needs_review'] }}, {{ $resumeStats['rejected'] ?? 0 }}],
+            backgroundColor: ['#A7F3D0', '#FDE68A', '#FCA5A5', '#DC143C'],
             borderWidth: 0
         }]
     },

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'resistant' => [
+        'key' => env('RESISTANT_API_KEY'),
+        'base' => env('RESISTANT_API_BASE', 'https://api.resistant.ai/v2'),
+    ],
+
 ];

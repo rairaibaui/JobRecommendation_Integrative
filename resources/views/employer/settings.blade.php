@@ -146,13 +146,59 @@
         </div>
         
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group" style="flex:1; min-width:260px;">
             <label class="form-label">Email (login)</label>
-            <input type="email" 
-                   class="form-control" 
-                   value="{{ Auth::user()->email }}" 
-                   readonly 
-                   style="background: #f8f9fa; cursor: not-allowed;">
+            <div class="d-flex" style="align-items:flex-start; gap:8px;">
+              <input type="email" 
+                     id="email_display_input"
+                     class="form-control" 
+                     value="{{ Auth::user()->email }}" 
+                     readonly 
+                     style="background: #f8f9fa; cursor: not-allowed; flex:1;">
+
+              @if(Auth::user()->hasVerifiedEmail())
+                <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 10px; background:#648EB5; border:1px solid #567a9c; color:#ffffff; border-radius:6px; font-weight:600;">
+                  <i class="fas fa-check-circle" style="color:#ffffff; font-size:14px;"></i>
+                  Verified
+                </div>
+              @else
+                <button type="button" 
+                        id="sendEmailVerifyBtn"
+                        onclick="confirmAndSendVerification()" 
+                        class="btn btn-primary btn-sm"
+                        style="white-space:nowrap;">
+                  <i class="fas fa-envelope"></i> Verify
+                </button>
+              @endif
+            </div>
+            @if(Auth::user()->hasVerifiedEmail())
+              <small id="emailVerifyHelp" class="form-help" style="display:block; margin-top:6px; color:#155724;">
+                <i class="fas fa-info-circle"></i> This email was verified on {{ optional(Auth::user()->email_verified_at)->format('M j, Y g:ia') }}.
+              </small>
+            @else
+              <small id="emailVerifyHelp" class="form-help" style="display:block; margin-top:6px;">
+                <i class="fas fa-info-circle"></i> Click "Verify" to send a verification email so you can confirm your address.
+              </small>
+            @endif
+            <div id="emailVerifyMessage" style="margin-top:8px; display:none;" class="alert"></div>
+
+            <!-- Hidden fallback form in case JS fetch cannot be used or server redirects non-AJAX -->
+            <!-- (Moved outside main <form> to avoid nested-form issues that can break file uploads) -->
+
+            <!-- Custom confirm modal for sending verification email -->
+            <div id="emailConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
+              <div style="background:#fff; max-width:520px; width:92%; padding:18px; border-radius:8px; box-shadow:0 10px 40px rgba(2,6,23,0.2);">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                  <h4 style="margin:0; font-size:16px;">Send verification email?</h4>
+                  <button type="button" id="emailConfirmClose" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+                </div>
+                <p id="emailConfirmMessage" style="color:#444; margin-top:12px;">We will send a verification link to <strong>{{ Auth::user()->email }}</strong>. This link will expire in a few minutes.</p>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+                  <button type="button" id="emailConfirmCancel" class="btn btn-secondary" style="background:#edf2f7;border:1px solid #cbd5e1;padding:8px 12px;">Cancel</button>
+                  <button type="button" id="emailConfirmOk" class="btn btn-primary" style="padding:8px 12px;">Send Email</button>
+                </div>
+              </div>
+            </div>
           </div>
           
           <div class="form-group">
@@ -231,7 +277,7 @@
           
           <div class="form-group">
             <label class="form-label">
-              Business Permit (PDF/JPG/PNG)
+              Business Permit (PDF only)
               @if(Auth::user()->business_permit_path)
                 <span style="color: #28a745; font-size: 14px; margin-left: 8px;">
                   <i class="fas fa-check-circle"></i> File uploaded
@@ -242,14 +288,46 @@
             {{-- Personal Email Verification Notice Component --}}
             <x-personal-email-notice :compact="true" />
             
-            @if(Auth::user()->business_permit_path)
-                <div style="background: #d4edda; border: 1px solid #28a745; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-check-circle" style="color: #28a745; font-size: 20px;"></i>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; color: #155724; font-size: 14px;">Business permit already uploaded</div>
-                        <div style="font-size: 12px; color: #155724;">You can upload a new file to replace the current one</div>
-                    </div>
-                </div>
+      @php
+        $hasFile = (bool) Auth::user()->business_permit_path;
+        $latestValidation = null;
+        try {
+          $latestValidation = \App\Models\DocumentValidation::where('user_id', Auth::id())
+            ->where('document_type', 'business_permit')
+            ->orderByDesc('created_at')
+            ->first();
+        } catch (\Throwable $e) {
+          $latestValidation = null;
+        }
+
+  // Red when no file or last validation was rejected/blocked (needs a new valid upload)
+  $needsUpload = ! $hasFile || ($latestValidation && in_array($latestValidation->validation_status, ['rejected','blocked']));
+      @endphp
+
+      @if($needsUpload)
+    <div style="background: #f8d7da; border: 1px solid #dc3545; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-exclamation-circle" style="color: #dc3545; font-size: 20px;"></i>
+          <div style="flex: 1;">
+            <div style="font-weight: 700; color: #721c24; font-size: 14px;">Business permit required</div>
+            <div style="font-size: 12px; color: #721c24;">Please upload a valid Barangay Clearance or Mayor's Permit (PDF only). The upload box is highlighted to indicate action is required.</div>
+          </div>
+        </div>
+      @elseif($hasFile)
+        <div style="background: #d4edda; border: 1px solid #28a745; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-check-circle" style="color: #28a745; font-size: 20px;"></i>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; color: #155724; font-size: 14px;">Business permit already uploaded</div>
+            <div style="font-size: 12px; color: #155724;">You can upload a new file to replace the current one</div>
+          </div>
+        </div>
+      @endif
+
+      @if(session('permit_removed'))
+        <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; display:flex; align-items:center; gap:10px;">
+          <i class="fas fa-info-circle" style="color:#856404; font-size:18px;"></i>
+          <div style="color:#856404; font-weight:600;">Business permit removed</div>
+          <div style="color:#856404; margin-left:6px;">Your previously uploaded business permit has been deleted and your account no longer has a registered permit.</div>
+        </div>
             @endif
             
             <div style="position: relative;">
@@ -258,11 +336,11 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                 @endif
-                <input type="file" 
-                       name="business_permit" 
-                       class="form-control" 
-                       accept=".pdf,.jpg,.jpeg,.png"
-                       style="padding: 8px; @if(Auth::user()->business_permit_path) border-color: #28a745; background-color: #f0fff4; @endif">
+      <input type="file" 
+        name="business_permit" 
+        class="form-control" 
+        accept=".pdf"
+        style="padding: 8px; @if($needsUpload) border-color: #dc3545; background-color: #fff5f5; @elseif(Auth::user()->business_permit_path) border-color: #28a745; background-color: #f0fff4; @endif">
             </div>
             @if(Auth::user()->business_permit_path)
               <div style="margin-top:8px;">
@@ -272,6 +350,10 @@
                    style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
                   <i class="fas fa-file-pdf"></i> View Current File
                 </a>
+                <label style="font-weight:500; display:inline-flex; align-items:center; gap:8px; cursor:pointer; margin-left:10px;">
+                  <input type="checkbox" name="remove_business_permit" value="1" id="remove_business_permit_checkbox">
+                  Remove current permit
+                </label>
               </div>
             @endif
             
@@ -296,6 +378,35 @@
           </button>
         </div>
       </form>
+
+      <!-- Hidden fallback form (moved outside main form to avoid nested forms) -->
+      <form id="emailVerifyFallbackForm" method="POST" action="{{ route('verification.resend') }}" style="display:none;">
+        @csrf
+      </form>
+
+      <script>
+        // Confirm removal of business permit when checkbox is checked and form is submitted
+        document.addEventListener('DOMContentLoaded', function() {
+          const form = document.querySelector('form[action="{{ route('profile.updateEmployer') }}"]');
+          const removeCheckbox = document.getElementById('remove_business_permit_checkbox');
+
+          if (!form || !removeCheckbox) return;
+
+          form.addEventListener('submit', async function(e) {
+            const businessInput = document.querySelector('input[name="business_permit"]');
+            const hasNewFile = businessInput && businessInput.files && businessInput.files.length > 0;
+            if (removeCheckbox.checked && !hasNewFile) {
+              // ask for confirmation
+              const confirmed = await window.systemConfirm('Remove Business Permit', 'Are you sure you want to permanently remove your current business permit file? This action cannot be undone.');
+              if (!confirmed) {
+                e.preventDefault();
+                // uncheck to avoid accidental submits
+                removeCheckbox.checked = false;
+              }
+            }
+          });
+        });
+      </script>
     </div>
   </div>
 
@@ -526,6 +637,45 @@
     </div>
   </div>
 
+  <!-- System-style Confirm Modal -->
+  <div id="systemConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
+    <div style="background:#fff; max-width:600px; width:92%; padding:16px 20px; border-radius:10px; box-shadow:0 12px 48px rgba(0,0,0,0.35);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div style="width:44px; height:44px; border-radius:50%; background:#f0f4f7; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-exclamation-triangle" style="color:#2b6cb0; font-size:18px;"></i>
+          </div>
+          <div>
+            <h4 id="systemConfirmTitle" style="margin:0; font-size:16px;">Confirm</h4>
+            <div id="systemConfirmMessage" style="color:#444; margin-top:8px; font-size:14px;"></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button id="systemConfirmCancel" class="btn btn-secondary" style="background:#edf2f7;border:1px solid #cbd5e1;padding:10px 14px;">Cancel</button>
+          <button id="systemConfirmOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:10px 14px;color:#fff;">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System-style Alert Modal -->
+  <div id="systemAlertModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
+    <div style="background:#fff; max-width:520px; width:90%; padding:16px 18px; border-radius:10px; box-shadow:0 12px 48px rgba(0,0,0,0.35);">
+      <div style="display:flex; gap:12px; align-items:flex-start;">
+        <div style="width:44px; height:44px; border-radius:50%; background:#f8fafc; display:flex; align-items:center; justify-content:center;">
+          <i id="systemAlertIcon" class="fas fa-info-circle" style="color:#2b6cb0; font-size:18px;"></i>
+        </div>
+        <div style="flex:1;">
+          <h4 id="systemAlertTitle" style="margin:0; font-size:16px;">Notice</h4>
+          <div id="systemAlertMessage" style="color:#444; margin-top:8px; font-size:14px;"></div>
+        </div>
+        <div style="display:flex; align-items:flex-start;">
+          <button id="systemAlertOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:8px 12px;color:#fff;">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
   // Auto-hide flash messages after 2 seconds
   document.addEventListener('DOMContentLoaded', function() {
@@ -570,9 +720,183 @@
         }
       }
 
+      // Email verification: allow user to manually request a verification email
+      window.confirmAndSendVerification = function() {
+        // Prefer our custom modal; fallback to native confirm if modal not found
+        const modal = document.getElementById('emailConfirmModal');
+        if (!modal) {
+          if (!confirm('Send verification email to {{ Auth::user()->email }}?')) return;
+          window.sendVerificationEmail();
+          return;
+        }
+
+        modal.style.display = 'flex';
+
+        // Wire up buttons once (idempotent)
+        const ok = document.getElementById('emailConfirmOk');
+        const cancel = document.getElementById('emailConfirmCancel');
+        const closeX = document.getElementById('emailConfirmClose');
+
+        function hideModal() { modal.style.display = 'none'; }
+
+        if (ok && !ok._bound) {
+          ok.addEventListener('click', function() {
+            hideModal();
+            window.sendVerificationEmail();
+          });
+          ok._bound = true;
+        }
+
+        if (cancel && !cancel._bound) {
+          cancel.addEventListener('click', function() { hideModal(); });
+          cancel._bound = true;
+        }
+
+        if (closeX && !closeX._bound) {
+          closeX.addEventListener('click', function() { hideModal(); });
+          closeX._bound = true;
+        }
+      }
+
+      window.sendVerificationEmail = async function() {
+        const btn = document.getElementById('sendEmailVerifyBtn');
+        const msgDiv = document.getElementById('emailVerifyMessage');
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        try {
+          const response = await fetch('{{ route('verification.resend') }}', {
+            method: 'POST',
+            credentials: 'same-origin', // include cookies so server can authenticate the user
+            headers: {
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            }
+          });
+
+          // Try to parse JSON if the server returns it, otherwise treat a 200/302 as success
+          let data = {};
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.indexOf('application/json') !== -1) {
+            data = await response.json().catch(() => ({}));
+          }
+
+          if (response.ok) {
+            // ok (200) - assume verification was queued/sent
+            showEmailVerifyMessage(data.message || 'Verification email sent. Check your inbox.', 'success');
+          } else if (response.status === 419) {
+            // CSRF/session issue - fallback to form submit
+            showEmailVerifyMessage('Session expired. Submitting fallback request...', 'danger');
+            // submit the hidden form so Laravel handles the redirect/flash
+            document.getElementById('emailVerifyFallbackForm').submit();
+          } else if (response.status === 401) {
+            // Not authenticated - fall back to form submit which will redirect to login
+            showEmailVerifyMessage('You must be signed in to request a verification email. Redirecting...', 'danger');
+            document.getElementById('emailVerifyFallbackForm').submit();
+          } else if (response.status >= 300 && response.status < 400) {
+            // Redirect - treat as success
+            showEmailVerifyMessage('Verification email sent. Check your inbox.', 'success');
+          } else {
+            showEmailVerifyMessage(data.message || 'Failed to send verification email. Try again later.', 'danger');
+          }
+        } catch (err) {
+          showEmailVerifyMessage('Network error sending verification. Please try again.', 'danger');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = original;
+        }
+      }
+
+      window.showEmailVerifyMessage = function(message, type) {
+        const msgDiv = document.getElementById('emailVerifyMessage');
+        if (!msgDiv) return;
+        msgDiv.style.display = 'block';
+        msgDiv.className = 'alert alert-' + (type === 'success' ? 'success' : 'danger');
+        msgDiv.innerHTML = '<i class="fas fa-info-circle"></i> ' + message;
+        setTimeout(() => {
+          msgDiv.style.opacity = '0';
+          setTimeout(() => { msgDiv.style.display = 'none'; msgDiv.style.opacity = '1'; }, 400);
+        }, 4000);
+      }
+
       input.value = formatted;
     }
   });
+  
+  // System-style confirm/alert helpers
+  window.systemConfirm = function(title, message) {
+    return new Promise(resolve => {
+      const modal = document.getElementById('systemConfirmModal');
+      const t = document.getElementById('systemConfirmTitle');
+      const m = document.getElementById('systemConfirmMessage');
+      const ok = document.getElementById('systemConfirmOk');
+      const cancel = document.getElementById('systemConfirmCancel');
+      if (!modal || !ok || !cancel || !t || !m) {
+        // fallback to native confirm
+        resolve(confirm(message));
+        return;
+      }
+
+      t.textContent = title || 'Confirm';
+      m.textContent = message || '';
+      modal.style.display = 'flex';
+
+      function cleanup() {
+        modal.style.display = 'none';
+        ok.removeEventListener('click', onOk);
+        cancel.removeEventListener('click', onCancel);
+      }
+
+      function onOk() { cleanup(); resolve(true); }
+      function onCancel() { cleanup(); resolve(false); }
+
+      ok.addEventListener('click', onOk);
+      cancel.addEventListener('click', onCancel);
+    });
+  }
+
+  window.systemAlert = function(message, level) {
+    return new Promise(resolve => {
+      const modal = document.getElementById('systemAlertModal');
+      const title = document.getElementById('systemAlertTitle');
+      const msg = document.getElementById('systemAlertMessage');
+      const ok = document.getElementById('systemAlertOk');
+      const icon = document.getElementById('systemAlertIcon');
+      if (!modal || !ok || !msg) {
+        alert(message);
+        resolve();
+        return;
+      }
+
+      // level can be 'warning'|'error'|'info' - adjust icon/color
+      if (level === 'warning') {
+        title.textContent = 'Warning';
+        icon.className = 'fas fa-exclamation-circle';
+        icon.style.color = '#d97706';
+      } else if (level === 'danger' || level === 'error') {
+        title.textContent = 'Error';
+        icon.className = 'fas fa-times-circle';
+        icon.style.color = '#b91c1c';
+      } else {
+        title.textContent = 'Notice';
+        icon.className = 'fas fa-info-circle';
+        icon.style.color = '#2b6cb0';
+      }
+
+      msg.textContent = message || '';
+      modal.style.display = 'flex';
+
+      function cleanup() {
+        modal.style.display = 'none';
+        ok.removeEventListener('click', onOk);
+      }
+
+      function onOk() { cleanup(); resolve(); }
+      ok.addEventListener('click', onOk);
+    });
+  }
   
   function openPhoneVerificationModal() {
     const currentPhone = document.getElementById('phone_number_input').value;
@@ -728,17 +1052,20 @@
     // Confirmation before submitting
     const deleteForm = document.getElementById('deleteAccountForm');
     if (deleteForm) {
-      deleteForm.addEventListener('submit', function(e) {
+      deleteForm.addEventListener('submit', async function(e) {
+        // prevent default initially; we'll submit programmatically when confirmed
+        e.preventDefault();
+
         if (deleteInput.value !== 'DELETE') {
-          e.preventDefault();
-          alert('Please type DELETE to confirm account deletion.');
+          await window.systemAlert('Please type DELETE to confirm account deletion.', 'warning');
           return false;
         }
-        
-        if (!confirm('Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.')) {
-          e.preventDefault();
-          return false;
-        }
+
+        const confirmed = await window.systemConfirm('Confirm Account Deletion', 'Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.');
+        if (!confirmed) return false;
+
+        // proceed with the original form submission
+        deleteForm.submit();
       });
     }
 

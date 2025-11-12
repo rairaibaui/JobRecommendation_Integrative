@@ -157,8 +157,9 @@ class DocumentValidationService
         $prompt .= '  "is_business_permit": true/false,'."\n";
         $prompt .= '  "confidence_score": 0-100,'."\n";
         $prompt .= '  "document_type": "description of what this document is",'."\n";
-        $prompt .= '  "has_official_seals": true/false,'."\n";
-        $prompt .= '  "has_registration_number": true/false,'."\n";
+    $prompt .= '  "has_official_seals": true/false,'."\n";
+    $prompt .= '  "has_signature": true/false,'."\n";
+    $prompt .= '  "has_registration_number": true/false,'."\n";
     $prompt .= '  "permit_number": "the permit or registration number exactly as printed, or null",' ."\n";
         $prompt .= '  "business_name_matches": true/false/null,'."\n";
         $prompt .= '  "appears_authentic": true/false,'."\n";
@@ -231,18 +232,19 @@ class DocumentValidationService
                 'permit_expiry_date' => $permitExpiryDate,
                 'permit_number' => $permitNumber,
                 'ai_analysis' => [
-                    'document_type' => $data['document_type'] ?? 'Unknown',
-                    'has_official_seals' => $data['has_official_seals'] ?? false,
-                    'has_registration_number' => $data['has_registration_number'] ?? false,
-                    'permit_number' => $permitNumber,
-                    'business_name_matches' => $data['business_name_matches'] ?? null,
-                    'appears_authentic' => $data['appears_authentic'] ?? false,
-                    'is_expired' => $data['is_expired'] ?? null,
-                    'issuing_authority' => $data['issuing_authority'] ?? null,
-                    'validity_dates' => $data['validity_dates'] ?? null,
-                    'recommendation' => $recommendation,
-                    'red_flags' => $data['red_flags'] ?? [],
-                ],
+                        'document_type' => $data['document_type'] ?? 'Unknown',
+                        'has_official_seals' => $data['has_official_seals'] ?? false,
+                        'has_signature' => $data['has_signature'] ?? false,
+                        'has_registration_number' => $data['has_registration_number'] ?? false,
+                        'permit_number' => $permitNumber,
+                        'business_name_matches' => $data['business_name_matches'] ?? null,
+                        'appears_authentic' => $data['appears_authentic'] ?? false,
+                        'is_expired' => $data['is_expired'] ?? null,
+                        'issuing_authority' => $data['issuing_authority'] ?? null,
+                        'validity_dates' => $data['validity_dates'] ?? null,
+                        'recommendation' => $recommendation,
+                        'red_flags' => $data['red_flags'] ?? [],
+                    ],
             ];
         } catch (\Exception $e) {
             Log::error('Failed to parse document validation response: '.$e->getMessage());

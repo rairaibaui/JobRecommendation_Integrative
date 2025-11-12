@@ -39,6 +39,7 @@ class AnalyticsController extends Controller
             'verified' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'verified')->count(),
             'pending' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'pending')->count(),
             'needs_review' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'needs_review')->count(),
+            'rejected' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'rejected')->count(),
         ];
 
         // Permits (document_validations table)

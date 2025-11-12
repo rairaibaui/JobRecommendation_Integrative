@@ -50,11 +50,17 @@ class LoginController extends Controller
                 ]);
             }
 
-            // Decide destination based on role, but show a smooth loader first
+            // If the verification flow placed a desired post-verification redirect in
+            // the session (e.g. user clicked verification link while logged out),
+            // honor it and then remove it from the session. Otherwise decide
+            // destination based on role, but show a smooth loader first.
+            $postVerifyTarget = session()->pull('post_verify_redirect');
+            $target = $postVerifyTarget ?: ($user && $user->user_type === 'employer'
+                ? route('employer.dashboard')
+                : route('dashboard'));
+
             return response()->view('auth.post-login', [
-                'target' => $user && $user->user_type === 'employer'
-                    ? route('employer.dashboard')
-                    : route('dashboard'),
+                'target' => $target,
             ]);
         }
 

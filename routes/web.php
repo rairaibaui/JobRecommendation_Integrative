@@ -20,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\WorkHistoryController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PermitVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,13 +84,26 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
     }
 
     // If the request came from an authenticated session that matches the
-    // verified user, keep them in the app and send them to the dashboard.
-    // Otherwise redirect to the login page so they can sign in.
+    // verified user, keep them in the app and send them to the appropriate
+    // dashboard based on their account type. Otherwise redirect to the
+    // login page so they can sign in.
     if ($request->user() && intval($request->user()->id) === intval($id)) {
+        // Prefer employer dashboard for employer accounts
+        $current = $request->user();
+        if (($current->user_type ?? null) === 'employer') {
+            return redirect()->route('employer.dashboard')->with('success', 'Your email has been verified.');
+        }
+
         return redirect()->route('dashboard')->with('success', 'Your email has been verified.');
     }
 
-    return redirect()->route('login')->with('success', 'Your email has been verified. You may now sign in.');
+    // If the verifier clicked while logged out, helpfully remember where they
+    // should land after signing in (employer vs jobseeker dashboard).
+    $postRedirect = ($user->user_type ?? null) === 'employer' ? route('employer.dashboard') : route('dashboard');
+
+    return redirect()->route('login')
+        ->with('success', 'Your email has been verified. You may now sign in.')
+        ->with('post_verify_redirect', $postRedirect);
 
 })->name('verification.verify');
 
@@ -171,6 +185,10 @@ Route::post('/contact-support', [ContactSupportController::class, 'submit'])->na
 
 // Debug route to check auth status
 Route::get('/debug/auth', [App\Http\Controllers\DebugController::class, 'checkAuth'])->middleware('auth');
+
+// Permit upload example routes (public)
+Route::get('/permit/upload', [PermitVerificationController::class, 'showForm'])->name('permit.form');
+Route::post('/permit/upload', [PermitVerificationController::class, 'upload'])->name('permit.upload');
 
 // 🔹 Routes that require authentication
 Route::middleware('auth')->group(function () {
@@ -313,4 +331,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::post('/notifications/bulk-mark-read', [App\Http\Controllers\Admin\NotificationController::class, 'bulkMarkRead'])->name('admin.notifications.bulkMarkRead');
     Route::delete('/notifications/{id}', [App\Http\Controllers\Admin\NotificationController::class, 'destroy'])->name('admin.notifications.destroy');
     Route::delete('/notifications/bulk-delete', [App\Http\Controllers\Admin\NotificationController::class, 'bulkDelete'])->name('admin.notifications.bulkDelete');
+
+    // Employer permit manual review
+    Route::get('/permits', [\App\Http\Controllers\AdminPermitController::class, 'index'])->name('admin.permits.index');
+    Route::get('/permits/{id}', [\App\Http\Controllers\AdminPermitController::class, 'show'])->name('admin.permits.show');
+    Route::post('/permits/{id}/approve', [\App\Http\Controllers\AdminPermitController::class, 'approve'])->name('admin.permits.approve');
+    Route::post('/permits/{id}/reject', [\App\Http\Controllers\AdminPermitController::class, 'reject'])->name('admin.permits.reject');
 });

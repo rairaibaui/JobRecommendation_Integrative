@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
 {
@@ -33,25 +35,30 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        // AUTOMATIC ROLE DETECTION:
-        // If user uploads business permit → Employer
-        // No business permit → Job Seeker
-        // This eliminates manual role selection and ensures accuracy
+        // ROLE DETERMINATION:
+        // 1) Prefer explicit user_type from the form (the JS toggle sets this).
+        // 2) If not provided, infer employer if company_name was supplied (supports JS-disabled clients).
+        // 3) Otherwise fall back to business_permit presence for auto-detection.
         $hasBusinessPermit = $request->hasFile('business_permit');
-        $userType = $hasBusinessPermit ? 'employer' : 'job_seeker';
+        if ($request->filled('user_type')) {
+            $userType = $request->input('user_type');
+        } elseif ($request->filled('company_name')) {
+            $userType = 'employer';
+        } else {
+            $userType = $hasBusinessPermit ? 'employer' : 'job_seeker';
+        }
 
-        if ($userType === 'employer') {
-            // EMPLOYER REGISTRATION (Auto-detected via business permit upload)
-            // Accepts ANY email domain (Gmail, Yahoo, company emails)
-            // Business permit is REQUIRED and will be AI-validated
-            $validated = $request->validate([
+    $permitUploaded = false;
+    if ($userType === 'employer') {
+            // EMPLOYER REGISTRATION
+            $validator = Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'company_name' => 'required|string|max:255',
                 'job_title' => 'nullable|string|max:255',
                 'employer_phone_number' => 'nullable|string|max:20',
-                'business_permit' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'password' => [
                     'required',
                     'confirmed',
@@ -63,22 +70,27 @@ class RegisterController extends Controller
                 ],
                 'terms' => 'accepted',
             ]);
+
+            if ($validator->fails()) {
+                Log::info('Registration validation failed (employer)', ['errors' => $validator->errors()->toArray(), 'input' => $request->except(['password','password_confirmation'])]);
+                return back()->withInput()->with('error', 'Registration failed. Please check your inputs and try again.');
+            }
+            $validated = $validator->validated();
+
             try {
                 // Store business permit temporarily for validation
                 $permitPath = null;
                 if ($request->hasFile('business_permit')) {
                     $permitPath = $request->file('business_permit')->store('business_permits/temp', 'public');
+                    // Move file from temp to permanent location
+                    $finalPath = 'business_permits/'.basename($permitPath);
+                    Storage::disk('public')->move($permitPath, $finalPath);
+                    $permitPath = $finalPath;
                 }
-
-                // Move file from temp to permanent location immediately
-                // Allow account creation, validate in background
-                $finalPath = 'business_permits/'.basename($permitPath);
-                Storage::disk('public')->move($permitPath, $finalPath);
-                $permitPath = $finalPath;
 
                 // Generate placeholder phone/location to satisfy schema constraints (if phone not provided)
                 $phoneNumber = $validated['employer_phone_number']
-                    ? preg_replace('/\D/', '', $validated['employer_phone_number']) // Remove formatting
+                    ? preg_replace('/\\D/', '', $validated['employer_phone_number']) // Remove formatting
                     : strval(random_int(10000000000, 99999999999)); // Fallback to random
                 $location = 'Unknown';
 
@@ -88,26 +100,22 @@ class RegisterController extends Controller
                     'email' => $validated['email'],
                     'company_name' => $validated['company_name'],
                     'job_title' => $validated['job_title'] ?? null,
-                    'business_permit_path' => $permitPath,
+                    'business_permit_path' => $permitPath ?? null,
                     'phone_number' => $phoneNumber,
                     'location' => $location,
                     'user_type' => 'employer',
                     'password' => Hash::make($validated['password']),
                 ]);
-                // Send email verification notification (best-effort)
-                try {
-                    if (method_exists($user, 'sendEmailVerificationNotification')) {
-                        $user->sendEmailVerificationNotification();
-                    }
-                } catch (\Throwable $e) {
-                    // best-effort: do not block registration on email failures
-                }
+
+                // NOTE: Do NOT send the verification email at registration time.
+                // The system will send verification emails on employer login instead
+                // to avoid sending verification links immediately after account creation.
 
                 // Queue AI validation for background processing
                 $isDocumentValidationEnabled = config('ai.features.document_validation', false)
                                                && config('ai.document_validation.business_permit.enabled', false);
 
-                if ($isDocumentValidationEnabled && $permitPath && $user) {
+                if ($isDocumentValidationEnabled && !empty($permitPath) && $user) {
                     // Dispatch background job for AI validation with delay
                     $delay = config('ai.document_validation.business_permit.validation_delay_seconds', 10);
 
@@ -125,9 +133,10 @@ class RegisterController extends Controller
                     )->delay(now()->addSeconds($delay));
                 }
 
-                // Notify admins about the new business permit upload
-                if ($user) {
+                // Notify admins about the new business permit upload (only if a permit was uploaded)
+                if ($user && !empty($permitPath)) {
                     AdminNotificationService::notifyPermitUploaded($user);
+                    $permitUploaded = true;
                 }
             } catch (\Throwable $e) {
                 // Clean up uploaded file if it exists
@@ -141,9 +150,7 @@ class RegisterController extends Controller
             }
         } else {
             // JOB SEEKER REGISTRATION (Auto-detected - no business permit uploaded)
-            // Can use any email domain
-            // No business permit required
-            $validated = $request->validate([
+            $validator = Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -165,6 +172,12 @@ class RegisterController extends Controller
                 'terms' => 'accepted',
             ]);
 
+            if ($validator->fails()) {
+                Log::info('Registration validation failed (job_seeker)', ['errors' => $validator->errors()->toArray(), 'input' => $request->except(['password','password_confirmation'])]);
+                return back()->withInput()->with('error', 'Registration failed. Please check your inputs and try again.');
+            }
+            $validated = $validator->validated();
+
             try {
                 // Ensure location is normalized (trim whitespace) before storing
                 $locationValue = isset($validated['location']) ? trim($validated['location']) : null;
@@ -182,9 +195,6 @@ class RegisterController extends Controller
                     'user_type' => 'job_seeker',
                     'password' => Hash::make($validated['password']),
                 ]);
-                // NOTE: For job seekers we DO NOT send the email verification automatically on registration.
-                // The app will allow the user to sign in first and use the "Resend verification email" flow from the dashboard/settings.
-                // This reduces unexpected outbound emails and lets users verify after signing in.
             } catch (\Throwable $e) {
                 return back()
                     ->withInput()
@@ -193,9 +203,16 @@ class RegisterController extends Controller
         }
 
         // Redirect to login for both employer and job seeker; require manual sign-in
+        if ($permitUploaded) {
+            $message = 'Account created successfully! Your business permit was uploaded and will be reviewed by our team. Please sign in to continue.';
+        } else {
+            $message = 'Account created successfully! Please sign in to continue.';
+        }
+
         return redirect()->route('login')
-            ->with('success', 'Account created successfully! Please sign in to continue.')
+            ->with('success', $message)
             ->with('email', $request->email)
-            ->with('registered', true);
+            ->with('registered', true)
+            ->with('permit_uploaded', $permitUploaded);
     }
 }

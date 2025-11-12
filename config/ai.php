@@ -126,6 +126,9 @@ return [
             'auto_delete_rejected' => env('AI_AUTO_DELETE_REJECTED', false), // Auto-delete rejected files
             'validation_delay_seconds' => env('AI_VALIDATION_DELAY', 10), // Delay before processing (allows user to complete signup)
             'personal_email_domains' => ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'], // Personal email providers
+            // Allow a looser auto-approve path for certain officially-issued permit types
+            'loose_auto_approve_threshold' => env('AI_BUSINESS_PERMIT_LOOSE_AUTO_APPROVE_THRESHOLD', 75),
+            'loose_auto_approve_doc_types' => ['barangay', 'mayor', 'dti'],
         ],
         'resume' => [
             'enabled' => env('AI_VALIDATE_RESUME', false),

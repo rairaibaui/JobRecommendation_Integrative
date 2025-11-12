@@ -84,4 +84,31 @@ class AdminNotificationService
             ]);
         }
     }
+
+    /**
+     * Notify all admins when a business permit is auto-approved by AI.
+     *
+     * @param \App\Models\User $employer
+     * @param mixed $validation DocumentValidation model or array with id/confidence
+     * @param string $method 'strict' or 'loose' to indicate auto-approve path
+     */
+    public static function notifyPermitAutoApproved(User $employer, $validation, string $method = 'strict')
+    {
+        $admins = User::where('user_type', 'admin')->get();
+        $companyInfo = $employer->company_name ?? $employer->email;
+
+        $validationId = is_object($validation) && isset($validation->id) ? $validation->id : ($validation['id'] ?? null);
+        $confidence = is_object($validation) && isset($validation->confidence_score) ? $validation->confidence_score : ($validation['confidence'] ?? null);
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'type' => 'permit_auto_approved',
+                'title' => 'Business Permit Auto-Approved',
+                'message' => "Employer {$employer->name} ({$companyInfo}) had their business permit auto-approved by AI (method: {$method}). Confidence: " . ($confidence ?? 'N/A') . ".",
+                'link' => route('admin.verifications.unified', ['tab' => 'permits', 'id' => $validationId]),
+                'is_read' => false,
+            ]);
+        }
+    }
 }

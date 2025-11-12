@@ -1,14 +1,10 @@
-@extends('jobseeker.layouts.base')
+@extends('layouts.standalone')
 
 @php $pageTitle = 'Verification Link Expired'; @endphp
 
 @section('title', 'Verification Link Expired')
 
 @section('content')
-    <div class="page-header">
-        <h1 class="page-title">Verification Link Expired</h1>
-        <p class="page-subtitle">Your verification link has expired or is invalid.</p>
-    </div>
 
     <div class="card">
         <div class="card-body" style="display:flex; justify-content:center;">

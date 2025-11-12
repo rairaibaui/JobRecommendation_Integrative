@@ -337,10 +337,15 @@ class VerificationController extends Controller
         $admin = Auth::user();
 
         // Check if this is a duplicate override
-        $isDuplicateOverride = false;
-        if (isset($validation->ai_analysis['duplicate_detection'])) {
-            $isDuplicateOverride = true;
+        // ai_analysis may be stored as JSON string or array; normalize it to an array first
+        $existingAi = [];
+        if (is_array($validation->ai_analysis)) {
+            $existingAi = $validation->ai_analysis;
+        } elseif (is_string($validation->ai_analysis) && $validation->ai_analysis !== '') {
+            $decoded = json_decode($validation->ai_analysis, true);
+            $existingAi = is_array($decoded) ? $decoded : [];
         }
+        $isDuplicateOverride = isset($existingAi['duplicate_detection']);
 
         $validation->validation_status = 'approved';
         $validation->is_valid = true;
@@ -361,8 +366,8 @@ class VerificationController extends Controller
             $validation->expiry_reminder_sent = false;
         }
 
-        // Store admin info in ai_analysis
-        $aiAnalysis = $validation->ai_analysis ?? [];
+        // Store admin info in ai_analysis (use normalized existingAi)
+        $aiAnalysis = $existingAi;
         $aiAnalysis['admin_approval'] = [
             'admin_id' => $admin->id,
             'admin_email' => $admin->email,
@@ -469,15 +474,21 @@ class VerificationController extends Controller
         $validation->validated_by = 'admin';
         $validation->validated_at = now();
 
-        // Store admin info
-        $aiAnalysis = $validation->ai_analysis ?? [];
-        $aiAnalysis['admin_rejection'] = [
+        // Store admin info (normalize ai_analysis to array first)
+        $existingAi = [];
+        if (is_array($validation->ai_analysis)) {
+            $existingAi = $validation->ai_analysis;
+        } elseif (is_string($validation->ai_analysis) && $validation->ai_analysis !== '') {
+            $decoded = json_decode($validation->ai_analysis, true);
+            $existingAi = is_array($decoded) ? $decoded : [];
+        }
+        $existingAi['admin_rejection'] = [
             'admin_id' => $admin->id,
             'admin_email' => $admin->email,
             'rejected_at' => now()->toDateTimeString(),
             'reason' => $request->rejection_reason,
         ];
-        $validation->ai_analysis = $aiAnalysis;
+        $validation->ai_analysis = $existingAi;
 
         $validation->save();
 

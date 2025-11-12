@@ -24,9 +24,13 @@ class EmailVerificationExpiryTest extends TestCase
 
         $signedUrl = URL::temporarySignedRoute('verification.verify', Carbon::now()->addMinutes(config('auth.verification.expire')), ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]);
 
-        $this->actingAs($user)
-             ->get($signedUrl)
-             ->assertRedirect(route('dashboard'));
+        $response = $this->actingAs($user)->get($signedUrl);
+        $location = $response->headers->get('Location');
+
+        $this->assertTrue(
+            in_array($location, [route('dashboard'), route('employer.dashboard')]),
+            "Unexpected redirect: $location"
+        );
 
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
     }

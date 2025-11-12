@@ -131,12 +131,93 @@
     </div>
   @endif
 
+  {{-- Show EmployerDocument review reason if present --}}
+  @php
+    // Try to fetch latest employer document by email (best-effort)
+    $employerDoc = null;
+    try {
+        $employerDoc = \App\Models\EmployerDocument::where('email', $user->email)->latest()->first();
+    } catch (\Throwable $e) {
+        $employerDoc = null;
+    }
+  // Avoid duplicate UI banners when we already have a more authoritative
+  // DocumentValidation ($validation) for the same uploaded file. Prefer the
+  // DocumentValidation banner and suppress the EmployerDocument banner to
+  // prevent the two messages from appearing at once.
+  try {
+    if (isset($validation) && $validation && $employerDoc) {
+      // If both records point to the same file path, treat as duplicate.
+      if (!empty($validation->file_path) && $validation->file_path === $employerDoc->file_path) {
+        $employerDoc = null;
+      } else {
+        // If validation_status is pending_review and EmployerDocument is PENDING
+        // that is also a duplicate semantic; suppress EmployerDocument banner.
+        $v = strtolower($validation->validation_status ?? '');
+        $eStatus = strtoupper($employerDoc->status ?? '');
+        if ($v === 'pending_review' && $eStatus === 'PENDING') {
+          $employerDoc = null;
+        }
+      }
+    }
+  } catch (\Throwable $__dedupeEx) {
+    // best-effort: if anything goes wrong, do not block rendering
+  }
+  @endphp
+
+  @php
+    $hasDoc = (bool) $employerDoc;
+    $needsReupload = $hasDoc ? ($employerDoc->needsReupload() ?? false) : false;
+  @endphp
+
+  {{-- Informational message when an employer uploaded a document but their email is not verified --}}
+  @if($hasDoc && !$user->hasVerifiedEmail())
+    <div style="background:#e9f5ff;color:#0b3d59;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #6fb0d9;display:flex;align-items:start;gap:12px;">
+      <i class="fas fa-info-circle" style="font-size:22px;margin-top:2px;color:#0b3d59;"></i>
+      <div style="flex:1;">
+        <strong style="display:block;margin-bottom:6px;font-size:16px;">📧 Email Verification Required</strong>
+        <p style="margin:0;line-height:1.5;font-size:14px;">We received a business permit upload, but your email address has not been verified. We cannot accept or process submitted business permits until your email is verified.</p>
+        <p style="margin:8px 0 0 0;font-size:13px;opacity:.95;"><strong>Verify your email first before submitting a file.</strong> Please check your inbox for the verification email and follow the link to verify your account. You can also update your email address or resend verification from your <a href="{{ route('settings') }}" style="color:#064e78;font-weight:700;text-decoration:underline;">Account Settings</a>.</p>
+      </div>
+    </div>
+  @endif
+
+  @if($employerDoc && strtoupper($employerDoc->status) === 'PENDING')
+    <div style="background:#fff3cd;color:#856404;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #ffc107;display:flex;align-items:start;gap:12px;">
+      <i class="fas fa-hourglass-half" style="font-size:24px;margin-top:2px;"></i>
+      <div style="flex:1;">
+        <strong style="display:block;margin-bottom:6px;font-size:16px;">Your business permit is pending admin review.</strong>
+        <p style="margin:0;line-height:1.5;font-size:14px;">We will notify you when the review is complete.</p>
+        @if($employerDoc->review_reason)
+          <p style="margin:8px 0 0 0;font-size:13px;opacity:.9;"><strong>Details:</strong> {{ $employerDoc->review_reason }}</p>
+        @endif
+      </div>
+    </div>
+  @elseif($employerDoc && strtoupper($employerDoc->status) === 'APPROVED')
+    <div style="background:#d4edda;color:#155724;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #28a745;display:flex;align-items:start;gap:12px;">
+      <i class="fas fa-check-circle" style="font-size:24px;margin-top:2px;"></i>
+      <div style="flex:1;">
+        <strong style="display:block;margin-bottom:6px;font-size:16px;">✅ Business Permit Verified</strong>
+        <p style="margin:0;line-height:1.5;font-size:14px;">Your submitted business permit has been approved. You can now post job openings and manage applications.</p>
+        @if($employerDoc->permit_expiry_date)
+          <p style="margin:8px 0 0 0;font-size:13px;opacity:.9;"><strong>Expiry:</strong> {{ \Carbon\Carbon::parse($employerDoc->permit_expiry_date)->format('M d, Y') }}</p>
+        @endif
+      </div>
+    </div>
+  @endif
+
+  {{-- Uploaded Documents table removed per request --}}
+
   @if(session('success'))
     <div class="flash-message" style="background:#d4edda;color:#155724;padding:12px 20px;border-radius:8px;margin-bottom:20px;border:1px solid #c3e6cb;transition:opacity .3s ease;"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
   @endif
 
   @if($errors->has('validation'))
     <div class="flash-message" style="background:#f8d7da;color:#721c24;padding:12px 20px;border-radius:8px;margin-bottom:20px;border:1px solid #f5c6cb;"><i class="fas fa-exclamation-circle"></i> {{ $errors->first('validation') }}</div>
+    @if(!$user->hasVerifiedEmail())
+      <div style="background:#fff5f5;color:#721c24;padding:10px 14px;border-radius:8px;margin-bottom:12px;border:1px solid #f5c6cb;font-size:13px;">
+        <strong>Verify your email first before submitting a file.</strong>
+      </div>
+    @endif
   @endif
 
   <div class="stats-cards">
@@ -226,10 +307,10 @@
         <h3 style="margin:0; color:#334A5E;">Re-Upload Business Permit</h3>
         <button onclick="closeReuploadPermitModal()" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:#334A5E;">&times;</button>
       </div>
-      <p style="margin:0 0 12px 0; color:#666;">Upload your corrected business permit for re-verification. Accepted formats: PDF, JPG, PNG. Max 5MB.</p>
+  <p style="margin:0 0 12px 0; color:#666;">Upload your corrected business permit for re-verification. Accepted format: PDF only. Max 5MB.</p>
       <form method="POST" action="{{ route('employer.permit.reupload') }}" enctype="multipart/form-data">
         @csrf
-        <input type="file" name="business_permit" accept=".pdf,.jpg,.jpeg,.png" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+  <input type="file" name="business_permit" accept=".pdf" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
           <button type="button" onclick="closeReuploadPermitModal()" class="btn" style="background:#6c757d; color:white;">Cancel</button>
           <button type="submit" class="btn" style="background:#648EB5; color:white;">Submit</button>
@@ -244,3 +325,47 @@
 
 </body>
 </html>
+
+@if(isset($employerDoc) && $employerDoc && $employerDoc->status === 'BLOCKED')
+  <!-- Blocked Notification Modal (auto-open) -->
+  <div id="blockedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:20000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; width:92%; max-width:640px; box-shadow:0 18px 40px rgba(0,0,0,0.35); overflow:hidden;">
+      <div style="background:linear-gradient(90deg,#5b9cc7,#6fb0d9); color:white; padding:18px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;">
+            <i class="fas fa-bell"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:18px;">Notification Details</div>
+            <div style="font-size:12px;opacity:0.95; margin-top:2px;">{{ $employerDoc->created_at->format('F j, Y \a\t h:i A') }}</div>
+          </div>
+        </div>
+        <button onclick="closeBlockedModal()" style="background:transparent;border:none;color:rgba(255,255,255,0.95);font-size:20px;cursor:pointer;padding:6px 8px;border-radius:8px;">&times;</button>
+      </div>
+      <div style="padding:22px 24px; background:#fff; color:#222;">
+        <h3 style="margin:0 0 8px 0; font-size:18px;">Upload Blocked</h3>
+        <p style="margin:0 0 16px 0; color:#444; line-height:1.5;">Your uploaded file was rejected: {{ $employerDoc->review_reason ?? 'Uploaded file does not resemble an official permit document.' }}</p>
+
+        <div style="background:#f7f9fb;border-radius:8px;padding:12px;margin-top:8px;border:1px solid #eef4f9;">
+          <div style="font-size:13px;color:#6b7280;margin-bottom:6px;font-weight:700;">Additional Details</div>
+          <div style="font-size:15px;color:#111;"><strong>Validation Id:</strong> {{ $employerDoc->id }}</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; padding:14px 18px; background:#fbfdff;">
+        <a href="{{ route('settings') }}" style="background:#6c757d;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;">Go to Settings</a>
+        <button onclick="closeBlockedModal()" style="background:#334A5E;color:white;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Auto-open the blocked notification modal
+      const modal = document.getElementById('blockedModal');
+      if (modal) {
+        modal.style.display = 'flex';
+      }
+    });
+    function closeBlockedModal(){ const m=document.getElementById('blockedModal'); if(m){ m.style.display='none'; } }
+  </script>
+@endif

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use App\Services\EmailChangeService;
 
 class ProfileController extends Controller
@@ -69,6 +70,32 @@ class ProfileController extends Controller
             // Validate profile fields. Note: first_name and last_name are intentionally
             // excluded here — names are considered immutable in the system and cannot
             // be changed via the user settings form. To change a legal name, contact support.
+            // Temporary debug: log upload metadata and PHP/$_FILES error information
+            // before validation runs so we can capture UPLOAD_ERR codes when the
+            // validator fails at the PHP upload layer.
+            try {
+                $uploaded = $request->file('resume_file');
+                if ($uploaded) {
+                    Log::info('Resume upload attempt (UploadedFile present)', [
+                        'user_id' => $user->id,
+                        'client_name' => $uploaded->getClientOriginalName(),
+                        'client_size' => $uploaded->getSize(),
+                        'client_mime' => $uploaded->getClientMimeType(),
+                        'error' => $uploaded->getError(),
+                    ]);
+                } else {
+                    // If UploadedFile is not present, inspect raw $_FILES for PHP-level errors
+                    $raw = isset($_FILES['resume_file']) ? $_FILES['resume_file'] : null;
+                    Log::info('Resume upload attempt (no UploadedFile) - raw $_FILES', [
+                        'user_id' => $user->id,
+                        '_FILES' => $raw,
+                    ]);
+                }
+            } catch (\Throwable $__uploadLogEx) {
+                // best-effort logging; do not block validation
+                Log::warning('Failed to log resume upload debug info: ' . $__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
+            }
+
             $request->validate([
                 'birthday' => 'nullable|date',
                 'phone_number' => 'nullable|string|max:20',
@@ -302,7 +329,41 @@ class ProfileController extends Controller
             // Upload: if a new resume file is present, temporarily store and verify the file
             if ($request->hasFile('resume_file')) {
                 // First, temporarily store the uploaded file
-                $tempPath = $request->file('resume_file')->store('temp_resumes', 'public');
+                try {
+                    $tempPath = $request->file('resume_file')->store('temp_resumes', 'public');
+                } catch (\Throwable $e) {
+                    // Log detailed info for debugging and return a friendly message
+                    Log::error('Resume temp store failed: ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                        'ip' => $request->ip(),
+                        'exception' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+
+                    $errorMessage = 'The resume file failed to upload.';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $errorMessage], 500);
+                    }
+
+                    return redirect()->back()->withErrors(['resume_file' => $errorMessage])->withInput();
+                }
+
+                // Sanity check: ensure stored temp file exists on disk
+                if (empty($tempPath) || !Storage::disk('public')->exists($tempPath)) {
+                    Log::error('Resume temp file missing after store', [
+                        'user_id' => $user->id,
+                        'tempPath' => $tempPath,
+                        'disk_root' => Storage::disk('public')->path(''),
+                        'request_filename' => $request->file('resume_file')->getClientOriginalName(),
+                    ]);
+
+                    $errorMessage = 'The resume file failed to upload.';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $errorMessage], 500);
+                    }
+
+                    return redirect()->back()->withErrors(['resume_file' => $errorMessage])->withInput();
+                }
 
                 try {
                     // Perform a conservative extension whitelist after storing the file
@@ -683,11 +744,17 @@ class ProfileController extends Controller
                     }
                 } catch (\Exception $e) {
                     // Clean up temp file
-                    if (Storage::disk('public')->exists($tempPath)) {
+                    if (isset($tempPath) && Storage::disk('public')->exists($tempPath)) {
                         Storage::disk('public')->delete($tempPath);
                     }
 
-                    Log::error('Resume verification failed: '.$e->getMessage());
+                    // Log error with stack trace for debugging
+                    Log::error('Resume verification failed: '.$e->getMessage(), [
+                        'user_id' => $user->id,
+                        'tempPath' => $tempPath ?? null,
+                        'exception' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
 
                     // Notify admins about system error
                     try {
@@ -813,7 +880,11 @@ class ProfileController extends Controller
 
                 return redirect()->back()->with('success', $message);
             } catch (\Exception $e) {
-                Log::error('Profile update error: '.$e->getMessage());
+                Log::error('Profile update error: '.$e->getMessage(), [
+                    'user_id' => $user->id ?? null,
+                    'exception' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
 
                 return response()->json([
                     'success' => false,
@@ -821,7 +892,10 @@ class ProfileController extends Controller
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Profile update error: '.$e->getMessage());
+            Log::error('Profile update error: '.$e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return response()->json([
                 'success' => false,
@@ -982,6 +1056,50 @@ class ProfileController extends Controller
             abort(403, 'Unauthorized');
         }
 
+        // Enforce email verification for employer actions: if the employer hasn't
+        // verified their email and they are not within the short grace period,
+        // block profile/permit updates and send (or re-send) a verification email.
+        try {
+            $graceKey = 'email_verification_grace_'.$user->id;
+            $hasGrace = Cache::get($graceKey, false);
+
+            if (!$user->hasVerifiedEmail() && !$hasGrace) {
+                // Do NOT automatically send verification when the employer uploads a permit.
+                // Only send a verification email if the request included an explicit
+                // action from the user (for example a "Send verification" button that
+                // sets the `send_verification` field). Otherwise, block the update and
+                // instruct the user to explicitly request a verification link.
+                if ($request->has('send_verification')) {
+                    try {
+                        $user->sendEmailVerificationNotification();
+                    } catch (\Throwable $__e) {
+                        Log::warning('Failed to send verification email in updateEmployer: '.$__e->getMessage(), ['user_id' => $user->id]);
+                    }
+
+                    // Recreate grace cache (so the user has 5 minutes after this send)
+                    try {
+                        Cache::put($graceKey, true, now()->addMinutes(5));
+                    } catch (\Throwable $__e) {
+                        Log::warning('Failed to set email verification grace cache in updateEmployer: '.$__e->getMessage(), ['user_id' => $user->id]);
+                    }
+
+                    // If this was an AJAX call, respond with success; otherwise redirect back
+                    if ($request->wantsJson() || $request->ajax()) {
+                        return response()->json(['success' => true, 'message' => 'Verification email sent. Please check your inbox.']);
+                    }
+
+                    return back()->with('success', 'Verification email sent. Please check your inbox.');
+                }
+
+                return back()->withErrors([
+                    'email' => 'Please verify your email before updating employer details. To receive a verification link, click the "Send verification" button in your account settings.'
+                ]);
+            }
+        } catch (\Throwable $__checkEx) {
+            // Best-effort: if something fails here, log and allow continuation so we don't accidentally lock out admins/test accounts
+            Log::warning('Email verification grace check failed: '.$__checkEx->getMessage(), ['user_id' => $user->id]);
+        }
+
         $request->validate([
             'company_name' => 'required|string|max:255',
             'first_name' => 'nullable|string|max:255',
@@ -993,6 +1111,7 @@ class ProfileController extends Controller
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'remove_picture' => 'nullable|boolean',
+            'remove_business_permit' => 'nullable|boolean',
         ]);
 
         // Enforce one-permit-per-account: if there is an approved permit, prevent changing the company name
@@ -1043,8 +1162,89 @@ class ProfileController extends Controller
             $user->profile_picture = $path;
         }
 
+        // Handle business permit removal (employer choice)
+        $removedPermit = false;
+        if ($request->has('remove_business_permit') && $request->remove_business_permit && !$request->hasFile('business_permit')) {
+            try {
+                if ($user->business_permit_path && Storage::disk('public')->exists($user->business_permit_path)) {
+                    Storage::disk('public')->delete($user->business_permit_path);
+                }
+
+                // Mark any existing validations as removed for auditability
+                try {
+                    \App\Models\DocumentValidation::where('user_id', $user->id)
+                        ->where('document_type', 'business_permit')
+                        ->update([
+                            'validation_status' => 'removed',
+                            'reason' => 'Employer removed uploaded permit',
+                            'validated_by' => 'system',
+                            'validated_at' => now(),
+                        ]);
+                } catch (\Throwable $__dvEx) {
+                    // best-effort
+                    Log::warning('Failed to update DocumentValidation records during permit removal for user '.$user->id.': '.$__dvEx->getMessage());
+                }
+
+                $user->business_permit_path = null;
+                $removedPermit = true;
+
+                // Audit log and notify admins
+                try {
+                    \App\Models\AuditLog::create([
+                        'user_id' => $user->id,
+                        'event' => 'business_permit_removed',
+                        'title' => 'Business Permit Removed',
+                        'message' => "Employer {$user->email} removed their uploaded business permit.",
+                        'data' => json_encode(['user_id' => $user->id, 'email' => $user->email]),
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                    ]);
+                } catch (\Throwable $__auditEx) {
+                    // best-effort
+                }
+
+                try {
+                    $admins = \App\Models\User::where('is_admin', true)->get();
+                    foreach ($admins as $admin) {
+                        \App\Models\Notification::create([
+                            'user_id' => $admin->id,
+                            'type' => 'info',
+                            'title' => 'Business Permit Removed',
+                            'message' => "Employer {$user->company_name} ({$user->email}) removed their uploaded business permit. Admin review may be required.",
+                            'read' => false,
+                            'data' => ['employer_id' => $user->id],
+                        ]);
+                    }
+                } catch (\Throwable $__notifyEx) {
+                    // best-effort
+                }
+
+            } catch (\Throwable $e) {
+                Log::warning('Failed to remove business permit for user '.$user->id.': '.$e->getMessage());
+            }
+        }
+
         // Business permit upload with background AI validation
         if ($request->hasFile('business_permit')) {
+            // Log upload attempt for debugging (similar to resume logging earlier)
+            try {
+                $uploadedPermit = $request->file('business_permit');
+                if ($uploadedPermit) {
+                    Log::info('Business permit upload attempt', [
+                        'user_id' => $user->id,
+                        'client_name' => $uploadedPermit->getClientOriginalName(),
+                        'client_size' => $uploadedPermit->getSize(),
+                        'client_mime' => $uploadedPermit->getClientMimeType(),
+                        'error' => $uploadedPermit->getError(),
+                    ]);
+                } else {
+                    $raw = isset($_FILES['business_permit']) ? $_FILES['business_permit'] : null;
+                    Log::info('Business permit upload attempt (no UploadedFile) - raw $_FILES', ['user_id' => $user->id, '_FILES' => $raw]);
+                }
+            } catch (\Throwable $__uploadLogEx) {
+                Log::warning('Failed to log business_permit upload debug info: ' . $__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
+            }
+
             // Delete old business permit if exists
             if ($user->business_permit_path && Storage::disk('public')->exists($user->business_permit_path)) {
                 Storage::disk('public')->delete($user->business_permit_path);
@@ -1054,7 +1254,64 @@ class ProfileController extends Controller
             $permitPath = $request->file('business_permit')->store('business_permits/'.$user->id, 'public');
             $user->business_permit_path = $permitPath;
 
-            // Queue AI validation for background processing
+            // Prepare pending record so the UI and admins see an immediate submission
+            try {
+                $absolutePath = Storage::disk('public')->path($permitPath);
+                $fileHash = file_exists($absolutePath) ? hash_file('sha256', $absolutePath) : null;
+
+                $initialPending = \App\Models\DocumentValidation::create([
+                    'user_id' => $user->id,
+                    'document_type' => 'business_permit',
+                    'file_path' => $permitPath,
+                    'file_hash' => $fileHash,
+                    'is_valid' => false,
+                    'confidence_score' => 0,
+                    'validation_status' => 'pending_review',
+                    'reason' => 'Uploaded by employer. Awaiting AI/manual review.',
+                    'ai_analysis' => null,
+                    'validated_by' => 'system',
+                    'validated_at' => now(),
+                    'permit_expiry_date' => null,
+                    'expiry_reminder_sent' => false,
+                ]);
+
+                // Notify employer immediately
+                \App\Models\Notification::create([
+                    'user_id' => $user->id,
+                    'type' => 'warning',
+                    'title' => 'Business Permit Submitted',
+                    'message' => 'Your business permit was received and is pending review by an administrator.',
+                    'read' => false,
+                    'data' => [
+                        'validation_id' => $initialPending->id,
+                        'company_name' => $user->company_name,
+                        'email' => $user->email,
+                    ],
+                ]);
+
+                // Notify all admins to review (in-app). Email notifications are handled elsewhere.
+                $admins = User::where('is_admin', true)->get(['id', 'email']);
+                foreach ($admins as $admin) {
+                    \App\Models\Notification::create([
+                        'user_id' => $admin->id,
+                        'type' => 'warning',
+                        'title' => 'New Business Permit Uploaded',
+                        'message' => ($user->company_name ?: 'An employer').' uploaded a new business permit. Please review.',
+                        'read' => false,
+                        'data' => [
+                            'validation_id' => $initialPending->id,
+                            'employer_id' => $user->id,
+                            'company_name' => $user->company_name,
+                            'email' => $user->email,
+                        ],
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort: do not block profile update if this fails
+                Log::warning('Failed to create initial pending DocumentValidation: '.$e->getMessage());
+            }
+
+            // Queue AI validation for background processing (job will create/update final record)
             $isDocumentValidationEnabled = config('ai.features.document_validation', false)
                                            && config('ai.document_validation.business_permit.enabled', false);
 
@@ -1068,6 +1325,7 @@ class ProfileController extends Controller
                         'company_name' => $user->company_name ?? 'Unknown',
                         'email' => $user->email,
                     ]
+<<<<<<< HEAD
                 )->delay(\Carbon\Carbon::now()->addSeconds($delay));
             } else {
                 // If AI validation is disabled or no queue worker, immediately create a pending review record
@@ -1127,6 +1385,9 @@ class ProfileController extends Controller
                     // Best-effort: do not block profile update if this fails
                     Log::warning('Failed to create pending DocumentValidation: '.$e->getMessage());
                 }
+=======
+                )->delay(now()->addSeconds($delay));
+>>>>>>> 7b2baf8 (Save local changes)
             }
         }
 
@@ -1177,11 +1438,19 @@ class ProfileController extends Controller
         }
 
         $successMessage = 'Employer profile updated successfully.';
+
         if ($request->hasFile('business_permit')) {
             $successMessage .= ' Your new business permit has been uploaded and is being verified. You will be notified once the review is complete.';
+        } elseif (!empty($removedPermit)) {
+            $successMessage .= ' Your uploaded business permit has been removed.';
         }
 
-        return redirect()->route('settings')->with('success', $successMessage);
+        $redirect = redirect()->route('settings')->with('success', $successMessage);
+        if (!empty($removedPermit)) {
+            $redirect = $redirect->with('permit_removed', true);
+        }
+
+        return $redirect;
     }
 
     /**

@@ -355,7 +355,7 @@
                     @error('employer_phone_number') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
-                    <label for="business_permit">Company/Business Verification Document (Business Permit)</label>
+                    <label for="business_permit">Company/Business Verification Document (Business Permit) <small style="font-weight:400; color:#666;">(optional)</small></label>
                     <div id="permit-drop" class="upload-zone" onclick="document.getElementById('business_permit').click()"
                          ondragover="handlePermitDrag(event,true)" ondragleave="handlePermitDrag(event,false)" ondrop="handlePermitDrop(event)">
                         <div class="upload-icon" aria-hidden="true">
@@ -367,11 +367,11 @@
                         </div>
                         <div class="upload-text">
                             <strong>Click to upload</strong> or drag & drop<br>
-                            <small>PDF, JPG, PNG (max 5 MB)</small>
+                            <small>PDF, JPG, PNG (max 5 MB) — optional during signup. You can upload later from your account settings.</small>
                         </div>
                         <div id="permit-file-name" class="file-name">No file chosen</div>
                     </div>
-                    <input type="file" name="business_permit" id="business_permit" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handlePermitChange(event)" class="@error('business_permit') input-error @enderror">
+                    <input type="file" name="business_permit" id="business_permit" accept=".pdf" style="display:none" onchange="handlePermitChange(event)" class="@error('business_permit') input-error @enderror">
                     @error('business_permit') <span class="error-text">{{ $message }}</span> @enderror
                     <span id="permit-error" class="error-text" style="display:none"></span>
                 </div>

@@ -177,9 +177,60 @@ class ValidateBusinessPermitJob implements ShouldQueue
                 Log::info("ValidateBusinessPermitJob: Personal email employer flagged for review. Confidence: {$confidenceScore}% (required: {$minConfidenceRequired}%)");
             }
 
+            // NOTE: Auto-approval by AI is potentially unsafe (false positives like resumes/random PDFs).
+            // Respect an explicit config flag to allow auto-approval. By default, we force manual review
+            // so that all permit-like uploads remain pending until an admin reviews them.
+            // To enable auto-approve in the future, set:
+            // ai.document_validation.business_permit.allow_auto_approve = true
+            $aiAnalysis = $validationResult['ai_analysis'] ?? [];
+            $autoApproved = false;
+            $allowAutoApprove = config('ai.document_validation.business_permit.allow_auto_approve', false);
+
+            if ($allowAutoApprove) {
+                // Preserve existing auto-approval logic only when explicitly enabled in config.
+                $autoApproveThreshold = config('ai.document_validation.business_permit.auto_approve_threshold', 85);
+                $looseAutoApproveThreshold = config('ai.document_validation.business_permit.loose_auto_approve_threshold', 75);
+                $looseDocTypes = config('ai.document_validation.business_permit.loose_auto_approve_doc_types', ['barangay', 'mayor', 'dti']);
+
+                // Normalize detected document type for loose matching
+                $documentTypeLower = strtolower($aiAnalysis['document_type'] ?? '');
+                $documentTypeIsLoose = false;
+                foreach ($looseDocTypes as $dt) {
+                    if ($dt && strpos($documentTypeLower, $dt) !== false) {
+                        $documentTypeIsLoose = true;
+                        break;
+                    }
+                }
+
+                if ($user->hasVerifiedEmail() && isset($aiAnalysis['business_name_matches']) && $aiAnalysis['business_name_matches'] === true) {
+                    $hasSignatureOrSeal = (!empty($aiAnalysis['has_signature']) && $aiAnalysis['has_signature'] === true)
+                        || (!empty($aiAnalysis['has_official_seals']) && $aiAnalysis['has_official_seals'] === true);
+
+                    // Auto-approve when signature/seal + high confidence, OR for certain permit types (barangay/mayor/DTI)
+                    // allow a looser threshold if business name matches and email is verified.
+                    $canAutoApproveByStrict = $hasSignatureOrSeal && $confidenceScore >= $autoApproveThreshold;
+                    $canAutoApproveByLooseType = $documentTypeIsLoose && $confidenceScore >= $looseAutoApproveThreshold;
+
+                    if ($canAutoApproveByStrict || $canAutoApproveByLooseType) {
+                        // Force approval
+                        $validationResult['valid'] = true;
+                        $validationResult['requires_review'] = false;
+                        $validationResult['reason'] = 'Auto-approved: verified email + AI match with sufficient confidence.';
+                        $autoApproved = true;
+                        Log::info("ValidateBusinessPermitJob: Auto-approved permit for user {$this->userId} via AI match. Confidence={$confidenceScore}, document_type={$aiAnalysis['document_type']}");
+                    }
+                }
+            } else {
+                // Default behavior: do NOT auto-approve. Force manual review for anything that would otherwise be accepted.
+                if ($validationResult['valid']) {
+                    $validationResult['requires_review'] = true;
+                    $validationResult['valid'] = false; // ensure it's marked pending_review below
+                    $validationResult['reason'] = ($validationResult['reason'] ?? '') . ' Pending manual review by an administrator.';
+                }
+            }
+
             // Enforce business-name match. If AI indicates a mismatch with the registered company name,
             // do not auto-approve; force manual review and show a clear reason.
-            $aiAnalysis = $validationResult['ai_analysis'] ?? [];
             if (array_key_exists('business_name_matches', $aiAnalysis) && $aiAnalysis['business_name_matches'] === false) {
                 $validationResult['valid'] = false;
                 $validationResult['requires_review'] = true;
@@ -218,7 +269,8 @@ class ValidateBusinessPermitJob implements ShouldQueue
             }
 
             // If company-name duplicate was detected earlier, force pending review with explanation if not already forced
-            if ($companyDuplicateOnly && !$postAiDuplicate) {
+            // Allow override when we already auto-approved via verified email + AI match
+            if ($companyDuplicateOnly && !$postAiDuplicate && !$autoApproved) {
                 $validationResult['valid'] = false;
                 $validationResult['requires_review'] = true;
                 $validationResult['reason'] = "The company name '{$user->company_name}' is already registered to another account. If this is a branch office or a renewed permit, admin approval is required.";
@@ -262,6 +314,18 @@ class ValidateBusinessPermitJob implements ShouldQueue
             } catch (\Exception $emailError) {
                 Log::warning("ValidateBusinessPermitJob: Failed to send email to {$user->email}: ".$emailError->getMessage());
                 // Don't fail the job if email fails
+            }
+
+            // Notify admins when the permit was auto-approved by AI (strict or loose path)
+            if (!empty($autoApproved)) {
+                try {
+                    // Determine method label
+                    $method = (!empty($documentTypeIsLoose) && $documentTypeIsLoose) ? 'loose' : 'strict';
+                    \App\Services\AdminNotificationService::notifyPermitAutoApproved($user, $validation, $method);
+                    Log::info("ValidateBusinessPermitJob: Admins notified of auto-approval for user {$this->userId} (method={$method})");
+                } catch (\Exception $notifyErr) {
+                    Log::warning('Failed to notify admins of auto-approval: '.$notifyErr->getMessage());
+                }
             }
 
             // If validation failed and auto-reject, optionally delete the file

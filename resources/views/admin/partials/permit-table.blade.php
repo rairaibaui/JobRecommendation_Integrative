@@ -39,12 +39,20 @@
                             'pending_review' => 'fa-clock',
                             default => 'fa-clock'
                         };
-                        $tooltipText = match($status) {
-                            'approved' => 'This business permit has been approved. The employer can post jobs and hire applicants.',
-                            'rejected' => 'This permit was rejected. The employer must upload a valid business permit to continue.',
-                            'pending_review' => 'This permit is waiting for administrator review. AI analysis is complete.',
-                            default => 'Status unknown'
-                        };
+                        $aiAnalysis = is_string($permit->ai_analysis) ? json_decode($permit->ai_analysis, true) : $permit->ai_analysis;
+                        $reason = $permit->reason ?? ($aiAnalysis['reason'] ?? null);
+                        if ($status === 'pending_review') {
+                            $tooltipText = $reason
+                                ? 'Pending review: ' . 
+                                    (strlen($reason) > 180 ? substr($reason,0,177) . '...' : $reason)
+                                : 'This permit is waiting for administrator review. AI analysis is complete.';
+                        } else {
+                            $tooltipText = match($status) {
+                                'approved' => 'This business permit has been approved. The employer can post jobs and hire applicants.',
+                                'rejected' => 'This permit was rejected. The employer must upload a valid business permit to continue.',
+                                default => 'Status unknown'
+                            };
+                        }
                     @endphp
                     <div class="tooltip">
                         <span class="status-badge {{ $statusClass }}">
@@ -53,6 +61,13 @@
                         </span>
                         <span class="tooltip-text">{{ $tooltipText }}</span>
                     </div>
+
+                    @if($reason)
+                        <div style="margin-top:6px; color:#64748b; font-size:13px; max-width:320px;">
+                            <strong style="font-weight:600;">Reason:</strong>
+                            <span>{{ \Illuminate\Support\Str::limit($reason, 140) }}</span>
+                        </div>
+                    @endif
                 </td>
                 <td>
                     @php
@@ -68,22 +83,65 @@
                 </td>
                 <td>
                     @php
+                        $typeLabels = [
+                            'MAYORS_PERMIT' => "Mayor's Permit",
+                            'BARANGAY_CLEARANCE' => 'Barangay Clearance',
+                            'BARANGAY_LOCATIONAL_CLEARANCE' => 'Barangay Locational Clearance',
+                            'DTI' => 'DTI Certificate',
+                            'BUSINESS_PERMIT' => 'Business Permit',
+                            'UNKNOWN' => 'Not specified',
+                        ];
+
                         $aiAnalysis = is_string($permit->ai_analysis) ? json_decode($permit->ai_analysis, true) : $permit->ai_analysis;
-                        $docType = $aiAnalysis['document_type'] ?? 'Business Permit';
+                        // Prefer the saved document_type on the record, fallback to AI analysis
+                        $rawType = $permit->document_type ?? ($aiAnalysis['document_type'] ?? 'UNKNOWN');
+                        $key = strtoupper((string) $rawType);
+                        $docLabel = $typeLabels[$key] ?? 'Not specified';
                     @endphp
-                    <span style="font-size: 13px; color: #475569;">{{ $docType }}</span>
+                    <span style="font-size: 13px; color: #475569;">{{ $docLabel }}</span>
                 </td>
                 <td>
-                    @if($permit->permit_expiry_date)
-                        @php
-                            $expiryDate = is_string($permit->permit_expiry_date) 
-                                ? \Carbon\Carbon::parse($permit->permit_expiry_date) 
-                                : $permit->permit_expiry_date;
+                    @php
+                        $expiryDateRaw = $permit->permit_expiry_date;
+                        $inferred = false;
+                        // Prepare text sources to search for 'mandaluyong'
+                        $aiText = '';
+                        if (is_string($permit->ai_analysis)) {
+                            $decoded = json_decode($permit->ai_analysis, true);
+                        } else {
+                            $decoded = is_array($permit->ai_analysis) ? $permit->ai_analysis : null;
+                        }
+                        if (is_array($decoded)) {
+                            // flatten nested arrays and collect scalar values only to avoid Array to string conversion
+                            $flatten = function($arr) use (&$flatten) {
+                                $out = [];
+                                foreach ($arr as $v) {
+                                    if (is_array($v)) {
+                                        $out = array_merge($out, $flatten($v));
+                                    } elseif (is_scalar($v)) {
+                                        $out[] = (string) $v;
+                                    }
+                                }
+                                return $out;
+                            };
+                            $aiText = implode(' ', $flatten($decoded));
+                        }
+                        $combinedText = strtolower(trim(($aiText ?? '') . ' ' . ($permit->ocr_text ?? '') . ' ' . ($permit->raw_text ?? '') . ' ' . ($permit->reason ?? '')));
+                        if (!$expiryDateRaw && strpos($combinedText, 'mandaluyong') !== false) {
+                            $expiryDateRaw = \Carbon\Carbon::create(2025,12,31);
+                            $inferred = true;
+                        }
+
+                        if ($expiryDateRaw) {
+                            $expiryDate = is_string($expiryDateRaw) ? \Carbon\Carbon::parse($expiryDateRaw) : $expiryDateRaw;
                             $isExpiringSoon = $expiryDate->diffInDays(now()) <= 30 && $expiryDate->isFuture();
                             $isExpired = $expiryDate->isPast();
-                        @endphp
+                        }
+                    @endphp
+
+                    @if(isset($expiryDate))
                         <span style="color: {{ $isExpired ? '#ef4444' : ($isExpiringSoon ? '#f59e0b' : '#64748b') }}; font-size: 13px;">
-                            {{ $expiryDate->format('M d, Y') }}
+                            {{ $expiryDate->format('M d, Y') }}@if($inferred) <small style="color:#94a3b8;">(inferred)</small>@endif
                             @if($isExpired)
                                 <i class="fas fa-exclamation-triangle" title="Expired"></i>
                             @elseif($isExpiringSoon)
