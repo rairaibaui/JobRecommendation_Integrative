@@ -175,6 +175,7 @@
         </div>
     </div>
 </body>
+@include('partials.logout-confirm')
 @include('partials.custom-modals')
 
 <script>
