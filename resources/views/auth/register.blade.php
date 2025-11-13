@@ -329,11 +329,7 @@
                 </div>
             @endif
 
-            @if ($errors->any())
-                <div style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:10px 12px; border-radius:8px; margin-bottom:12px;">
-                    <strong>There were some problems with your input.</strong>
-                </div>
-            @endif
+            {{-- Per-field errors are displayed next to inputs. Removed the generic summary box so users focus on the exact invalid field. --}}
 
             <!-- Employer-only fields (placed first for employer flow) -->
             <div id="employer-fields" style="display:none; margin-top:6px;">
@@ -488,18 +484,40 @@
                 </div>
             </div>
 
+            @php
+                $pwError = $errors->first('password');
+                $pwConfirmError = $errors->first('password_confirmation');
+                $pwConfirmationRelated = ($pwConfirmError) || ($pwError && (stripos($pwError, 'confirm') !== false || stripos($pwError, 'confirmation') !== false || stripos($pwError, 'match') !== false));
+            @endphp
+
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" name="password" id="password" class="@error('password') input-error @enderror"
+                <input type="password" name="password" id="password" class="@if($pwError) input-error @endif"
                     autocomplete="new-password" required>
-                @error('password') <span class="error-text">{{ $message }}</span> @enderror
+                @if($pwError)
+                    <span class="error-text">{{ $pwError }}</span>
+                @endif
+            </div>
+
+            <div class="form-group" id="password-requirements" aria-live="polite">
+                <label style="font-size:13px; margin-bottom:6px;">Password requirements</label>
+                <div class="req-item invalid" id="pw-req-length">Be at least 8 characters long</div>
+                <div class="req-item invalid" id="pw-req-upper">Include at least one uppercase letter (A–Z)</div>
+                <div class="req-item invalid" id="pw-req-lower">Include at least one lowercase letter (a–z)</div>
+                <div class="req-item invalid" id="pw-req-number">Include numbers (optional)</div>
+                <div class="req-item invalid" id="pw-req-special">Include special characters (optional)</div>
             </div>
 
             <div class="form-group">
                 <label for="password_confirmation">Confirm Password</label>
                 <input type="password" name="password_confirmation" id="password_confirmation"
-                    class="@error('password_confirmation') input-error @enderror" autocomplete="new-password" required>
-                @error('password_confirmation') <span class="error-text">{{ $message }}</span> @enderror
+                    class="@if($pwConfirmationRelated) input-error @endif" autocomplete="new-password" required>
+                @if($pwConfirmError)
+                    <span class="error-text">{{ $pwConfirmError }}</span>
+                @elseif($pwConfirmationRelated && $pwError)
+                    {{-- If the validator attaches the confirmation error to the password field, show it under confirmation as well --}}
+                    <span class="error-text">{{ $pwError }}</span>
+                @endif
             </div>
 
             <div class="terms">
@@ -566,11 +584,12 @@
             }
         }
 
-        // Initialize based on old value
+        // Initialize based on old value (use JSON encoding so the value is a valid JS string)
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const roleParam = urlParams.get('role');
-            const initial = roleParam === 'employer' || roleParam === 'job_seeker' ? roleParam : '{{ old('user_type', request()->get('role','job_seeker')) }}';
+            const fallback = @json(old('user_type', request()->get('role','job_seeker')));
+            const initial = (roleParam === 'employer' || roleParam === 'job_seeker') ? roleParam : (fallback || 'job_seeker');
             selectType(initial);
         })();
 
@@ -650,6 +669,34 @@
                 e.target.value = formatted;
             });
         }
+
+        // Password requirement live checks
+        (function() {
+            const pwd = document.getElementById('password');
+            if (!pwd) return;
+            const reqLength = document.getElementById('pw-req-length');
+            const reqUpper = document.getElementById('pw-req-upper');
+            const reqLower = document.getElementById('pw-req-lower');
+            const reqNumber = document.getElementById('pw-req-number');
+            const reqSpecial = document.getElementById('pw-req-special');
+
+            function testPassword(value) {
+                // length
+                if (value.length >= 8) { reqLength.classList.remove('invalid'); reqLength.classList.add('valid'); } else { reqLength.classList.remove('valid'); reqLength.classList.add('invalid'); }
+                // uppercase
+                if (/[A-Z]/.test(value)) { reqUpper.classList.remove('invalid'); reqUpper.classList.add('valid'); } else { reqUpper.classList.remove('valid'); reqUpper.classList.add('invalid'); }
+                // lowercase
+                if (/[a-z]/.test(value)) { reqLower.classList.remove('invalid'); reqLower.classList.add('valid'); } else { reqLower.classList.remove('valid'); reqLower.classList.add('invalid'); }
+                // number (optional)
+                if (/[0-9]/.test(value)) { reqNumber.classList.remove('invalid'); reqNumber.classList.add('valid'); } else { reqNumber.classList.remove('valid'); reqNumber.classList.add('invalid'); }
+                // special char (optional)
+                if (/[!@#$%^&*(),.?":{}|<>\[\]\\/`~_+=;:'-]/.test(value)) { reqSpecial.classList.remove('invalid'); reqSpecial.classList.add('valid'); } else { reqSpecial.classList.remove('valid'); reqSpecial.classList.add('invalid'); }
+            }
+
+            pwd.addEventListener('input', function(e) { testPassword(e.target.value); });
+            // Run once on load if there's a prefilled value
+            if (pwd.value && pwd.value.length > 0) testPassword(pwd.value);
+        })();
     </script>
 </body>
 

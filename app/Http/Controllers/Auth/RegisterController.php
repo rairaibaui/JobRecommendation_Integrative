@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -48,50 +49,78 @@ class RegisterController extends Controller
             $userType = $hasBusinessPermit ? 'employer' : 'job_seeker';
         }
 
-    $permitUploaded = false;
-    if ($userType === 'employer') {
+        $permitUploaded = false;
+
+        if ($userType === 'employer') {
             // EMPLOYER REGISTRATION
-            $validator = Validator::make($request->all(), [
+            $rawEmployerPhone = $request->input('employer_phone_number');
+            $normalizedEmployerPhone = $this->normalizePhilippinePhone($rawEmployerPhone);
+
+            // Prepare data for validation so unique rule checks normalized value
+            $dataForValidation = $request->all();
+            if (!empty($normalizedEmployerPhone)) {
+                $dataForValidation['employer_phone_number'] = $normalizedEmployerPhone;
+            }
+
+            $validator = Validator::make($dataForValidation, [
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'company_name' => 'required|string|max:255',
                 'job_title' => 'nullable|string|max:255',
-                'employer_phone_number' => 'nullable|string|max:20',
+                'employer_phone_number' => ['nullable','string','max:20', Rule::unique('users', 'phone_number')],
                 'business_permit' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'password' => [
                     'required',
                     'confirmed',
                     Password::min(8)
                         ->letters()
-                        ->mixedCase()
-                        ->numbers()
-                        ->symbols(),
+                        ->mixedCase(),
                 ],
                 'terms' => 'accepted',
             ]);
 
             if ($validator->fails()) {
                 Log::info('Registration validation failed (employer)', ['errors' => $validator->errors()->toArray(), 'input' => $request->except(['password','password_confirmation'])]);
-                return back()->withInput()->with('error', 'Registration failed. Please check your inputs and try again.');
+                $preserve = array_merge($request->all(), ['user_type' => 'employer']);
+                if (!empty($normalizedEmployerPhone)) $preserve['employer_phone_number'] = $normalizedEmployerPhone;
+                return back()->withInput($preserve)->withErrors($validator)->with('user_type', 'employer');
             }
+
             $validated = $validator->validated();
 
+            // Ensure normalized phone is valid length before storing
+            if (!empty($validated['employer_phone_number'])) {
+                $normalizedPhone = $this->normalizePhilippinePhone($validated['employer_phone_number']);
+                if (empty($normalizedPhone) || strlen($normalizedPhone) !== 11) {
+                    $validator->errors()->add('employer_phone_number', 'Please provide a valid Philippine phone number.');
+                    $preserve = array_merge($request->all(), ['user_type' => 'employer']);
+                    if (!empty($normalizedPhone)) $preserve['employer_phone_number'] = $normalizedPhone;
+                    return back()->withInput($preserve)->withErrors($validator)->with('user_type', 'employer');
+                }
+                $validated['employer_phone_number'] = $normalizedPhone;
+            }
+
+            // Defensive check: ensure the email is not already registered (race-safe)
+            if (!empty($validated['email']) && User::where('email', $validated['email'])->exists()) {
+                $validator->errors()->add('email', 'This email is already registered with another account.');
+                $preserve = array_merge($request->all(), ['user_type' => 'employer']);
+                if (!empty($normalizedEmployerPhone)) $preserve['employer_phone_number'] = $normalizedEmployerPhone;
+                return back()->withInput($preserve)->withErrors($validator)->with('user_type', 'employer');
+            }
+
             try {
-                // Store business permit temporarily for validation
                 $permitPath = null;
                 if ($request->hasFile('business_permit')) {
                     $permitPath = $request->file('business_permit')->store('business_permits/temp', 'public');
-                    // Move file from temp to permanent location
                     $finalPath = 'business_permits/'.basename($permitPath);
                     Storage::disk('public')->move($permitPath, $finalPath);
                     $permitPath = $finalPath;
                 }
 
-                // Generate placeholder phone/location to satisfy schema constraints (if phone not provided)
-                $phoneNumber = $validated['employer_phone_number']
-                    ? preg_replace('/\\D/', '', $validated['employer_phone_number']) // Remove formatting
-                    : strval(random_int(10000000000, 99999999999)); // Fallback to random
+                $phoneNumber = !empty($validated['employer_phone_number'])
+                    ? $validated['employer_phone_number']
+                    : strval(random_int(10000000000, 99999999999));
                 $location = 'Unknown';
 
                 $user = User::create([
@@ -107,19 +136,11 @@ class RegisterController extends Controller
                     'password' => Hash::make($validated['password']),
                 ]);
 
-                // NOTE: Do NOT send the verification email at registration time.
-                // The system will send verification emails on employer login instead
-                // to avoid sending verification links immediately after account creation.
-
-                // Queue AI validation for background processing
                 $isDocumentValidationEnabled = config('ai.features.document_validation', false)
                                                && config('ai.document_validation.business_permit.enabled', false);
 
                 if ($isDocumentValidationEnabled && !empty($permitPath) && $user) {
-                    // Dispatch background job for AI validation with delay
                     $delay = config('ai.document_validation.business_permit.validation_delay_seconds', 10);
-
-                    // Check if Gmail/personal email - apply stricter validation
                     $isPersonalEmail = preg_match('/@(gmail|yahoo|hotmail|outlook)\.com$/i', $validated['email']) === 1;
 
                     \App\Jobs\ValidateBusinessPermitJob::dispatch(
@@ -128,34 +149,39 @@ class RegisterController extends Controller
                         [
                             'company_name' => $validated['company_name'],
                             'email' => $validated['email'],
-                            'is_personal_email' => $isPersonalEmail, // Flag for stricter validation
+                            'is_personal_email' => $isPersonalEmail,
                         ]
                     )->delay(now()->addSeconds($delay));
                 }
 
-                // Notify admins about the new business permit upload (only if a permit was uploaded)
                 if ($user && !empty($permitPath)) {
                     AdminNotificationService::notifyPermitUploaded($user);
                     $permitUploaded = true;
                 }
             } catch (\Throwable $e) {
-                // Clean up uploaded file if it exists
                 if (isset($permitPath) && $permitPath) {
                     Storage::disk('public')->delete($permitPath);
                 }
 
+                $preserve = array_merge($request->all(), ['user_type' => 'employer']);
                 return back()
-                    ->withInput()
-                    ->with('error', 'Registration failed. Please check your inputs and try again.');
+                    ->withInput($preserve)
+                    ->with('error', 'Registration failed. Please check your inputs and try again.')
+                    ->with('user_type', 'employer');
             }
         } else {
-            // JOB SEEKER REGISTRATION (Auto-detected - no business permit uploaded)
-            $validator = Validator::make($request->all(), [
+            // JOB SEEKER REGISTRATION
+            $rawPhone = $request->input('phone_number');
+            $normalizedPhoneForValidation = $this->normalizePhilippinePhone($rawPhone);
+            $dataForValidation = $request->all();
+            if (!empty($normalizedPhoneForValidation)) $dataForValidation['phone_number'] = $normalizedPhoneForValidation;
+
+            $validator = Validator::make($dataForValidation, [
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'birthday' => 'nullable|date',
-                'phone_number' => 'required|digits:11|numeric|unique:users,phone_number',
+                'phone_number' => ['required','string','max:20', Rule::unique('users', 'phone_number')],
                 'education_level' => 'nullable|string|max:255',
                 'skills' => 'nullable|string',
                 'years_of_experience' => 'nullable|integer|min:0',
@@ -165,21 +191,30 @@ class RegisterController extends Controller
                     'confirmed',
                     Password::min(8)
                         ->letters()
-                        ->mixedCase()
-                        ->numbers()
-                        ->symbols(),
+                        ->mixedCase(),
                 ],
                 'terms' => 'accepted',
             ]);
 
             if ($validator->fails()) {
                 Log::info('Registration validation failed (job_seeker)', ['errors' => $validator->errors()->toArray(), 'input' => $request->except(['password','password_confirmation'])]);
-                return back()->withInput()->with('error', 'Registration failed. Please check your inputs and try again.');
+                $preserve = array_merge($request->all(), ['user_type' => 'job_seeker']);
+                if (!empty($normalizedPhoneForValidation)) $preserve['phone_number'] = $normalizedPhoneForValidation;
+                return back()->withInput($preserve)->withErrors($validator);
             }
+
             $validated = $validator->validated();
 
+            if (empty($validated['phone_number']) || strlen($validated['phone_number']) !== 11) {
+                $validator->errors()->add('phone_number', 'Please provide a valid Philippine phone number (e.g. 09171234567 or +639171234567).');
+                $preserve = array_merge($request->all(), ['user_type' => 'job_seeker']);
+                if (!empty($normalizedPhoneForValidation)) $preserve['phone_number'] = $normalizedPhoneForValidation;
+                return back()->withInput($preserve)->withErrors($validator);
+            }
+
+            // phone_number is already normalized into $validated via validation
+
             try {
-                // Ensure location is normalized (trim whitespace) before storing
                 $locationValue = isset($validated['location']) ? trim($validated['location']) : null;
 
                 $user = User::create([
@@ -196,13 +231,13 @@ class RegisterController extends Controller
                     'password' => Hash::make($validated['password']),
                 ]);
             } catch (\Throwable $e) {
+                $preserve = array_merge($request->all(), ['user_type' => 'job_seeker']);
                 return back()
-                    ->withInput()
+                    ->withInput($preserve)
                     ->with('error', 'Registration failed. Please check your inputs and try again.');
             }
         }
 
-        // Redirect to login for both employer and job seeker; require manual sign-in
         if ($permitUploaded) {
             $message = 'Account created successfully! Your business permit was uploaded and will be reviewed by our team. Please sign in to continue.';
         } else {
@@ -214,5 +249,61 @@ class RegisterController extends Controller
             ->with('email', $request->email)
             ->with('registered', true)
             ->with('permit_uploaded', $permitUploaded);
+        }
+
+    /**
+     * Normalize a Philippine phone number into an 11-digit local format starting with 0.
+     * Examples:
+     *  +639171234567 -> 09171234567
+     *  639171234567  -> 09171234567
+     *  9171234567    -> 09171234567
+     *  09171234567   -> 09171234567
+     */
+    protected function normalizePhilippinePhone(?string $raw): ?string
+    {
+        if (empty($raw)) return null;
+        $s = preg_replace('/[^0-9]/', '', $raw);
+        if ($s === '') return null;
+        // Remove leading + if present (already removed by preg_replace)
+        // If starts with '63' and length >= 11, convert to leading 0
+        if (strpos($s, '63') === 0 && strlen($s) >= 11) {
+            // drop country code 63, prefix 0
+            $s = '0' . substr($s, 2);
+        }
+        // If starts with country code '0' already OK
+        if (strlen($s) === 10 && strpos($s, '9') === 0) {
+            // local 10-digit without leading zero (e.g., 9171234567) -> add 0
+            $s = '0' . $s;
+        }
+        // final sanity: if it's longer than 11, trim to last 11 digits
+        if (strlen($s) > 11) {
+            $s = substr($s, -11);
+        }
+        // if not 11 digits at this point, return as-is (validation will catch it)
+        return $s;
+    }
+
+    /**
+     * Check whether a normalized Philippine phone number is already in use.
+     * This method normalizes stored phone numbers on-the-fly to avoid mismatches
+     * caused by different formatting (spaces, dashes, +63, etc.). Uses a cursor
+     * to avoid loading all users into memory.
+     */
+    protected function isPhoneInUse(?string $normalizedPhone): bool
+    {
+        if (empty($normalizedPhone)) {
+            return false;
+        }
+
+        foreach (User::whereNotNull('phone_number')->cursor() as $user) {
+            $stored = $user->phone_number;
+            if (empty($stored)) continue;
+            $normalizedStored = $this->normalizePhilippinePhone($stored);
+            if ($normalizedStored === $normalizedPhone) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

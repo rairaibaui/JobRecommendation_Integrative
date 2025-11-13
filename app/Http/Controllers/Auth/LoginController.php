@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class LoginController extends Controller
 {
@@ -38,6 +39,13 @@ class LoginController extends Controller
             'email' => $emailInput,
             'password' => $request->input('password'),
         ];
+
+        // If the email does not exist, provide a clear error message for the user
+        if (! User::where('email', $emailInput)->exists()) {
+            return back()->withErrors([
+                'email' => "We couldn\'t find any account registered with this email address. Please check your email or create a new account to continue.",
+            ])->onlyInput('email');
+        }
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();

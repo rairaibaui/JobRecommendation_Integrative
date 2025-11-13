@@ -42,12 +42,12 @@ class ProfileController extends Controller
                 return response()->json(['message' => 'User not found'], 404);
             }
 
-            // Capture original profile fields to detect critical changes that should
-            // invalidate a previously AI-verified resume (force pending manual review).
+            // Only changes to phone (and email via the separate changeEmail flow)
+            // should trigger re-verification of an already-verified resume.
+            // Non-critical changes (address, summary, skills, etc.) must NOT
+            // remove or obscure an existing verified badge.
             $watchedProfileFields = [
-                'phone_number', 'birthday', 'education_level', 'skills', 'summary',
-                'education', 'experiences', 'languages', 'portfolio_links',
-                'availability', 'years_of_experience', 'location', 'address'
+                'phone_number',
             ];
             $originalProfileSnapshot = [];
             foreach ($watchedProfileFields as $__wf) {
@@ -72,52 +72,103 @@ class ProfileController extends Controller
             // be changed via the user settings form. To change a legal name, contact support.
             // Temporary debug: log upload metadata and PHP/$_FILES error information
             // before validation runs so we can capture UPLOAD_ERR codes when the
-            // validator fails at the PHP upload layer.
+            // validator fails at the PHP upload layer. Also inspect profile_picture
+            // raw $_FILES entries which previously were not logged.
             try {
-                $uploaded = $request->file('resume_file');
-                if ($uploaded) {
+                $uploadedResume = $request->file('resume_file');
+                if ($uploadedResume) {
                     Log::info('Resume upload attempt (UploadedFile present)', [
                         'user_id' => $user->id,
-                        'client_name' => $uploaded->getClientOriginalName(),
-                        'client_size' => $uploaded->getSize(),
-                        'client_mime' => $uploaded->getClientMimeType(),
-                        'error' => $uploaded->getError(),
+                        'client_name' => $uploadedResume->getClientOriginalName(),
+                        'client_size' => $uploadedResume->getSize(),
+                        'client_mime' => $uploadedResume->getClientMimeType(),
+                        'error' => $uploadedResume->getError(),
                     ]);
                 } else {
-                    // If UploadedFile is not present, inspect raw $_FILES for PHP-level errors
-                    $raw = isset($_FILES['resume_file']) ? $_FILES['resume_file'] : null;
+                    $rawResume = isset($_FILES['resume_file']) ? $_FILES['resume_file'] : null;
                     Log::info('Resume upload attempt (no UploadedFile) - raw $_FILES', [
                         'user_id' => $user->id,
-                        '_FILES' => $raw,
+                        '_FILES' => $rawResume,
                     ]);
+                    // If PHP reports no file uploaded (error code 4), remove any empty form value
+                    if (is_array($rawResume) && isset($rawResume['error']) && intval($rawResume['error']) === 4) {
+                        try {
+                            $request->files->remove('resume_file');
+                            $request->request->remove('resume_file');
+                        } catch (\Throwable $__remEx) {
+                            // best-effort
+                        }
+                    }
+                }
+
+                // Profile picture raw logging
+                $uploadedPic = $request->file('profile_picture');
+                if ($uploadedPic) {
+                    Log::info('Profile picture upload attempt (UploadedFile present)', [
+                        'user_id' => $user->id,
+                        'client_name' => $uploadedPic->getClientOriginalName(),
+                        'client_size' => $uploadedPic->getSize(),
+                        'client_mime' => $uploadedPic->getClientMimeType(),
+                        'error' => $uploadedPic->getError(),
+                    ]);
+                } else {
+                    $rawPic = isset($_FILES['profile_picture']) ? $_FILES['profile_picture'] : null;
+                    Log::info('Profile picture upload attempt (no UploadedFile) - raw $_FILES', [
+                        'user_id' => $user->id,
+                        '_FILES' => $rawPic,
+                    ]);
+                    if (is_array($rawPic) && isset($rawPic['error']) && intval($rawPic['error']) === 4) {
+                        try {
+                            $request->files->remove('profile_picture');
+                            $request->request->remove('profile_picture');
+                        } catch (\Throwable $__remEx) {
+                            // best-effort
+                        }
+                    }
                 }
             } catch (\Throwable $__uploadLogEx) {
                 // best-effort logging; do not block validation
-                Log::warning('Failed to log resume upload debug info: ' . $__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
+                Log::warning('Failed to log resume/profile_picture upload debug info: ' . $__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
             }
 
-            $request->validate([
-                'birthday' => 'nullable|date',
-                'phone_number' => 'nullable|string|max:20',
-                'education_level' => 'nullable|string|max:255',
-                'skills' => 'nullable|string',
-                'summary' => 'nullable|string',
-                'education' => 'nullable|array',
-                'experiences' => 'nullable|array',
-                'languages' => 'nullable|string',
-                'portfolio_links' => 'nullable|string',
-                'availability' => 'nullable|string',
-                // Only check size at validation time. We perform a conservative extension
-                // whitelist after storing the uploaded file so that unexpected/misreported
-                // client MIME types don't cause the validator to fail prematurely.
-                'resume_file' => 'nullable|file|max:5120',
-                'years_of_experience' => 'nullable|numeric|min:0',
-                'location' => 'nullable|string|max:255',
-                'address' => 'nullable|string|max:255',
-                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-                'remove_picture' => 'nullable|boolean',
-                'remove_resume' => 'nullable|boolean',
-            ]);
+            // Use explicit Validator so we can capture validation failures and
+            // return per-field errors instead of letting the exception bubble.
+            try {
+                $rules = [
+                    'birthday' => 'nullable|date',
+                    'phone_number' => 'nullable|string|max:20',
+                    'education_level' => 'nullable|string|max:255',
+                    'skills' => 'nullable|string',
+                    'summary' => 'nullable|string',
+                    'education' => 'nullable|array',
+                    'experiences' => 'nullable|array',
+                    'languages' => 'nullable|string',
+                    'portfolio_links' => 'nullable|string',
+                    'availability' => 'nullable|string',
+                    'resume_file' => 'nullable|file|max:5120',
+                    'years_of_experience' => 'nullable|numeric|min:0',
+                    'location' => 'nullable|string|max:255',
+                    'address' => 'nullable|string|max:255',
+                    'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                    'remove_picture' => 'nullable|boolean',
+                    'remove_resume' => 'nullable|boolean',
+                ];
+
+                $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules);
+                if ($validator->fails()) {
+                    $errors = $validator->errors()->toArray();
+                    Log::warning('Profile update validation failed', ['user_id' => $user->id, 'errors' => $errors, '_FILES' => $_FILES]);
+
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $errors], 422);
+                    }
+
+                    return redirect()->back()->withErrors($validator)->withInput();
+                }
+            } catch (\Throwable $e) {
+                Log::error('Profile validation exception: '.$e->getMessage(), ['user_id' => $user->id ?? null, 'trace' => $e->getTraceAsString()]);
+                throw $e;
+            }
 
             // Track what was updated
             $pictureUpdated = false;
@@ -198,11 +249,18 @@ class ProfileController extends Controller
                 }
             }
 
-            if ($profileChanged && $user->resume_file && ($user->resume_verification_status ?? '') === 'verified') {
-                // Invalidate the verified resume: mark pending and notify admins.
+            // Only treat profile change as requiring re-verification when the
+            // changed fields include our watched (critical) fields. Watch list
+            // is intentionally small to avoid invalidating verification badge
+            // for minor edits like address or summary.
+            $criticalChanged = array_intersect($changedFields, $watchedProfileFields);
+            if (!empty($criticalChanged) && $user->resume_file && ($user->resume_verification_status ?? '') === 'verified') {
+                // Mark resume as pending for re-check but DO NOT clear the
+                // existing verified badge (verified_at) so the UI can still
+                // display the previous verification until an admin acts.
                 $user->resume_verification_status = 'pending';
-                $user->verification_flags = json_encode(array_merge((array)json_decode($user->verification_flags ?? '[]', true), ['profile_changed']));
-                $user->verification_notes = 'Profile information changed ('.implode(',', $changedFields).'). Resume set to pending for re-verification.';
+                $user->verification_flags = json_encode(array_merge((array)json_decode($user->verification_flags ?? '[]', true), ['phone_changed']));
+                $user->verification_notes = 'Critical profile information changed ('.implode(',', $criticalChanged).'). Resume set to pending for re-verification.';
 
                 // Persist change now so that later code doesn't attempt to auto-approve
                 // or re-verify until an admin has reviewed.
@@ -269,7 +327,41 @@ class ProfileController extends Controller
                 if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
                     Storage::disk('public')->delete($user->profile_picture);
                 }
-                $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+                $file = $request->file('profile_picture');
+
+                if (! $file->isValid()) {
+                    $uploadErr = $file->getError();
+                    Log::error('Profile picture upload reported invalid file.', [
+                        'user_id' => $user->id ?? null,
+                        'ip' => $request->ip(),
+                        'error_code' => $uploadErr,
+                    ]);
+
+                    $errorMessage = 'The profile picture failed to upload (invalid file).';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $errorMessage], 422);
+                    }
+
+                    return redirect()->back()->withErrors(['profile_picture' => $errorMessage])->withInput();
+                }
+
+                try {
+                    $path = $file->store('profile_pictures', 'public');
+                } catch (\Throwable $e) {
+                    Log::error('Profile picture store failed: '.$e->getMessage(), [
+                        'user_id' => $user->id ?? null,
+                        'ip' => $request->ip(),
+                        'exception' => $e->getMessage(),
+                    ]);
+
+                    $errorMessage = 'The profile picture failed to upload.';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $errorMessage], 500);
+                    }
+
+                    return redirect()->back()->withErrors(['profile_picture' => $errorMessage])->withInput();
+                }
+
                 $user->profile_picture = $path;
                 $pictureUpdated = true;
             }
@@ -947,7 +1039,55 @@ class ProfileController extends Controller
             'email' => 'required|email|unique:users,email,'.$user->id,
         ]);
 
+        $oldEmail = $user->email;
         $user->email = $request->email;
+
+        // If the user has an uploaded resume and it was previously verified,
+        // mark the resume as pending for re-verification due to email change.
+        // Do NOT clear the verified badge (verified_at) so the UI may still
+        // indicate prior verification until an admin confirms.
+        try {
+            if ($user->resume_file && ($user->resume_verification_status ?? '') === 'verified') {
+                $user->resume_verification_status = 'pending';
+                $user->verification_flags = json_encode(array_merge((array)json_decode($user->verification_flags ?? '[]', true), ['email_changed']));
+                $user->verification_notes = 'Email changed from '.$oldEmail.' to '.$user->email.'. Resume set to pending for re-verification.';
+
+                // Audit log for traceability
+                try {
+                    \App\Models\AuditLog::create([
+                        'user_id' => $user->id,
+                        'event' => 'email_changed_requires_reverify',
+                        'title' => 'Email Changed - Resume Pending',
+                        'message' => "User {$oldEmail} changed email to {$user->email}. Resume set to pending for admin review.",
+                        'data' => json_encode(['old_email' => $oldEmail, 'new_email' => $user->email]),
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                    ]);
+                } catch (\Throwable $__auditEx) {
+                    // best-effort
+                }
+
+                // Notify admins to review the resume (best-effort)
+                try {
+                    $admins = User::where('is_admin', true)->get();
+                    foreach ($admins as $admin) {
+                        \App\Models\Notification::create([
+                            'user_id' => $admin->id,
+                            'type' => 'info',
+                            'title' => 'User Email Changed - Resume Re-Verification Required',
+                            'message' => "User {$user->email} changed email. Previously verified resume requires admin review.",
+                            'read' => false,
+                            'data' => ['user_id' => $user->id, 'old_email' => $oldEmail, 'new_email' => $user->email],
+                        ]);
+                    }
+                } catch (\Throwable $__notifyEx) {
+                    // best-effort
+                }
+            }
+        } catch (\Throwable $__e) {
+            Log::warning('Failed to mark resume pending after email change for user '.$user->id.': '.$__e->getMessage());
+        }
+
         $user->save();
 
         return redirect()->back()->with('success', 'Email updated successfully.');
@@ -1318,15 +1458,14 @@ class ProfileController extends Controller
             if ($isDocumentValidationEnabled) {
                 $delay = config('ai.document_validation.business_permit.validation_delay_seconds', 10);
 
-                \App\Jobs\ValidateBusinessPermitJob::dispatch(
-                    $user->id,
-                    $permitPath,
-                    [
-                        'company_name' => $user->company_name ?? 'Unknown',
-                        'email' => $user->email,
-                    ]
-<<<<<<< HEAD
-                )->delay(\Carbon\Carbon::now()->addSeconds($delay));
+                    \App\Jobs\ValidateBusinessPermitJob::dispatch(
+                        $user->id,
+                        $permitPath,
+                        [
+                            'company_name' => $user->company_name ?? 'Unknown',
+                            'email' => $user->email,
+                        ]
+                    )->delay(\Carbon\Carbon::now()->addSeconds($delay));
             } else {
                 // If AI validation is disabled or no queue worker, immediately create a pending review record
                 try {
@@ -1385,9 +1524,7 @@ class ProfileController extends Controller
                     // Best-effort: do not block profile update if this fails
                     Log::warning('Failed to create pending DocumentValidation: '.$e->getMessage());
                 }
-=======
-                )->delay(now()->addSeconds($delay));
->>>>>>> 7b2baf8 (Save local changes)
+
             }
         }
 
