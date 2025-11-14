@@ -335,34 +335,80 @@ class ValidateBusinessPermitJob implements ShouldQueue
                 Log::info("ValidateBusinessPermitJob: Deleted rejected file {$this->filePath}");
             }
         } catch (\Exception $e) {
-            Log::error("ValidateBusinessPermitJob failed for user {$this->userId}: ".$e->getMessage());
+            $errorMessage = $e->getMessage();
+            Log::error("ValidateBusinessPermitJob failed for user {$this->userId}: {$errorMessage}");
+            Log::error("Stack trace: " . $e->getTraceAsString());
 
-            // Create validation record for failed job
-            DocumentValidation::create([
-                'user_id' => $this->userId,
-                'document_type' => 'business_permit',
-                'file_path' => $this->filePath,
-                'is_valid' => false,
-                'confidence_score' => 0,
-                'validation_status' => 'pending_review',
-                'reason' => 'AI validation failed. Manual review required. Error: '.$e->getMessage(),
-                'ai_analysis' => null,
-                'validated_by' => 'system',
-                'validated_at' => now(),
-            ]);
+            // Determine if this is an AI service failure
+            $isAiFailure = str_contains($errorMessage, 'AI validation failed') || 
+                          str_contains($errorMessage, 'AI service') ||
+                          str_contains($errorMessage, 'Python') ||
+                          str_contains($errorMessage, 'document verifier');
 
-            throw $e; // Re-throw to trigger retry
+            // Create validation record for failed job with detailed error message
+            $reason = $isAiFailure 
+                ? "AI validation service encountered an error: {$errorMessage}. This document requires manual review by an administrator to verify the business permit."
+                : "Validation failed: {$errorMessage}. Manual review required.";
+
+            DocumentValidation::updateOrCreate(
+                [
+                    'user_id' => $this->userId,
+                    'document_type' => 'business_permit',
+                    'file_path' => $this->filePath,
+                ],
+                [
+                    'is_valid' => false,
+                    'confidence_score' => 0,
+                    'validation_status' => 'pending_review',
+                    'reason' => $reason,
+                    'ai_analysis' => [
+                        'error' => $errorMessage,
+                        'error_type' => $isAiFailure ? 'ai_service_failure' : 'validation_failure',
+                        'attempted_at' => now()->toIso8601String(),
+                    ],
+                    'validated_by' => 'system',
+                    'validated_at' => now(),
+                ]
+            );
+
+            // Notify user about the issue
+            try {
+                Notification::create([
+                    'user_id' => $this->userId,
+                    'type' => 'warning',
+                    'title' => 'Business Permit Validation',
+                    'message' => 'Your business permit is pending manual review. Our automated system encountered a technical issue and an administrator will review your document shortly.',
+                    'read' => false,
+                ]);
+            } catch (\Exception $notifyError) {
+                Log::warning('Failed to create notification: ' . $notifyError->getMessage());
+            }
+
+            // Re-throw to trigger retry (up to max attempts)
+            throw $e;
         }
     }
 
     /**
-     * Handle a job failure.
+     * Handle a job failure after all retries are exhausted.
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("ValidateBusinessPermitJob permanently failed for user {$this->userId} after {$this->tries} attempts: ".$exception->getMessage());
+        $errorMessage = $exception->getMessage();
+        Log::error("ValidateBusinessPermitJob permanently failed for user {$this->userId} after {$this->tries} attempts: {$errorMessage}");
+        Log::error("Final stack trace: " . $exception->getTraceAsString());
 
-        // Update or create final validation record
+        // Determine if this is an AI service failure
+        $isAiFailure = str_contains($errorMessage, 'AI validation failed') || 
+                      str_contains($errorMessage, 'AI service') ||
+                      str_contains($errorMessage, 'Python') ||
+                      str_contains($errorMessage, 'document verifier');
+
+        // Update or create final validation record with detailed error message
+        $reason = $isAiFailure
+            ? "AI validation service failed after {$this->tries} attempts: {$errorMessage}. This document requires manual review by an administrator. Please check system logs for details."
+            : "Automatic validation failed after {$this->tries} attempts: {$errorMessage}. Document flagged for manual review by administrator.";
+
         DocumentValidation::updateOrCreate(
             [
                 'user_id' => $this->userId,
@@ -373,14 +419,36 @@ class ValidateBusinessPermitJob implements ShouldQueue
                 'is_valid' => false,
                 'confidence_score' => 0,
                 'validation_status' => 'pending_review',
-                'reason' => 'Automatic validation failed after multiple attempts. Document flagged for manual review by administrator.',
-                'ai_analysis' => ['error' => $exception->getMessage()],
+                'reason' => $reason,
+                'ai_analysis' => [
+                    'error' => $errorMessage,
+                    'error_type' => $isAiFailure ? 'ai_service_failure_after_retries' : 'validation_failure_after_retries',
+                    'attempts' => $this->tries,
+                    'failed_at' => now()->toIso8601String(),
+                ],
                 'validated_by' => 'system',
                 'validated_at' => now(),
             ]
         );
 
-        // TODO: Send email to admin about failed validation job
+        // Try to send email notification to user
+        try {
+            $user = User::find($this->userId);
+            if ($user) {
+                Mail::to($user->email)->send(new BusinessPermitValidated(
+                    $user,
+                    DocumentValidation::where('user_id', $this->userId)
+                        ->where('file_path', $this->filePath)
+                        ->where('document_type', 'business_permit')
+                        ->first()
+                ));
+                Log::info("ValidateBusinessPermitJob: Sent failure notification email to {$user->email}");
+            }
+        } catch (\Exception $emailError) {
+            Log::warning("ValidateBusinessPermitJob: Failed to send failure notification email: " . $emailError->getMessage());
+        }
+
+        // TODO: Send email to admin about failed validation job (AI service may be down)
     }
 
     /**

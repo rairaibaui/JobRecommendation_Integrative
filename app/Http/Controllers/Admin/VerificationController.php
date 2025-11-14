@@ -70,7 +70,16 @@ class VerificationController extends Controller
                 END
             ")->orderBy('updated_at', 'desc')->get();
         } else {
-            $query = DocumentValidation::with('user')->where('document_type', 'business_permit');
+            // Get the latest permit for each user to avoid duplicates
+            // Use a subquery to find the most recent permit per user (by highest ID, which typically corresponds to most recent)
+            $query = DocumentValidation::with('user')
+                ->where('document_type', 'business_permit')
+                ->whereIn('id', function($subquery) {
+                    $subquery->selectRaw('MAX(id)')
+                        ->from('document_validations')
+                        ->where('document_type', 'business_permit')
+                        ->groupBy('user_id');
+                });
 
             if ($status) {
                 $query->where('validation_status', $status);

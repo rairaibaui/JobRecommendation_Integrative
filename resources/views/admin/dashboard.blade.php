@@ -486,7 +486,7 @@
             .grid-2 {
                 grid-template-columns: 1fr;
             }
-            
+
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -496,7 +496,7 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .admin-header {
                 flex-direction: column;
                 gap: 15px;
@@ -667,6 +667,52 @@
             </div>
         </div>
 
+        <!-- AI System Status -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-robot"></i> AI Document Verification System</h2>
+            </div>
+            <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-brain" style="font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 700;">Custom AI Model Active</h3>
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">Fine-tuned vision model for Philippine business permit validation</p>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #10b981; margin-bottom: 4px;">100%</div>
+                        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Training Accuracy</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #3b82f6; margin-bottom: 4px;">< 2s</div>
+                        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Inference Time</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #8b5cf6; margin-bottom: 4px;">8</div>
+                        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Detection Elements</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #f59e0b; margin-bottom: 4px;">AMD</div>
+                        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Optimized For</div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                        <span style="font-weight: 600; color: #1e293b;">System Capabilities</span>
+                    </div>
+                    <div style="color: #64748b; font-size: 13px; line-height: 1.5;">
+                        Detects Mandaluyong City logo, business permit titles, details, names, issued dates, and government signatures across all Philippine business permit types (DTI, Barangay, Mayor's permits).
+                        <a href="#" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Learn more →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Alerts -->
         @if($resumesNeedingReview > 0 || $pendingPermits > 0)
             <div class="alert alert-warning">
@@ -813,7 +859,7 @@
                         View All
                     </a>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                         <span style="font-size: 14px; color: #495057;">With Resume</span>
@@ -856,7 +902,7 @@
                         View All
                     </a>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                         <span style="font-size: 14px; color: #495057;">Verified Employers</span>

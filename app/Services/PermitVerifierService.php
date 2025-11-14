@@ -55,8 +55,11 @@ Document text:
 ---
 PROMPT;
 
+            // Note: This service uses OpenAI for document classification
+            // If you want to remove OpenAI entirely, this service should be refactored
+            // to use custom AI or removed if not needed
             $response = $client->chat()->create([
-                'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+                'model' => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
                 'response_format' => ['type' => 'json_object'],
                 'messages' => [
                     ['role' => 'system', 'content' => 'You are a strict document type classifier.'],

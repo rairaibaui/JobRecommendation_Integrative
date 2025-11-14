@@ -3,7 +3,11 @@ import os
 from datetime import datetime, timedelta
 import pytest
 
-from document_verifier_service import mandaluyong_verifier as mv
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+import mandaluyong_verifier as mv
 
 
 def make_temp_image_with_text(text: str):
@@ -106,4 +110,3 @@ def test_blocked_expired_date():
     except Exception:
         pass
     assert res['status'] == 'BLOCKED'
-*** End Patch

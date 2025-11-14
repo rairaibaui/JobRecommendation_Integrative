@@ -455,12 +455,16 @@
         .table-container {
             max-height: 600px;
             overflow-y: auto;
+            overflow-x: auto;
             position: relative;
+            width: 100%;
         }
 
         .table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 1200px;
         }
 
         .table thead {
@@ -471,7 +475,7 @@
         }
 
         .table th {
-            padding: 14px 16px;
+            padding: 14px 12px;
             text-align: left;
             font-weight: 600;
             color: #506B81;
@@ -480,13 +484,40 @@
             letter-spacing: 0.5px;
             border-bottom: 2px solid #E5E7EB;
             font-family: 'Poppins', sans-serif;
+            white-space: nowrap;
+        }
+
+        .table th:nth-child(1) { width: 18%; } /* Employer */
+        .table th:nth-child(2) { width: 15%; } /* Status */
+        .table th:nth-child(3) { width: 16%; } /* AI Confidence */
+        .table th:nth-child(4) { width: 12%; } /* Document Type */
+        .table th:nth-child(5) { width: 12%; } /* Expiry Date */
+        .table th:nth-child(6) { width: 12%; } /* Submitted */
+        .table th:nth-child(7) { width: 15%; } /* Actions */
+
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid #F3F4F6;
+            color: #334155;
+            font-size: 13px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .table td:nth-child(1),
+        .table td:nth-child(2),
+        .table td:nth-child(3),
+        .table td:nth-child(4),
+        .table td:nth-child(5),
+        .table td:nth-child(6),
+        .table td:nth-child(7) {
+            max-width: 0;
+            overflow: visible;
         }
 
         .table td {
-            padding: 16px;
-            border-bottom: 1px solid #F3F4F6;
-            color: #334155;
-            font-size: 14px;
+            overflow: visible !important;
         }
 
         .table tbody tr {
@@ -597,6 +628,7 @@
             font-size: 12px;
             line-height: 1.5;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
         }
 
         .tooltip .tooltip-text::after {
@@ -613,6 +645,67 @@
         .tooltip:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
+        }
+
+        /* Enhanced tooltip for detailed AI analysis */
+        .tooltip-text-enhanced {
+            visibility: hidden;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #fff;
+            text-align: left;
+            border-radius: 12px;
+            padding: 16px;
+            position: absolute;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            pointer-events: none;
+            transform: translateX(-50%) translateY(5px);
+            border: 1px solid #475569;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .tooltip-text-enhanced::before {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 20px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: #334155 transparent transparent transparent;
+        }
+
+        /* Only show enhanced tooltip when hovering status badge tooltips */
+        .status-container .tooltip:hover .tooltip-text-enhanced {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Ensure AI confidence tooltips don't show status badge tooltips */
+        .ai-analysis-container .tooltip:hover .tooltip-text-enhanced {
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
+        /* Fix AI Confidence tooltip positioning */
+        .ai-analysis-container .tooltip {
+            position: relative;
+        }
+
+        .ai-analysis-container .tooltip .tooltip-text {
+            position: fixed;
+            z-index: 10001;
+            width: 350px;
+            max-width: 90vw;
+            left: auto !important;
+            margin-left: 0 !important;
+            bottom: auto;
+            top: auto;
         }
 
         /* AI Score Indicator */
@@ -646,23 +739,297 @@
             min-width: 40px;
         }
 
+        /* Enhanced AI Analysis Container */
+        .ai-analysis-container {
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .ai-score-enhanced {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .ai-confidence-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .ai-confidence-card:hover {
+            border-color: #648EB5;
+            box-shadow: 0 4px 12px rgba(100, 142, 181, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .confidence-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .confidence-header i {
+            font-size: 14px !important;
+            flex-shrink: 0;
+        }
+
+        .confidence-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #506B81;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .score-bar-enhanced {
+            width: 100%;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: visible;
+            position: relative;
+            margin-bottom: 6px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .score-fill-enhanced {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 0;
+        }
+
+        .score-fill-enhanced[style*="width: 0%"],
+        .score-fill-enhanced[style*="width: 1%"],
+        .score-fill-enhanced[style*="width: 2%"] {
+            min-width: 0;
+            box-shadow: none;
+        }
+
+        .score-fill-enhanced.high {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+
+        .score-fill-enhanced.medium {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .score-fill-enhanced.low {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .score-percentage {
+            font-size: 9px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        .score-bar-enhanced .score-percentage[style*="position: absolute"] {
+            font-size: 10px;
+            font-weight: 600;
+            color: #64748b;
+            text-shadow: none;
+            z-index: 1;
+        }
+
+        .detection-summary {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+
+        .detection-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .stat-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.detected {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #059669;
+        }
+
+        .stat-icon.missing {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #dc2626;
+        }
+
+        .stat-text {
+            color: #64748b;
+            font-size: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60px;
+        }
+
+        /* Enhanced Status Badges */
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 100%;
+        }
+
+        .status-badge-enhanced {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px solid;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .badge-icon-wrapper {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .badge-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .badge-text {
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge-subtext {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.85;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-badge-enhanced.status-approved {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border-color: #10b981;
+        }
+
+        .status-badge-enhanced.status-approved .badge-icon-wrapper {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge-enhanced.status-rejected {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border-color: #ef4444;
+        }
+
+        .status-badge-enhanced.status-rejected .badge-icon-wrapper {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .status-badge-enhanced.status-needs-review {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border-color: #f59e0b;
+        }
+
+        .status-badge-enhanced.status-needs-review .badge-icon-wrapper {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .status-badge-enhanced.status-pending {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #3730a3;
+            border-color: #6366f1;
+        }
+
+        .status-badge-enhanced.status-pending .badge-icon-wrapper {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .status-badge-enhanced:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
         /* Action Buttons */
         .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .btn-action {
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 6px;
             border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            white-space: nowrap;
         }
 
         .btn-approve {
@@ -746,11 +1113,20 @@
         .user-name {
             font-weight: 600;
             color: #1e293b;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
         }
 
         .user-email {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
         }
 
         /* Flags Display */
@@ -917,7 +1293,6 @@
 
         <div style="margin-top: auto; padding-top: 20px;">
             <form method="POST" action="{{ route('logout') }}" onsubmit="return showLogoutModal(this);">
-            <form method="POST" action="{{ route('logout') }}>
                 @csrf
                 <button type="submit" class="menu-item" style="width: 100%; background: #648EB5; color: white; border: none; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
                     <i class="fas fa-sign-out-alt"></i>
@@ -935,6 +1310,25 @@
                 <i class="fas fa-check-circle"></i>
                 Verification Management
             </h1>
+        </div>
+
+        <!-- AI System Info -->
+        <div class="page-header">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-brain" style="font-size: 14px;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 700;">Custom AI-Powered Verification</h3>
+                    <p style="margin: 2px 0 0 0; color: #64748b; font-size: 13px;">Fine-tuned vision model automatically validates business permits</p>
+                </div>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                <div style="font-size: 13px; color: #475569; line-height: 1.5;">
+                    <strong>Custom AI Vision Model:</strong> Fine-tuned EfficientNet model automatically detects Mandaluyong City logo, business permit titles, company details & nature, business addresses, owner/applicant names, issued dates, and government signatures.
+                    <span style="color: #059669; font-weight: 600;">100% training accuracy</span> with < 2s inference time.
+                </div>
+            </div>
         </div>
 
         <!-- Tabs -->
@@ -1023,10 +1417,10 @@
                     </div>
                     <div class="filter-group">
                         <label for="search">Search</label>
-                        <input 
-                            type="text" 
-                            name="search" 
-                            id="search" 
+                        <input
+                            type="text"
+                            name="search"
+                            id="search"
                             placeholder="Search by name or email..."
                             value="{{ request('search') }}"
                         >

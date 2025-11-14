@@ -22,3 +22,4 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/document_verifier_service/venv

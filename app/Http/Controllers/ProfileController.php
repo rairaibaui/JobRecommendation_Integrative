@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use App\Services\EmailChangeService;
+use Illuminate\Database\QueryException;
 
 class ProfileController extends Controller
 {
@@ -134,9 +135,17 @@ class ProfileController extends Controller
             // Use explicit Validator so we can capture validation failures and
             // return per-field errors instead of letting the exception bubble.
             try {
+                // Normalize phone number before validation to match stored format
+                if ($request->has('phone_number') && $request->phone_number) {
+                    $normalizedPhone = $this->normalizePhilippinePhone($request->phone_number);
+                    if ($normalizedPhone) {
+                        $request->merge(['phone_number' => $normalizedPhone]);
+                    }
+                }
+
                 $rules = [
                     'birthday' => 'nullable|date',
-                    'phone_number' => 'nullable|string|max:20',
+                    'phone_number' => ['nullable', 'string', 'max:20', 'unique:users,phone_number,' . $user->id],
                     'education_level' => 'nullable|string|max:255',
                     'skills' => 'nullable|string',
                     'summary' => 'nullable|string',
@@ -883,7 +892,25 @@ class ProfileController extends Controller
             }
 
             try {
-                $user->save();
+                try {
+                    $user->save();
+                } catch (QueryException $e) {
+                    // Handle unique constraint violation for phone_number
+                    if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                        if ($request->ajax() || $request->wantsJson()) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'This phone number is already registered with another account.',
+                                'errors' => ['phone_number' => ['This phone number is already registered with another account. Please use a different phone number.']]
+                            ], 422);
+                        }
+                        return redirect()->back()->withErrors([
+                            'phone_number' => 'This phone number is already registered with another account. Please use a different phone number.',
+                        ])->withInput();
+                    }
+                    // Re-throw other database exceptions
+                    throw $e;
+                }
 
                 // If the user already has an uploaded resume, re-run verification
                 try {
@@ -1088,6 +1115,13 @@ class ProfileController extends Controller
             Log::warning('Failed to mark resume pending after email change for user '.$user->id.': '.$__e->getMessage());
         }
 
+        // Diagnostic logs for phone number uniqueness issue
+        Log::info('updateEmployer: About to save user', [
+            'user_id' => $user->id,
+            'phone_number' => $user->phone_number,
+            'existing_users_with_same_phone' => \App\Models\User::where('phone_number', $user->phone_number)->where('id', '!=', $user->id)->count(),
+        ]);
+
         $user->save();
 
         return redirect()->back()->with('success', 'Email updated successfully.');
@@ -1240,12 +1274,18 @@ class ProfileController extends Controller
             Log::warning('Email verification grace check failed: '.$__checkEx->getMessage(), ['user_id' => $user->id]);
         }
 
+        // Normalize phone number before validation to match stored format
+        $normalizedPhone = $this->normalizePhilippinePhone($request->phone_number);
+        if ($normalizedPhone) {
+            $request->merge(['phone_number' => $normalizedPhone]);
+        }
+
         $request->validate([
             'company_name' => 'required|string|max:255',
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'job_title' => 'nullable|string|max:255',
-            'phone_number' => 'required|string|max:20',
+            'phone_number' => ['required', 'string', 'max:20', 'unique:users,phone_number,' . $user->id],
             'address' => 'required|string|max:500',
             'company_description' => 'nullable|string|max:2000',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
@@ -1281,7 +1321,8 @@ class ProfileController extends Controller
         if ($request->filled('job_title')) {
             $user->job_title = $request->job_title;
         }
-        $user->phone_number = $request->phone_number; // required
+        // Use normalized phone number (already normalized before validation)
+        $user->phone_number = $normalizedPhone ?: $request->phone_number; // required
         $user->address = $request->address;
         $user->company_description = $request->company_description;
 
@@ -1528,7 +1569,18 @@ class ProfileController extends Controller
             }
         }
 
-        $user->save();
+        try {
+            $user->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle unique constraint violation for phone_number
+            if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                return back()->withErrors([
+                    'phone_number' => 'This phone number is already registered with another account. Please use a different phone number.',
+                ])->withInput();
+            }
+            // Re-throw other database exceptions
+            throw $e;
+        }
 
         // ONLY reset verification if a NEW business permit was uploaded (not for profile updates)
         if ($request->hasFile('business_permit')) {
@@ -1775,5 +1827,38 @@ class ProfileController extends Controller
         }
 
         return redirect()->back()->withErrors(['otp_code' => $result['message']]);
+    }
+
+    /**
+     * Normalize a Philippine phone number into an 11-digit local format starting with 0.
+     * Examples:
+     *  +639171234567 -> 09171234567
+     *  639171234567  -> 09171234567
+     *  9171234567    -> 09171234567
+     *  09171234567   -> 09171234567
+     *  0947 497 4843 -> 09474974843
+     */
+    protected function normalizePhilippinePhone(?string $raw): ?string
+    {
+        if (empty($raw)) return null;
+        $s = preg_replace('/[^0-9]/', '', $raw);
+        if ($s === '') return null;
+        // Remove leading + if present (already removed by preg_replace)
+        // If starts with '63' and length >= 11, convert to leading 0
+        if (strpos($s, '63') === 0 && strlen($s) >= 11) {
+            // drop country code 63, prefix 0
+            $s = '0' . substr($s, 2);
+        }
+        // If starts with country code '0' already OK
+        if (strlen($s) === 10 && strpos($s, '9') === 0) {
+            // local 10-digit without leading zero (e.g., 9171234567) -> add 0
+            $s = '0' . $s;
+        }
+        // final sanity: if it's longer than 11, trim to last 11 digits
+        if (strlen($s) > 11) {
+            $s = substr($s, -11);
+        }
+        // if not 11 digits at this point, return as-is (validation will catch it)
+        return $s;
     }
 }

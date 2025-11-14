@@ -9,15 +9,27 @@ from datetime import datetime, timedelta
 def _default_ocr_extract_text(path):
     # best-effort: try to import the project's verifier OCR; if not available, return empty string
     try:
-        from .verifier import ocr_extract_text as _ocr
+        # Try relative import first (when used as module)
+        try:
+            from .verifier import ocr_extract_text as _ocr
+        except (ImportError, ValueError):
+            # Fall back to absolute import (when run directly)
+            import verifier
+            _ocr = verifier.ocr_extract_text
         return _ocr(path)
-    except Exception:
+    except Exception as e:
         return ''
 
 
 def _default_detect_signature(path):
     try:
-        from .verifier import detect_signature as _ds
+        # Try relative import first (when used as module)
+        try:
+            from .verifier import detect_signature as _ds
+        except (ImportError, ValueError):
+            # Fall back to absolute import (when run directly)
+            import verifier
+            _ds = verifier.detect_signature
         return _ds(path)
     except Exception:
         return 0.0
@@ -25,7 +37,13 @@ def _default_detect_signature(path):
 
 def _default_ela_score(path):
     try:
-        from .verifier import ela_forgery_score as _es
+        # Try relative import first (when used as module)
+        try:
+            from .verifier import ela_forgery_score as _es
+        except (ImportError, ValueError):
+            # Fall back to absolute import (when run directly)
+            import verifier
+            _es = verifier.ela_forgery_score
         return _es(path)
     except Exception:
         return 0.0
@@ -114,6 +132,8 @@ def extract_firm_and_owner(text: str):
 def detect_seal(image_path):
     """Detect circular/oval seals/stamps. Returns confidence 0..1."""
     try:
+        import cv2
+        import numpy as np
         img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
         if img is None:
             return 0.0

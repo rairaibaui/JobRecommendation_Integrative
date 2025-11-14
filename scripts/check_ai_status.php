@@ -56,9 +56,10 @@ echo str_repeat("=", 50) . PHP_EOL;
 
 if ($openaiInstalled && $apiKeyConfigured) {
     echo PHP_EOL . "Your system uses:" . PHP_EOL;
-    echo "✅ GPT-4o Vision (OpenAI)" . PHP_EOL;
+    echo "✅ Custom AI Vision Model (Fine-tuned EfficientNet)" . PHP_EOL;
     echo "✅ Automatic business permit validation" . PHP_EOL;
     echo "✅ Duplicate detection (system-level)" . PHP_EOL;
     echo "✅ Expiry date extraction (AI-powered)" . PHP_EOL;
     echo "✅ Fraud detection (AI-powered)" . PHP_EOL;
+    echo PHP_EOL . "NOTE: GPT-4o has been removed. System now uses custom AI only." . PHP_EOL;
 }

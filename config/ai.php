@@ -30,12 +30,13 @@ return [
     | Vision Model
     |--------------------------------------------------------------------------
     |
-    | The OpenAI model with vision capabilities for document validation.
-    | Options: 'gpt-4o', 'gpt-4-turbo', 'gpt-4-vision-preview'
+    | NOTE: This setting is deprecated. The system now uses custom AI only
+    | for document validation. This config is kept for backward compatibility
+    | but is not used.
     |
     */
 
-    'vision_model' => env('OPENAI_VISION_MODEL', 'gpt-4o'),
+    'vision_model' => null,
 
     /*
     |--------------------------------------------------------------------------

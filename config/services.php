@@ -40,4 +40,9 @@ return [
         'base' => env('RESISTANT_API_BASE', 'https://api.resistant.ai/v2'),
     ],
 
+    'document_verifier' => [
+        'base_url' => env('DOCUMENT_VERIFIER_BASE_URL', 'http://localhost:5010'),
+        'timeout' => env('DOCUMENT_VERIFIER_TIMEOUT', 120), // 2 minutes timeout
+    ],
+
 ];
