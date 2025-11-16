@@ -213,24 +213,15 @@
             <label class="form-label">
               Contact Number <span class="text-danger">*</span>
             </label>
-            <div class="d-flex gap-2" style="align-items:flex-start;">
-              <input type="text" 
-                     id="phone_number_input" 
-                     name="phone_number" 
-                     class="form-control" 
-                     required 
-                     value="{{ old('phone_number', Auth::user()->phone_number) }}" 
-                     placeholder="e.g., 0917 123 4567" 
-                     style="flex:1;">
-              <button type="button" 
-                      onclick="openPhoneVerificationModal()" 
-                      class="btn-secondary"
-                      style="white-space:nowrap;">
-                <i class="fas fa-shield-alt"></i> Verify
-              </button>
-            </div>
+            <input type="text"
+                   id="phone_number_input"
+                   name="phone_number"
+                   class="form-control"
+                   required
+                   value="{{ old('phone_number', Auth::user()->phone_number) }}"
+                   placeholder="e.g., 0917 123 4567">
             <small class="form-help">
-              <i class="fas fa-info-circle"></i> Click "Verify" to change your phone number securely
+              <i class="fas fa-info-circle"></i> Enter your contact phone number
             </small>
           </div>
         </div>
@@ -523,8 +514,8 @@
             <li>Your business permit and verification status</li>
           </ul>
         </div>
-        <button type="button" 
-                onclick="openDeleteAccountModal()" 
+        <button type="button"
+                onclick="openDeleteAccountModal()"
                 class="btn btn-danger">
           <i class="fas fa-trash-alt"></i> Delete Account
         </button>
@@ -534,75 +525,66 @@
 
   <!-- Delete Account Confirmation Modal -->
   <div id="deleteAccountModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div class="card" style="max-width:500px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); margin: 0; border-radius: 16px;">
-      <div class="card-header" style="background: #fff; border-bottom: none; position: relative;">
-      <h3 class="card-title" style="color: #dc3545; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 12px; padding-right: 50px;">
-          <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 24px;"></i>
-          Confirm Account Deletion
-      </h3>  
-      <button onclick="closeDeleteAccountModal()" class ="close-btn"  style="background: transparent; color: #999; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
-    
-      </div>
+    <div style="background:#fff; max-width:520px; width:90%; padding:24px; border-radius:12px; box-shadow:0 12px 48px rgba(0,0,0,0.35);">
+      <button onclick="closeDeleteAccountModal()" style="position:absolute; top:15px; right:15px; background:transparent; border:none; font-size:24px; color:#999; cursor:pointer; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
       
-      <div class="card-body" style="padding: 32px;">
-        <div class="alert alert-danger" style="margin-bottom: 24px; padding: 16px; border-radius: 12px;">
-          <i class="fas fa-exclamation-circle"></i>
-          <strong>Warning:</strong> This action cannot be undone!
+      <h2 style="color: #dc3545; margin-bottom: 20px; font-size: 22px; font-weight: 600;">
+        <i class="fas fa-exclamation-triangle"></i> Confirm Account Deletion
+      </h2>
+      
+      <div class="alert alert-danger" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: #f8d7da; border: 1px solid #f5c2c7; color: #842029;">
+        <i class="fas fa-exclamation-circle"></i>
+        <strong>Warning:</strong> This action cannot be undone!
+      </div>
+
+      <p style="color: #333; margin-bottom: 15px; line-height: 1.6; font-size: 15px;">
+        You are about to permanently delete your employer account for
+        <strong>{{ Auth::user()->company_name ?? Auth::user()->name }}</strong>.
+      </p>
+
+      <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+        This will immediately and permanently remove:
+      </p>
+
+      <ul style="margin: 0 0 20px 20px; color: #666; font-size: 14px; line-height: 1.8;">
+        <li><strong>{{ \App\Models\JobPosting::where('employer_id', Auth::id())->count() }} job posting(s)</strong></li>
+        <li><strong>{{ \App\Models\Application::whereHas('jobPosting', function($q) { $q->where('employer_id', Auth::id()); })->count() }} application(s)</strong> from job seekers</li>
+        <li>Your company profile and business permit</li>
+        <li>All associated data and history</li>
+      </ul>
+
+      <form id="deleteAccountForm" method="POST" action="{{ route('account.delete') }}">
+        @csrf
+        @method('DELETE')
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" style="font-weight: 600; color: #333; display: block; margin-bottom: 8px;">
+            Type <strong style="color: #dc3545;">DELETE</strong> to confirm:
+          </label>
+          <input type="text"
+                 id="deleteConfirmInput"
+                 class="form-control"
+                 placeholder="Type DELETE in capital letters"
+                 required
+                 autocomplete="off"
+                 style="border: 2px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 8px;">
+          <small style="color: #6c757d; display: block; margin-top: 6px; font-size: 13px;">
+            This verification step ensures you understand the consequences.
+          </small>
         </div>
 
-        <p style="margin: 0 0 16px 0; color: #333; font-size: 15px; line-height: 1.6;">
-          You are about to permanently delete your employer account for
-          <strong>{{ Auth::user()->company_name ?? 'your company' }}</strong>.
-        </p>
-
-        <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
-          This will immediately and permanently remove:
-        </p>
-
-        <ul style="margin: 0 0 24px 20px; color: #666; font-size: 14px; line-height: 1.8;">
-          <li><strong>{{ \App\Models\JobPosting::where('employer_id', Auth::id())->count() }} job posting(s)</strong></li>
-          <li><strong>{{ \App\Models\Application::whereHas('jobPosting', function($q) { $q->where('employer_id', Auth::id()); })->count() }} application(s)</strong> from job seekers</li>
-          <li>Your company profile and business permit</li>
-          <li>All associated data and history</li>
-        </ul>
-
-        <form id="deleteAccountForm" method="POST" action="{{ route('account.delete') }}">
-          @csrf
-          @method('DELETE')
-          
-          <div class="form-group" style="margin-bottom: 24px;">
-            <label class="form-label" style="font-weight: 600; color: #333; display: block; margin-bottom: 8px; font-size: 14px;">
-              Type <strong style="color: #dc3545;">DELETE</strong> to confirm:
-            </label>
-            <input type="text"
-                   id="deleteConfirmInput"
-                   class="form-control"
-                   placeholder="Type DELETE in capital letters"
-                   required
-                   autocomplete="off"
-                   style="width: 100%; padding: 14px 16px; border: 2px solid #dc3545; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.3s;">
-            <small style="color: #6c757d; display: block; margin-top: 8px; font-size: 13px;">
-              This verification step ensures you understand the consequences.
-            </small>
-          </div>
-
-          <div style="display:flex; gap:12px; justify-content: flex-end; margin-top: 30px; flex-wrap: wrap;">
-            <button type="button"
-                    onclick="closeDeleteAccountModal()"
-                    class="btn btn-secondary"
-                    style="padding: 14px 26px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s;">
-              Cancel
-            </button>
-            <button type="submit"
-                    id="confirmDeleteBtn"
-                    class="btn btn-danger"
-                    disabled
-                    style="padding: 14px 26px; background: #dc3545; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); opacity: 0.6;">
-              <i class="fas fa-trash-alt"></i> Permanently Delete Account
-            </button>
-          </div>
-        </form>
-      </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
+          <button type="button" onclick="closeDeleteAccountModal()" style="padding: 14px 26px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s;">
+            Cancel
+          </button>
+          <button type="submit"
+                  id="confirmDeleteBtn"
+                  disabled
+                  style="padding: 14px 26px; background: #dc3545; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); opacity: 0.6;">
+            <i class="fas fa-trash-alt"></i> Permanently Delete Account
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -918,7 +900,7 @@
   });
   
   // System-style confirm/alert helpers
-  window.systemConfirm = function(title, message) {
+  window.systemConfirm = function(title, message, okText = 'OK', cancelText = 'Cancel') {
     return new Promise(resolve => {
       const modal = document.getElementById('systemConfirmModal');
       const t = document.getElementById('systemConfirmTitle');
@@ -933,6 +915,8 @@
 
       t.textContent = title || 'Confirm';
       m.textContent = message || '';
+      ok.textContent = okText;
+      cancel.textContent = cancelText;
       modal.style.display = 'flex';
 
       function cleanup() {
@@ -1153,8 +1137,16 @@
           return false;
         }
 
-        const confirmed = await window.systemConfirm('Confirm Account Deletion', 'Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.');
-        if (!confirmed) return false;
+        // Hide the large delete account modal before showing the confirmation
+        document.getElementById('deleteAccountModal').style.display = 'none';
+
+        const confirmed = await window.systemConfirm('Confirm Account Deletion', 'Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.', 'No', 'Yes');
+        
+        if (!confirmed) {
+          // If user cancels, show the delete account modal again
+          document.getElementById('deleteAccountModal').style.display = 'flex';
+          return false;
+        }
 
         // proceed with the original form submission
         deleteForm.submit();
