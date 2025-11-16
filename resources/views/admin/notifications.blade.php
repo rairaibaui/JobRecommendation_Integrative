@@ -593,18 +593,14 @@
                                 </td>
                                 <td>
                                     <div class="actions" style="justify-content: center;">
-                                        @if(isset($data['validation_id']))
-                                            <a href="{{ route('admin.verifications.index') }}?id={{ $data['validation_id'] }}" class="action-btn view" title="View Verification">
-                                                👁️ View
-                                            </a>
-                                        @endif
+                                        {{-- View button removed: only Read and Delete actions remain --}}
                                         
                                         @if($isUnread)
                                             <form method="POST" action="{{ route('admin.notifications.markRead', $notification->id) }}" style="display: inline;">
                                                 @csrf
                                                 @method('PATCH')
                                                 <button type="submit" class="action-btn mark-read" title="Mark as Read">
-                                                    ✓ Read
+                                                    Read
                                                 </button>
                                             </form>
                                         @endif
@@ -613,7 +609,7 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="action-btn delete" title="Delete" onclick="return confirm('Are you sure you want to delete this notification?')">
-                                                🗑️
+                                                Delete
                                             </button>
                                         </form>
                                     </div>
