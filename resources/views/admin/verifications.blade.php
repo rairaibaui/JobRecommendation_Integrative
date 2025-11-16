@@ -1413,7 +1413,10 @@
                                     <td>{{ $validation->created_at->diffForHumans() }}</td>
                                     <td>
                                         <div class="actions">
-                                            <button onclick='openDetailModal({{ json_encode($validation->id) }})' class="btn btn-view" title="{{ route('admin.verifications.file', $validation->id) }}">
+                                            <button 
+                                                onclick="openDetailModal({{ json_encode($validation->id, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }})" 
+                                                class="btn btn-view" 
+                                                title="{{ htmlspecialchars(route('admin.verifications.file', $validation->id), ENT_QUOTES, 'UTF-8') }}">
                                                 <i class="fas fa-eye"></i>
                                                 View
                                             </button>
@@ -1435,21 +1438,24 @@
                                                         data-company-name="{{ htmlspecialchars($validation->user->company_name ?? 'N/A', ENT_QUOTES, 'UTF-8') }}"
                                                         onclick="openApproveModal(this)" 
                                                         class="btn btn-approve" 
-                                                        title="{{ route('admin.verifications.approve', $validation->id) }}">
+                                                        title="{{ htmlspecialchars(route('admin.verifications.approve', $validation->id), ENT_QUOTES, 'UTF-8') }}">
                                                         <i class="fas fa-check"></i>
                                                         Approve
                                                     </button>
                                                 @else
                                                     <form method="POST" action="{{ route('admin.verifications.approve', $validation->id) }}" style="display: inline;" onsubmit="return confirm('Approve this business permit?')">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-approve" title="{{ route('admin.verifications.approve', $validation->id) }}">
+                                                        <button type="submit" class="btn btn-approve" title="{{ htmlspecialchars(route('admin.verifications.approve', $validation->id), ENT_QUOTES, 'UTF-8') }}">
                                                             <i class="fas fa-check"></i>
                                                             Approve
                                                         </button>
                                                     </form>
                                                 @endif
                                             @endif
-                                            <button onclick='openRejectModal({{ json_encode($validation->id) }})' class="btn btn-reject" title="{{ route('admin.verifications.reject', $validation->id) }}">
+                                            <button 
+                                                onclick="openRejectModal({{ json_encode($validation->id, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }})" 
+                                                class="btn btn-reject" 
+                                                title="{{ htmlspecialchars(route('admin.verifications.reject', $validation->id), ENT_QUOTES, 'UTF-8') }}">
                                                 <i class="fas fa-times"></i>
                                                 Reject
                                             </button>
