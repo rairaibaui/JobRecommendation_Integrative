@@ -175,13 +175,18 @@
       <i class="fas fa-info-circle" style="font-size:22px;margin-top:2px;color:#0b3d59;"></i>
       <div style="flex:1;">
         <strong style="display:block;margin-bottom:6px;font-size:16px;">📧 Email Verification Required</strong>
-        <p style="margin:0;line-height:1.5;font-size:14px;">We received a business permit upload, but your email address has not been verified. We cannot accept or process submitted business permits until your email is verified.</p>
-        <p style="margin:8px 0 0 0;font-size:13px;opacity:.95;"><strong>Verify your email first before submitting a file.</strong> Please check your inbox for the verification email and follow the link to verify your account. You can also update your email address or resend verification from your <a href="{{ route('settings') }}" style="color:#064e78;font-weight:700;text-decoration:underline;">Account Settings</a>.</p>
+        <p style="margin:0;line-height:1.5;font-size:14px;">Your email address has not been verified. You cannot submit or have us process business permits until your email is verified. If a document is already on file, it will remain pending and will not be processed until you verify your email.</p>
+        <p style="margin:8px 0 0 0;font-size:13px;opacity:.95;"><strong>Verify your email first before submitting a file.</strong> Check your inbox for the verification email and follow the link to verify your account. You can also update your email address or resend verification from your <a href="{{ route('settings') }}" style="color:#064e78;font-weight:700;text-decoration:underline;">Account Settings</a>.</p>
       </div>
     </div>
   @endif
 
-  @if($employerDoc && strtoupper($employerDoc->status) === 'PENDING')
+      @if(
+        $employerDoc
+        && strtoupper($employerDoc->status) === 'PENDING'
+        && $employerDoc->wasUploadedByEmployer()
+        && \App\Models\DocumentValidation::where('document_id', $employerDoc->id)->exists()
+      )
     <div style="background:#fff3cd;color:#856404;padding:16px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #ffc107;display:flex;align-items:start;gap:12px;">
       <i class="fas fa-hourglass-half" style="font-size:24px;margin-top:2px;"></i>
       <div style="flex:1;">

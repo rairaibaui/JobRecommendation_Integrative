@@ -185,17 +185,25 @@
             <!-- Hidden fallback form in case JS fetch cannot be used or server redirects non-AJAX -->
             <!-- (Moved outside main <form> to avoid nested-form issues that can break file uploads) -->
 
-            <!-- Custom confirm modal for sending verification email -->
+            <!-- Custom confirm modal for sending verification email (system-style) -->
             <div id="emailConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
-              <div style="background:#fff; max-width:520px; width:92%; padding:18px; border-radius:8px; box-shadow:0 10px 40px rgba(2,6,23,0.2);">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                  <h4 style="margin:0; font-size:16px;">Send verification email?</h4>
-                  <button type="button" id="emailConfirmClose" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+              <div style="background:#fff; max-width:520px; width:92%; border-radius:12px; box-shadow:0 14px 48px rgba(2,6,23,0.18);">
+                <div style="display:flex; gap:14px; padding:16px; align-items:flex-start;">
+                  <div style="flex-shrink:0; width:52px; height:52px; border-radius:10px; background:#eef6ff; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-envelope" style="color:#1e63a8; font-size:18px;"></i>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; gap:12px;">
+                      <h4 style="margin:0; font-size:17px; font-weight:700; color:#1f2937;">Send verification email?</h4>
+                      <button type="button" id="emailConfirmClose" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;">&times;</button>
+                    </div>
+                    <div id="emailConfirmMessage" style="color:#4b5563; margin-top:10px; font-size:14px; line-height:1.4;">We will send a verification link to <strong>{{ Auth::user()->email }}</strong>. This link will expire in a few minutes.</div>
+                  </div>
                 </div>
-                <p id="emailConfirmMessage" style="color:#444; margin-top:12px;">We will send a verification link to <strong>{{ Auth::user()->email }}</strong>. This link will expire in a few minutes.</p>
-                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
-                  <button type="button" id="emailConfirmCancel" class="btn btn-secondary" style="background:#edf2f7;border:1px solid #cbd5e1;padding:8px 12px;">Cancel</button>
-                  <button type="button" id="emailConfirmOk" class="btn btn-primary" style="padding:8px 12px;">Send Email</button>
+
+                <div style="display:flex; justify-content:flex-end; gap:12px; padding:12px 16px 18px 16px; border-top:1px solid #eef2f6;">
+                  <button type="button" id="emailConfirmCancel" class="btn btn-secondary" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:10px 14px; border-radius:8px;">Cancel</button>
+                  <button type="button" id="emailConfirmOk" class="btn btn-primary" style="padding:10px 14px; border-radius:8px;">Send Email</button>
                 </div>
               </div>
             </div>
@@ -300,8 +308,12 @@
           $latestValidation = null;
         }
 
-  // Red when no file or last validation was rejected/blocked (needs a new valid upload)
-  $needsUpload = ! $hasFile || ($latestValidation && in_array($latestValidation->validation_status, ['rejected','blocked']));
+        // Determine verification state. When a validation exists with status
+        // 'approved' we consider the employer verified for the business permit.
+        $isVerified = $latestValidation && ($latestValidation->validation_status === 'approved');
+
+    // Red when no file or last validation was rejected/blocked (needs a new valid upload)
+    $needsUpload = ! $hasFile || ($latestValidation && in_array($latestValidation->validation_status, ['rejected','blocked']));
       @endphp
 
       @if($needsUpload)
@@ -336,11 +348,26 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                 @endif
-      <input type="file" 
-        name="business_permit" 
-        class="form-control" 
-        accept=".pdf"
-        style="padding: 8px; @if($needsUpload) border-color: #dc3545; background-color: #fff5f5; @elseif(Auth::user()->business_permit_path) border-color: #28a745; background-color: #f0fff4; @endif">
+
+                @if(isset($isVerified) && $isVerified)
+                    <input type="text"
+                           class="form-control"
+                           value="Business permit verified"
+                           disabled
+                           style="padding: 8px; border-color: #28a745; background-color: #f0fff4; font-weight:600; color:#155724;">
+                    @if($latestValidation && $latestValidation->validated_at)
+                      <small class="form-help" style="display:block; margin-top:8px; color:#155724;">
+                        <i class="fas fa-info-circle"></i>
+                        Verified on {{ optional($latestValidation->validated_at)->format('M j, Y g:ia') }} ({{ $latestValidation->validated_by ?? 'system' }}).
+                      </small>
+                    @endif
+                @else
+                    <input type="file" 
+                      name="business_permit" 
+                      class="form-control" 
+                      accept=".pdf"
+                      style="padding: 8px; @if($needsUpload) border-color: #dc3545; background-color: #fff5f5; @elseif(Auth::user()->business_permit_path) border-color: #28a745; background-color: #f0fff4; @endif">
+                @endif
             </div>
             @if(Auth::user()->business_permit_path)
               <div style="margin-top:8px;">
@@ -350,10 +377,14 @@
                    style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
                   <i class="fas fa-file-pdf"></i> View Current File
                 </a>
+                @if(! (isset($isVerified) && $isVerified))
                 <label style="font-weight:500; display:inline-flex; align-items:center; gap:8px; cursor:pointer; margin-left:10px;">
                   <input type="checkbox" name="remove_business_permit" value="1" id="remove_business_permit_checkbox">
                   Remove current permit
                 </label>
+                @else
+                <span style="margin-left:10px; color:#6c757d; font-size:13px;">To replace or remove a verified permit contact support or admin.</span>
+                @endif
               </div>
             @endif
             
@@ -392,17 +423,74 @@
 
           if (!form || !removeCheckbox) return;
 
-          form.addEventListener('submit', async function(e) {
+          // When the user checks the "Remove current permit" box, show
+          // an immediate confirmation modal and remember the user's
+          // explicit confirmation. This avoids accidentally submitting the
+          // form and having the server remove the permit before the user
+          // actually confirms.
+          removeCheckbox.addEventListener('change', async function(e) {
+            // reset any previous confirmation flag when toggling
+            removeCheckbox.dataset.confirmed = 'false';
+            if (removeCheckbox.checked) {
+              // ask for confirmation right away
+              const confirmed = await window.systemConfirm('Remove Business Permit', 'Are you sure you want to permanently remove your current business permit file? This action cannot be undone.');
+              if (confirmed) {
+                // Immediately call AJAX endpoint to remove the permit and reflect changes
+                try {
+                  const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                  const resp = await fetch('{{ route('employer.permit.remove') }}', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-TOKEN': token,
+                      'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({})
+                  });
+
+                  const body = await resp.json().catch(() => ({}));
+                  if (resp.ok && body.success) {
+                    await window.systemAlert(body.message || 'Business permit removed.', 'info');
+                    // Refresh the page so UI reflects removal (file list, banners)
+                    window.location.reload();
+                    return;
+                  } else {
+                    await window.systemAlert(body.message || 'Failed to remove business permit.', 'danger');
+                    removeCheckbox.checked = false;
+                    removeCheckbox.dataset.confirmed = 'false';
+                    return;
+                  }
+                } catch (err) {
+                  console.error('Permit removal failed', err);
+                  await window.systemAlert('Network error removing permit. Please try again.', 'danger');
+                  removeCheckbox.checked = false;
+                  removeCheckbox.dataset.confirmed = 'false';
+                  return;
+                }
+              } else {
+                // user cancelled — revert checkbox
+                removeCheckbox.checked = false;
+                removeCheckbox.dataset.confirmed = 'false';
+              }
+            }
+          });
+
+          // Final safety check on submit: if checkbox is checked but not
+          // explicitly confirmed, block submission and surface a notice.
+          form.addEventListener('submit', function(e) {
             const businessInput = document.querySelector('input[name="business_permit"]');
             const hasNewFile = businessInput && businessInput.files && businessInput.files.length > 0;
-            if (removeCheckbox.checked && !hasNewFile) {
-              // ask for confirmation
-              const confirmed = await window.systemConfirm('Remove Business Permit', 'Are you sure you want to permanently remove your current business permit file? This action cannot be undone.');
-              if (!confirmed) {
-                e.preventDefault();
-                // uncheck to avoid accidental submits
-                removeCheckbox.checked = false;
-              }
+            const wantsRemove = removeCheckbox.checked;
+            const confirmed = removeCheckbox.dataset.confirmed === 'true';
+
+            if (wantsRemove && !hasNewFile && !confirmed) {
+              e.preventDefault();
+              // provide feedback to the user
+              window.systemAlert('Removal not confirmed', 'Please confirm removal of your business permit by checking the box and clicking OK in the confirmation dialog.');
+              // ensure checkbox is unchecked to avoid accidental submits
+              removeCheckbox.checked = false;
+              removeCheckbox.dataset.confirmed = 'false';
+              return false;
             }
           });
         });
@@ -639,20 +727,21 @@
 
   <!-- System-style Confirm Modal -->
   <div id="systemConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
-    <div style="background:#fff; max-width:600px; width:92%; padding:16px 20px; border-radius:10px; box-shadow:0 12px 48px rgba(0,0,0,0.35);">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
-        <div style="display:flex; gap:12px; align-items:center;">
-          <div style="width:44px; height:44px; border-radius:50%; background:#f0f4f7; display:flex; align-items:center; justify-content:center;">
-            <i class="fas fa-exclamation-triangle" style="color:#2b6cb0; font-size:18px;"></i>
+    <div style="background:#fff; max-width:560px; width:88%; padding:14px 16px; border-radius:12px; box-shadow:0 14px 48px rgba(2,6,23,0.18);">
+      <div style="display:block;">
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <div style="flex-shrink:0; width:52px; height:52px; border-radius:10px; background:#eaf4ff; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-exclamation-triangle" style="color:#1e63a8; font-size:18px;"></i>
           </div>
-          <div>
-            <h4 id="systemConfirmTitle" style="margin:0; font-size:16px;">Confirm</h4>
-            <div id="systemConfirmMessage" style="color:#444; margin-top:8px; font-size:14px;"></div>
+          <div style="flex:1;">
+            <h4 id="systemConfirmTitle" style="margin:0; font-size:17px; font-weight:700; color:#1f2937;">Confirm</h4>
+            <div id="systemConfirmMessage" style="color:#4b5563; margin-top:8px; font-size:14px; line-height:1.4;"></div>
           </div>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button id="systemConfirmCancel" class="btn btn-secondary" style="background:#edf2f7;border:1px solid #cbd5e1;padding:10px 14px;">Cancel</button>
-          <button id="systemConfirmOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:10px 14px;color:#fff;">OK</button>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:16px;">
+          <button id="systemConfirmCancel" class="btn btn-secondary" style="background:#f7fafc;border:1px solid #e6edf7;padding:8px 14px;color:#6b7280;border-radius:8px;">Cancel</button>
+          <button id="systemConfirmOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:8px 14px;color:#fff;border-radius:8px;">OK</button>
         </div>
       </div>
     </div>
@@ -660,17 +749,20 @@
 
   <!-- System-style Alert Modal -->
   <div id="systemAlertModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
-    <div style="background:#fff; max-width:520px; width:90%; padding:16px 18px; border-radius:10px; box-shadow:0 12px 48px rgba(0,0,0,0.35);">
-      <div style="display:flex; gap:12px; align-items:flex-start;">
-        <div style="width:44px; height:44px; border-radius:50%; background:#f8fafc; display:flex; align-items:center; justify-content:center;">
-          <i id="systemAlertIcon" class="fas fa-info-circle" style="color:#2b6cb0; font-size:18px;"></i>
+    <div style="background:#fff; max-width:520px; width:86%; padding:14px 16px; border-radius:12px; box-shadow:0 14px 48px rgba(2,6,23,0.15);">
+      <div style="display:block;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div style="flex-shrink:0; width:52px; height:52px; border-radius:10px; background:#f4f8ff; display:flex; align-items:center; justify-content:center;">
+            <i id="systemAlertIcon" class="fas fa-info-circle" style="color:#1e63a8; font-size:18px;"></i>
+          </div>
+          <div style="flex:1;">
+            <h4 id="systemAlertTitle" style="margin:0; font-size:16px; font-weight:700; color:#1f2937;">Notice</h4>
+            <div id="systemAlertMessage" style="color:#4b5563; margin-top:8px; font-size:14px; line-height:1.4;"></div>
+          </div>
         </div>
-        <div style="flex:1;">
-          <h4 id="systemAlertTitle" style="margin:0; font-size:16px;">Notice</h4>
-          <div id="systemAlertMessage" style="color:#444; margin-top:8px; font-size:14px;"></div>
-        </div>
-        <div style="display:flex; align-items:flex-start;">
-          <button id="systemAlertOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:8px 12px;color:#fff;">OK</button>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+          <button id="systemAlertOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:8px 12px;color:#fff;border-radius:8px;">OK</button>
         </div>
       </div>
     </div>

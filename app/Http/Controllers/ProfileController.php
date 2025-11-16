@@ -4,21 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Mail\ResumeVerified;
 use App\Models\Application;
-use App\Models\Hiring;
 use App\Models\User;
 use App\Services\AdminNotificationService;
 use App\Services\DocumentValidationService;
+use App\Services\EmailChangeService;
 use App\Services\ResumeVerificationService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache;
-use App\Services\EmailChangeService;
-use Illuminate\Database\QueryException;
 
 class ProfileController extends Controller
 {
@@ -112,24 +110,49 @@ class ProfileController extends Controller
                         'client_mime' => $uploadedPic->getClientMimeType(),
                         'error' => $uploadedPic->getError(),
                     ]);
+                    // If PHP rejected the upload due to server limits, surface a clear message
+                    if (intval($uploadedPic->getError()) === UPLOAD_ERR_INI_SIZE) {
+                        $uploadMax = ini_get('upload_max_filesize') ?: 'unknown';
+                        $postMax = ini_get('post_max_size') ?: 'unknown';
+                        $message = "The uploaded profile picture exceeds the server upload limits. Please resize the image or increase PHP's `upload_max_filesize` ({$uploadMax}) and `post_max_size` ({$postMax}).";
+                        Log::warning('Profile picture upload blocked by PHP ini limits', ['user_id' => $user->id, 'upload_max_filesize' => $uploadMax, 'post_max_size' => $postMax]);
+                        if ($request->ajax() || $request->wantsJson()) {
+                            return response()->json(['success' => false, 'message' => $message], 422);
+                        }
+                        return redirect()->back()->withErrors(['profile_picture' => $message])->withInput();
+                    }
                 } else {
                     $rawPic = isset($_FILES['profile_picture']) ? $_FILES['profile_picture'] : null;
                     Log::info('Profile picture upload attempt (no UploadedFile) - raw $_FILES', [
                         'user_id' => $user->id,
                         '_FILES' => $rawPic,
                     ]);
-                    if (is_array($rawPic) && isset($rawPic['error']) && intval($rawPic['error']) === 4) {
-                        try {
-                            $request->files->remove('profile_picture');
-                            $request->request->remove('profile_picture');
-                        } catch (\Throwable $__remEx) {
-                            // best-effort
+                    if (is_array($rawPic) && isset($rawPic['error'])) {
+                        // If the upload was rejected by PHP (error code 1 = UPLOAD_ERR_INI_SIZE), inform the user with actionable guidance
+                        if (intval($rawPic['error']) === 1) {
+                            $uploadMax = ini_get('upload_max_filesize') ?: 'unknown';
+                            $postMax = ini_get('post_max_size') ?: 'unknown';
+                            $message = "The uploaded profile picture exceeds the server upload limits. Please resize the image or increase PHP's `upload_max_filesize` ({$uploadMax}) and `post_max_size` ({$postMax}).";
+                            Log::warning('Profile picture raw upload blocked by PHP ini limits', ['user_id' => $user->id, 'upload_max_filesize' => $uploadMax, 'post_max_size' => $postMax, '_FILES' => $rawPic]);
+                            if ($request->ajax() || $request->wantsJson()) {
+                                return response()->json(['success' => false, 'message' => $message], 422);
+                            }
+                            return redirect()->back()->withErrors(['profile_picture' => $message])->withInput();
+                        }
+                        // If PHP reports no file uploaded (error code 4), remove any empty form value
+                        if (intval($rawPic['error']) === 4) {
+                            try {
+                                $request->files->remove('profile_picture');
+                                $request->request->remove('profile_picture');
+                            } catch (\Throwable $__remEx) {
+                                // best-effort
+                            }
                         }
                     }
                 }
             } catch (\Throwable $__uploadLogEx) {
                 // best-effort logging; do not block validation
-                Log::warning('Failed to log resume/profile_picture upload debug info: ' . $__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
+                Log::warning('Failed to log resume/profile_picture upload debug info: '.$__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
             }
 
             // Use explicit Validator so we can capture validation failures and
@@ -145,7 +168,7 @@ class ProfileController extends Controller
 
                 $rules = [
                     'birthday' => 'nullable|date',
-                    'phone_number' => ['nullable', 'string', 'max:20', 'unique:users,phone_number,' . $user->id],
+                    'phone_number' => ['nullable', 'string', 'max:20', 'unique:users,phone_number,'.$user->id],
                     'education_level' => 'nullable|string|max:255',
                     'skills' => 'nullable|string',
                     'summary' => 'nullable|string',
@@ -268,7 +291,7 @@ class ProfileController extends Controller
                 // existing verified badge (verified_at) so the UI can still
                 // display the previous verification until an admin acts.
                 $user->resume_verification_status = 'pending';
-                $user->verification_flags = json_encode(array_merge((array)json_decode($user->verification_flags ?? '[]', true), ['phone_changed']));
+                $user->verification_flags = json_encode(array_merge((array) json_decode($user->verification_flags ?? '[]', true), ['phone_changed']));
                 $user->verification_notes = 'Critical profile information changed ('.implode(',', $criticalChanged).'). Resume set to pending for re-verification.';
 
                 // Persist change now so that later code doesn't attempt to auto-approve
@@ -285,7 +308,7 @@ class ProfileController extends Controller
                         'user_id' => $user->id,
                         'event' => 'resume_invalidated_profile_change',
                         'title' => 'Resume Invalidated - Profile Changed',
-                        'message' => "User {$user->email} updated profile fields (".implode(',', $changedFields).") and their previously verified resume was set to pending.",
+                        'message' => "User {$user->email} updated profile fields (".implode(',', $changedFields).') and their previously verified resume was set to pending.',
                         'data' => json_encode(['changed_fields' => $changedFields]),
                         'ip_address' => $request->ip(),
                         'user_agent' => $request->userAgent(),
@@ -338,7 +361,7 @@ class ProfileController extends Controller
                 }
                 $file = $request->file('profile_picture');
 
-                if (! $file->isValid()) {
+                if (!$file->isValid()) {
                     $uploadErr = $file->getError();
                     Log::error('Profile picture upload reported invalid file.', [
                         'user_id' => $user->id ?? null,
@@ -434,7 +457,7 @@ class ProfileController extends Controller
                     $tempPath = $request->file('resume_file')->store('temp_resumes', 'public');
                 } catch (\Throwable $e) {
                     // Log detailed info for debugging and return a friendly message
-                    Log::error('Resume temp store failed: ' . $e->getMessage(), [
+                    Log::error('Resume temp store failed: '.$e->getMessage(), [
                         'user_id' => $user->id,
                         'ip' => $request->ip(),
                         'exception' => $e->getMessage(),
@@ -561,7 +584,7 @@ class ProfileController extends Controller
                     // Normalize flags early so we can decide whether to reject or treat as scanned
                     $flags = $verificationResult['flags'] ?? [];
                     $normalizedFlags = [];
-                    foreach ((array)$flags as $__flag_item) {
+                    foreach ((array) $flags as $__flag_item) {
                         $normalizedFlags[] = is_string($__flag_item) ? strtolower($__flag_item) : $__flag_item;
                     }
 
@@ -643,7 +666,7 @@ class ProfileController extends Controller
                     // mark it as pending for manual admin review instead of auto-approving. ---
                     $flags = $verificationResult['flags'] ?? [];
                     $normalizedFlags = [];
-                    foreach ((array)$flags as $__flag_item) {
+                    foreach ((array) $flags as $__flag_item) {
                         $normalizedFlags[] = is_string($__flag_item) ? strtolower($__flag_item) : $__flag_item;
                     }
 
@@ -901,9 +924,10 @@ class ProfileController extends Controller
                             return response()->json([
                                 'success' => false,
                                 'message' => 'This phone number is already registered with another account.',
-                                'errors' => ['phone_number' => ['This phone number is already registered with another account. Please use a different phone number.']]
+                                'errors' => ['phone_number' => ['This phone number is already registered with another account. Please use a different phone number.']],
                             ], 422);
                         }
+
                         return redirect()->back()->withErrors([
                             'phone_number' => 'This phone number is already registered with another account. Please use a different phone number.',
                         ])->withInput();
@@ -959,7 +983,7 @@ class ProfileController extends Controller
                                 'user_id' => $admin->id,
                                 'type' => 'info',
                                 'title' => 'Job Seeker Updated Profile Picture',
-                                'message' => trim(($user->first_name.' '.$user->last_name)) ?: $user->email . ' updated their profile picture.',
+                                'message' => trim($user->first_name.' '.$user->last_name) ?: $user->email.' updated their profile picture.',
                                 'read' => false,
                                 'data' => [
                                     'job_seeker_id' => $user->id,
@@ -1076,7 +1100,7 @@ class ProfileController extends Controller
         try {
             if ($user->resume_file && ($user->resume_verification_status ?? '') === 'verified') {
                 $user->resume_verification_status = 'pending';
-                $user->verification_flags = json_encode(array_merge((array)json_decode($user->verification_flags ?? '[]', true), ['email_changed']));
+                $user->verification_flags = json_encode(array_merge((array) json_decode($user->verification_flags ?? '[]', true), ['email_changed']));
                 $user->verification_notes = 'Email changed from '.$oldEmail.' to '.$user->email.'. Resume set to pending for re-verification.';
 
                 // Audit log for traceability
@@ -1119,7 +1143,7 @@ class ProfileController extends Controller
         Log::info('updateEmployer: About to save user', [
             'user_id' => $user->id,
             'phone_number' => $user->phone_number,
-            'existing_users_with_same_phone' => \App\Models\User::where('phone_number', $user->phone_number)->where('id', '!=', $user->id)->count(),
+            'existing_users_with_same_phone' => User::where('phone_number', $user->phone_number)->where('id', '!=', $user->id)->count(),
         ]);
 
         $user->save();
@@ -1266,7 +1290,7 @@ class ProfileController extends Controller
                 }
 
                 return back()->withErrors([
-                    'email' => 'Please verify your email before updating employer details. To receive a verification link, click the "Send verification" button in your account settings.'
+                    'email' => 'Please verify your email before updating employer details. To receive a verification link, click the "Send verification" button in your account settings.',
                 ]);
             }
         } catch (\Throwable $__checkEx) {
@@ -1285,7 +1309,7 @@ class ProfileController extends Controller
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'job_title' => 'nullable|string|max:255',
-            'phone_number' => ['required', 'string', 'max:20', 'unique:users,phone_number,' . $user->id],
+            'phone_number' => ['required', 'string', 'max:20', 'unique:users,phone_number,'.$user->id],
             'address' => 'required|string|max:500',
             'company_description' => 'nullable|string|max:2000',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
@@ -1385,7 +1409,7 @@ class ProfileController extends Controller
                 }
 
                 try {
-                    $admins = \App\Models\User::where('is_admin', true)->get();
+                    $admins = User::where('is_admin', true)->get();
                     foreach ($admins as $admin) {
                         \App\Models\Notification::create([
                             'user_id' => $admin->id,
@@ -1399,7 +1423,6 @@ class ProfileController extends Controller
                 } catch (\Throwable $__notifyEx) {
                     // best-effort
                 }
-
             } catch (\Throwable $e) {
                 Log::warning('Failed to remove business permit for user '.$user->id.': '.$e->getMessage());
             }
@@ -1423,7 +1446,7 @@ class ProfileController extends Controller
                     Log::info('Business permit upload attempt (no UploadedFile) - raw $_FILES', ['user_id' => $user->id, '_FILES' => $raw]);
                 }
             } catch (\Throwable $__uploadLogEx) {
-                Log::warning('Failed to log business_permit upload debug info: ' . $__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
+                Log::warning('Failed to log business_permit upload debug info: '.$__uploadLogEx->getMessage(), ['user_id' => $user->id ?? null]);
             }
 
             // Delete old business permit if exists
@@ -1499,14 +1522,14 @@ class ProfileController extends Controller
             if ($isDocumentValidationEnabled) {
                 $delay = config('ai.document_validation.business_permit.validation_delay_seconds', 10);
 
-                    \App\Jobs\ValidateBusinessPermitJob::dispatch(
-                        $user->id,
-                        $permitPath,
-                        [
-                            'company_name' => $user->company_name ?? 'Unknown',
-                            'email' => $user->email,
-                        ]
-                    )->delay(\Carbon\Carbon::now()->addSeconds($delay));
+                \App\Jobs\ValidateBusinessPermitJob::dispatch(
+                    $user->id,
+                    $permitPath,
+                    [
+                        'company_name' => $user->company_name ?? 'Unknown',
+                        'email' => $user->email,
+                    ]
+                )->delay(\Carbon\Carbon::now()->addSeconds($delay));
             } else {
                 // If AI validation is disabled or no queue worker, immediately create a pending review record
                 try {
@@ -1565,13 +1588,12 @@ class ProfileController extends Controller
                     // Best-effort: do not block profile update if this fails
                     Log::warning('Failed to create pending DocumentValidation: '.$e->getMessage());
                 }
-
             }
         }
 
         try {
             $user->save();
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // Handle unique constraint violation for phone_number
             if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
                 return back()->withErrors([
@@ -1643,6 +1665,78 @@ class ProfileController extends Controller
     }
 
     /**
+     * AJAX: Remove the authenticated employer's stored business permit immediately.
+     * Returns JSON success/failure.
+     */
+    public function removeBusinessPermit(Request $request)
+    {
+        $user = User::find(Auth::id());
+        if (!$user || ($user->user_type ?? null) !== 'employer') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            if ($user->business_permit_path && Storage::disk('public')->exists($user->business_permit_path)) {
+                Storage::disk('public')->delete($user->business_permit_path);
+            }
+
+            // Mark validations as removed for auditability
+            try {
+                \App\Models\DocumentValidation::where('user_id', $user->id)
+                    ->where('document_type', 'business_permit')
+                    ->update([
+                        'validation_status' => 'removed',
+                        'reason' => 'Employer removed uploaded permit',
+                        'validated_by' => 'system',
+                        'validated_at' => now(),
+                    ]);
+            } catch (\Throwable $__dvEx) {
+                Log::warning('Failed to update DocumentValidation during AJAX permit removal for user '.$user->id.': '.$__dvEx->getMessage());
+            }
+
+            $user->business_permit_path = null;
+            $user->save();
+
+            try {
+                \App\Models\AuditLog::create([
+                    'user_id' => $user->id,
+                    'event' => 'business_permit_removed',
+                    'title' => 'Business Permit Removed (AJAX)',
+                    'message' => "Employer {$user->email} removed their uploaded business permit via settings.",
+                    'data' => json_encode(['user_id' => $user->id, 'email' => $user->email]),
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ]);
+            } catch (\Throwable $__auditEx) {
+                // best-effort
+            }
+
+            // Notify admins (best-effort)
+            try {
+                $admins = User::where('is_admin', true)->get();
+                foreach ($admins as $admin) {
+                    \App\Models\Notification::create([
+                        'user_id' => $admin->id,
+                        'type' => 'info',
+                        'title' => 'Business Permit Removed',
+                        'message' => "Employer {$user->company_name} ({$user->email}) removed their uploaded business permit.",
+                        'read' => false,
+                        'data' => ['employer_id' => $user->id],
+                    ]);
+                }
+            } catch (\Throwable $__notifyEx) {
+                // best-effort
+            }
+
+            return response()->json(['success' => true, 'message' => 'Business permit removed.']);
+        } catch (\Throwable $e) {
+            Log::warning('AJAX permit removal failed for user '.$user->id.': '.$e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'Failed to remove business permit. Please try again.'], 500);
+        }
+    }
+
+    /**
      * Permanently delete the authenticated user's account and related data.
      * After deletion, logs out and redirects to login so a new account can be created.
      */
@@ -1661,17 +1755,17 @@ class ProfileController extends Controller
                     $jobIds = \App\Models\JobPosting::where('employer_id', $user->id)->pluck('id');
 
                     if ($jobIds->isNotEmpty()) {
-                        \App\Models\Application::whereIn('job_posting_id', $jobIds)->delete();
+                        Application::whereIn('job_posting_id', $jobIds)->delete();
                         \App\Models\ApplicationHistory::whereIn('job_posting_id', $jobIds)->delete();
                         \App\Models\JobPosting::whereIn('id', $jobIds)->delete();
                     }
 
                     // Applications referencing this employer directly
-                    \App\Models\Application::where('employer_id', $user->id)->delete();
+                    Application::where('employer_id', $user->id)->delete();
                     \App\Models\ApplicationHistory::where('employer_id', $user->id)->delete();
                 } else {
                     // Job seeker: delete their applications and history
-                    \App\Models\Application::where('user_id', $user->id)->delete();
+                    Application::where('user_id', $user->id)->delete();
                     \App\Models\ApplicationHistory::where('job_seeker_id', $user->id)->delete();
                 }
 
@@ -1830,34 +1924,99 @@ class ProfileController extends Controller
     }
 
     /**
+     * AJAX endpoint: upload a profile picture separately (used by some front-end flows).
+     */
+    public function uploadPhoto(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        if (!$request->hasFile('profile_picture')) {
+            return response()->json(['success' => false, 'message' => 'No file uploaded'], 422);
+        }
+
+        try {
+            // remove old picture if exists
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+
+            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $user->profile_picture = $path;
+            $user->save();
+
+            return response()->json(['success' => true, 'message' => 'Profile picture uploaded', 'profile_picture' => asset('storage/'.$path)]);
+        } catch (\Throwable $e) {
+            Log::error('uploadPhoto failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
+            return response()->json(['success' => false, 'message' => 'Failed to upload profile picture'], 500);
+        }
+    }
+
+    /**
+     * AJAX endpoint: remove profile picture separately.
+     */
+    public function removePhoto(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+
+            $user->profile_picture = null;
+            $user->save();
+
+            return response()->json(['success' => true, 'message' => 'Profile picture removed']);
+        } catch (\Throwable $e) {
+            Log::error('removePhoto failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
+            return response()->json(['success' => false, 'message' => 'Failed to remove profile picture'], 500);
+        }
+    }
+
+    /**
      * Normalize a Philippine phone number into an 11-digit local format starting with 0.
      * Examples:
      *  +639171234567 -> 09171234567
      *  639171234567  -> 09171234567
      *  9171234567    -> 09171234567
      *  09171234567   -> 09171234567
-     *  0947 497 4843 -> 09474974843
+     *  0947 497 4843 -> 09474974843.
      */
     protected function normalizePhilippinePhone(?string $raw): ?string
     {
-        if (empty($raw)) return null;
+        if (empty($raw)) {
+            return null;
+        }
         $s = preg_replace('/[^0-9]/', '', $raw);
-        if ($s === '') return null;
+        if ($s === '') {
+            return null;
+        }
         // Remove leading + if present (already removed by preg_replace)
         // If starts with '63' and length >= 11, convert to leading 0
         if (strpos($s, '63') === 0 && strlen($s) >= 11) {
             // drop country code 63, prefix 0
-            $s = '0' . substr($s, 2);
+            $s = '0'.substr($s, 2);
         }
         // If starts with country code '0' already OK
         if (strlen($s) === 10 && strpos($s, '9') === 0) {
             // local 10-digit without leading zero (e.g., 9171234567) -> add 0
-            $s = '0' . $s;
+            $s = '0'.$s;
         }
         // final sanity: if it's longer than 11, trim to last 11 digits
         if (strlen($s) > 11) {
             $s = substr($s, -11);
         }
+
         // if not 11 digits at this point, return as-is (validation will catch it)
         return $s;
     }

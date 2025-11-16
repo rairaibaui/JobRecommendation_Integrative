@@ -16,11 +16,11 @@ use App\Http\Controllers\EmployerHistoryController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\MyApplicationsController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\WorkHistoryController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PermitVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,18 +48,18 @@ use Illuminate\Support\Facades\URL as URLFacade;
 // Verification link: allow the signed URL to verify even when the user is not currently logged in.
 Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $hash) {
     // Validate that the URL signature is valid (protects against tampering and enforces expiry)
-    if (! URLFacade::hasValidSignature($request)) {
+    if (!URLFacade::hasValidSignature($request)) {
         // If the link is expired or invalid, handle based on whether the visitor
         // is currently authenticated. For unauthenticated requests we redirect
         // back to login with a generic error. If the recipient happens to be
         // authenticated (rare), show the friendly expired page that allows a
         // public resend flow without leaking account existence.
-        if (! $request->user()) {
+        if (!$request->user()) {
             return redirect()->route('login')->with('error', 'Invalid or expired verification link.');
         }
 
-        $user = \App\Models\User::find($id);
-        if ($user && ! $user->hasVerifiedEmail()) {
+        $user = App\Models\User::find($id);
+        if ($user && !$user->hasVerifiedEmail()) {
             return response()->view('auth.verify-expired', ['user' => $user]);
         }
 
@@ -68,8 +68,8 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
 
     // At this point the signed URL is valid and within its configured expiry window.
     // Find the user and verify the email hash matches
-    $user = \App\Models\User::find($id);
-    if (! $user) {
+    $user = App\Models\User::find($id);
+    if (!$user) {
         return redirect()->route('login')->with('error', 'Invalid verification link (user not found).');
     }
 
@@ -79,7 +79,7 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
     }
 
     // Mark as verified if not already
-    if (! $user->hasVerifiedEmail()) {
+    if (!$user->hasVerifiedEmail()) {
         $user->markEmailAsVerified();
     }
 
@@ -104,10 +104,9 @@ Route::get('/email/verify/{id}/{hash}', function (HttpRequest $request, $id, $ha
     return redirect()->route('login')
         ->with('success', 'Your email has been verified. You may now sign in.')
         ->with('post_verify_redirect', $postRedirect);
-
 })->name('verification.verify');
 
-Route::post('/email/resend', function (\Illuminate\Http\Request $request) {
+Route::post('/email/resend', function (HttpRequest $request) {
     try {
         if (!$request->user()) {
             if ($request->wantsJson()) {
@@ -125,9 +124,9 @@ Route::post('/email/resend', function (\Illuminate\Http\Request $request) {
         }
 
         return back()->with('success', 'Verification link sent to your email address.');
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         // Log the failure and show a friendly message without exposing internals
-        \Illuminate\Support\Facades\Log::error('Failed to resend verification email', ['user_id' => optional($request->user())->id, 'error' => $e->getMessage()]);
+        Illuminate\Support\Facades\Log::error('Failed to resend verification email', ['user_id' => optional($request->user())->id, 'error' => $e->getMessage()]);
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Unable to send verification email right now. Please try again later or contact support.'], 500);
         }
@@ -137,18 +136,18 @@ Route::post('/email/resend', function (\Illuminate\Http\Request $request) {
 })->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
 
 // Public resend endpoint for expired verification links (rate limited to prevent abuse)
-Route::post('/email/resend-public', function (\Illuminate\Http\Request $request) {
+Route::post('/email/resend-public', function (HttpRequest $request) {
     $request->validate([
         'user_id' => 'required|integer',
     ]);
 
     try {
-        $user = \App\Models\User::find($request->input('user_id'));
-        if ($user && ! $user->hasVerifiedEmail()) {
+        $user = App\Models\User::find($request->input('user_id'));
+        if ($user && !$user->hasVerifiedEmail()) {
             $user->sendEmailVerificationNotification();
         }
-    } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::error('Failed to resend verification email (public)', ['user_id' => $request->input('user_id'), 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        Illuminate\Support\Facades\Log::error('Failed to resend verification email (public)', ['user_id' => $request->input('user_id'), 'error' => $e->getMessage()]);
     }
 
     // Don't reveal whether the account exists; return back to the expired link page
@@ -248,11 +247,12 @@ Route::middleware('auth')->group(function () {
     Route::prefix('profile')->group(function () {
         Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
         Route::post('/update-employer', [ProfileController::class, 'updateEmployer'])->name('profile.updateEmployer');
+        Route::post('/employer/permit/remove', [ProfileController::class, 'removeBusinessPermit'])->name('employer.permit.remove');
         Route::get('/resume', [ProfileController::class, 'resume'])->name('profile.resume');
-    // Start email change flow: sends OTP to new email
-    Route::post('/change-email', [ProfileController::class, 'sendEmailOTP'])->middleware('throttle:6,1')->name('profile.changeEmail');
-    // Verify the OTP and complete email change
-    Route::post('/verify-email-otp', [ProfileController::class, 'verifyEmailOTP'])->middleware('throttle:6,1')->name('profile.verifyEmailOTP');
+        // Start email change flow: sends OTP to new email
+        Route::post('/change-email', [ProfileController::class, 'sendEmailOTP'])->middleware('throttle:6,1')->name('profile.changeEmail');
+        // Verify the OTP and complete email change
+        Route::post('/verify-email-otp', [ProfileController::class, 'verifyEmailOTP'])->middleware('throttle:6,1')->name('profile.verifyEmailOTP');
         Route::post('/change-phone', [ProfileController::class, 'changePhone'])->name('profile.changePhone');
         Route::post('/send-phone-otp', [ProfileController::class, 'sendPhoneOTP'])->name('profile.sendPhoneOTP');
         Route::post('/verify-phone-otp', [ProfileController::class, 'verifyPhoneOTP'])->name('profile.verifyPhoneOTP');
@@ -333,8 +333,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::delete('/notifications/bulk-delete', [App\Http\Controllers\Admin\NotificationController::class, 'bulkDelete'])->name('admin.notifications.bulkDelete');
 
     // Employer permit manual review
-    Route::get('/permits', [\App\Http\Controllers\AdminPermitController::class, 'index'])->name('admin.permits.index');
-    Route::get('/permits/{id}', [\App\Http\Controllers\AdminPermitController::class, 'show'])->name('admin.permits.show');
-    Route::post('/permits/{id}/approve', [\App\Http\Controllers\AdminPermitController::class, 'approve'])->name('admin.permits.approve');
-    Route::post('/permits/{id}/reject', [\App\Http\Controllers\AdminPermitController::class, 'reject'])->name('admin.permits.reject');
+    Route::get('/permits', [App\Http\Controllers\AdminPermitController::class, 'index'])->name('admin.permits.index');
+    Route::get('/permits/{id}', [App\Http\Controllers\AdminPermitController::class, 'show'])->name('admin.permits.show');
+    Route::post('/permits/{id}/approve', [App\Http\Controllers\AdminPermitController::class, 'approve'])->name('admin.permits.approve');
+    Route::post('/permits/{id}/reject', [App\Http\Controllers\AdminPermitController::class, 'reject'])->name('admin.permits.reject');
 });
