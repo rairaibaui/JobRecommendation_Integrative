@@ -709,21 +709,23 @@
 
   <!-- System-style Confirm Modal -->
   <div id="systemConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:12000; align-items:center; justify-content:center;">
-    <div style="background:#fff; max-width:560px; width:88%; padding:14px 16px; border-radius:12px; box-shadow:0 14px 48px rgba(2,6,23,0.18);">
+    <div style="background:#fff; max-width:720px; width:92%; padding:24px 28px; border-radius:16px; box-shadow:0 14px 48px rgba(2,6,23,0.18); position:relative;">
+      <button type="button" id="systemConfirmClose" style="position:absolute; top:18px; right:18px; background:transparent; border:none; font-size:24px; color:#999; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.1)'; this.style.color='#333';" onmouseout="this.style.background='transparent'; this.style.color='#999';">&times;</button>
+      
       <div style="display:block;">
-        <div style="display:flex; gap:14px; align-items:flex-start;">
-          <div style="flex-shrink:0; width:52px; height:52px; border-radius:10px; background:#eaf4ff; display:flex; align-items:center; justify-content:center;">
-            <i class="fas fa-exclamation-triangle" style="color:#1e63a8; font-size:18px;"></i>
+        <div style="display:flex; gap:16px; align-items:flex-start;">
+          <div style="flex-shrink:0; width:56px; height:56px; border-radius:12px; background:#eaf4ff; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-exclamation-triangle" style="color:#1e63a8; font-size:20px;"></i>
           </div>
           <div style="flex:1;">
-            <h4 id="systemConfirmTitle" style="margin:0; font-size:17px; font-weight:700; color:#1f2937;">Confirm</h4>
-            <div id="systemConfirmMessage" style="color:#4b5563; margin-top:8px; font-size:14px; line-height:1.4;"></div>
+            <h4 id="systemConfirmTitle" style="margin:0; font-size:18px; font-weight:700; color:#1f2937;">Confirm</h4>
+            <div id="systemConfirmMessage" style="color:#4b5563; margin-top:10px; font-size:15px; line-height:1.5;"></div>
           </div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:16px;">
-          <button id="systemConfirmCancel" class="btn btn-secondary" style="background:#f7fafc;border:1px solid #e6edf7;padding:8px 14px;color:#6b7280;border-radius:8px;">Cancel</button>
-          <button id="systemConfirmOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:8px 14px;color:#fff;border-radius:8px;">OK</button>
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
+          <button id="systemConfirmOk" class="btn btn-primary" style="background:#2b6cb0;border-color:#2b6cb0;padding:12px 18px;color:#fff;border-radius:8px; font-size:14px; font-weight:600;">OK</button>
+          <button id="systemConfirmCancel" class="btn btn-secondary" style="background:#f7fafc;border:1px solid #e6edf7;padding:12px 18px;color:#6b7280;border-radius:8px; font-size:14px; font-weight:600;">Cancel</button>
         </div>
       </div>
     </div>
@@ -907,6 +909,7 @@
       const m = document.getElementById('systemConfirmMessage');
       const ok = document.getElementById('systemConfirmOk');
       const cancel = document.getElementById('systemConfirmCancel');
+      const close = document.getElementById('systemConfirmClose');
       if (!modal || !ok || !cancel || !t || !m) {
         // fallback to native confirm
         resolve(confirm(message));
@@ -923,13 +926,16 @@
         modal.style.display = 'none';
         ok.removeEventListener('click', onOk);
         cancel.removeEventListener('click', onCancel);
+        if (close) close.removeEventListener('click', onClose);
       }
 
       function onOk() { cleanup(); resolve(true); }
       function onCancel() { cleanup(); resolve(false); }
+      function onClose() { cleanup(); resolve(false); }
 
       ok.addEventListener('click', onOk);
       cancel.addEventListener('click', onCancel);
+      if (close) close.addEventListener('click', onClose);
     });
   }
 
@@ -1140,7 +1146,7 @@
         // Hide the large delete account modal before showing the confirmation
         document.getElementById('deleteAccountModal').style.display = 'none';
 
-        const confirmed = await window.systemConfirm('Confirm Account Deletion', 'Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.', 'No', 'Yes');
+        const confirmed = await window.systemConfirm('Confirm Account Deletion', 'Are you absolutely sure? This action CANNOT be undone. All your data will be permanently deleted.', 'Yes', 'No');
         
         if (!confirmed) {
           // If user cancels, show the delete account modal again
