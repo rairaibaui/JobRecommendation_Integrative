@@ -1332,7 +1332,7 @@
                                     ];
                                 @endphp
                                 <tr data-validation-id="{{ $validation->id }}"
-                                    data-validation-data='@json($validationData)'
+                                    data-validation-data="{{ htmlspecialchars(json_encode($validationData), ENT_QUOTES, 'UTF-8') }}"
                                 >
                                     <td>
                                         <div class="company-info">
@@ -1413,7 +1413,7 @@
                                     <td>{{ $validation->created_at->diffForHumans() }}</td>
                                     <td>
                                         <div class="actions">
-                                            <button onclick="openDetailModal({{ $validation->id }})" class="btn btn-view">
+                                            <button onclick='openDetailModal({{ json_encode($validation->id) }})' class="btn btn-view" title="{{ route('admin.verifications.file', $validation->id) }}">
                                                 <i class="fas fa-eye"></i>
                                                 View
                                             </button>
@@ -1430,21 +1430,26 @@
                                                 </button>
                                             @else
                                                 @if($isDuplicate)
-                                                    <button onclick="openApproveModal({{ $validation->id }}, '{{ addslashes($validation->user->company_name ?? 'N/A') }}')" class="btn btn-approve">
+                                                    <button 
+                                                        data-validation-id="{{ $validation->id }}" 
+                                                        data-company-name="{{ htmlspecialchars($validation->user->company_name ?? 'N/A', ENT_QUOTES, 'UTF-8') }}"
+                                                        onclick="openApproveModal(this)" 
+                                                        class="btn btn-approve" 
+                                                        title="{{ route('admin.verifications.approve', $validation->id) }}">
                                                         <i class="fas fa-check"></i>
                                                         Approve
                                                     </button>
                                                 @else
-                                                    <form method="POST" action="{{ route('admin.verifications.approve', $validation->id) }}" style="display: inline;">
+                                                    <form method="POST" action="{{ route('admin.verifications.approve', $validation->id) }}" style="display: inline;" onsubmit="return confirm('Approve this business permit?')">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-approve" onclick="return confirm('Approve this business permit?')">
+                                                        <button type="submit" class="btn btn-approve" title="{{ route('admin.verifications.approve', $validation->id) }}">
                                                             <i class="fas fa-check"></i>
                                                             Approve
                                                         </button>
                                                     </form>
                                                 @endif
                                             @endif
-                                            <button onclick="openRejectModal({{ $validation->id }})" class="btn btn-reject">
+                                            <button onclick='openRejectModal({{ json_encode($validation->id) }})' class="btn btn-reject" title="{{ route('admin.verifications.reject', $validation->id) }}">
                                                 <i class="fas fa-times"></i>
                                                 Reject
                                             </button>
@@ -1536,7 +1541,7 @@
                 <i class="fas fa-times-circle"></i>
                 <h3>Reject Business Permit</h3>
             </div>
-            <form id="rejectForm" method="POST">
+            <form id="rejectForm" method="POST" onsubmit="return handleRejectSubmit(event)">
                 @csrf
                 <div class="form-group">
                     <label>Reason for Rejection:</label>
@@ -1557,7 +1562,7 @@
                 <i class="fas fa-exclamation-triangle"></i>
                 <h3>Approve Duplicate Permit</h3>
             </div>
-            <form id="approveForm" method="POST">
+            <form id="approveForm" method="POST" onsubmit="return handleApproveSubmit(event)">
                 @csrf
                 <div class="duplicate-warning">
                     <i class="fas fa-info-circle"></i>
@@ -1688,39 +1693,261 @@
              </div>
          </div>
      </div>    <script>
+        // Store current verification ID for form submission
+        let currentRejectId = null;
+        let currentApproveId = null;
+
         function openRejectModal(id) {
+            console.log('Opening reject modal for ID:', id);
+            currentRejectId = id;
             const modal = document.getElementById('rejectModal');
             const form = document.getElementById('rejectForm');
-            form.action = `/admin/verifications/${id}/reject`;
+            
+            if (!modal) {
+                console.error('Reject modal not found!');
+                alert('Error: Modal not found. Please refresh the page.');
+                return;
+            }
+            
+            if (!form) {
+                console.error('Reject form not found!');
+                alert('Error: Form not found. Please refresh the page.');
+                return;
+            }
+            
+            // Clear any previous action and form data
+            form.action = '';
+            form.reset();
             modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            console.log('Reject modal opened successfully');
         }
 
         function closeRejectModal() {
-            document.getElementById('rejectModal').style.display = 'none';
+            const m = document.getElementById('rejectModal');
+            if (m) m.style.display = 'none';
+            document.body.style.overflow = '';
+            currentRejectId = null;
+            // Clear form
+            const form = document.getElementById('rejectForm');
+            if (form) {
+                form.reset();
+                form.action = '';
+            }
         }
 
-        function openApproveModal(id, companyName) {
+        function handleRejectSubmit(event) {
+            console.log('handleRejectSubmit called, currentRejectId:', currentRejectId);
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (!currentRejectId) {
+                console.error('No currentRejectId set');
+                alert('Error: Validation ID not set. Please try again.');
+                return false;
+            }
+            
+            const form = document.getElementById('rejectForm');
+            if (!form) {
+                console.error('Reject form not found in handleRejectSubmit');
+                alert('Error: Form not found. Please refresh the page and try again.');
+                return false;
+            }
+            
+            const rejectionReason = form.querySelector('textarea[name="rejection_reason"]');
+            if (!rejectionReason) {
+                console.error('Rejection reason textarea not found');
+                alert('Error: Form field not found. Please refresh the page.');
+                return false;
+            }
+            
+            const reasonValue = rejectionReason.value.trim();
+            
+            if (!reasonValue) {
+                alert('Please provide a reason for rejection.');
+                return false;
+            }
+            
+            // Set form action
+            const base = '{{ url('/admin/verifications') }}';
+            const actionUrl = `${base}/${currentRejectId}/reject`;
+            form.action = actionUrl;
+            form.method = 'POST';
+            console.log('Setting form action to:', actionUrl);
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+            }
+            
+            // Restore body overflow before submission
+            document.body.style.overflow = '';
+            
+            // Submit the form (page will reload after submission)
+            console.log('Submitting reject form...');
+            try {
+                form.submit();
+            } catch (error) {
+                console.error('Form submission error:', error);
+                alert('An error occurred while submitting the form. Please try again.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Reject Permit';
+                }
+                // Restore modal if submission failed
+                document.body.style.overflow = 'hidden';
+            }
+            
+            return false;
+        }
+
+        function openApproveModal(buttonElement) {
+            // Extract data from the button's data attributes
+            const id = buttonElement.dataset.validationId;
+            const companyName = buttonElement.dataset.companyName;
+            
+            console.log('Opening approve modal for ID:', id, 'Company:', companyName);
+            currentApproveId = id;
             const modal = document.getElementById('approveModal');
             const form = document.getElementById('approveForm');
             const companyDisplay = document.getElementById('duplicateCompanyName');
             
-            form.action = `/admin/verifications/${id}/approve`;
-            companyDisplay.textContent = companyName;
+            if (!modal) {
+                console.error('Approve modal not found!');
+                alert('Error: Modal not found. Please refresh the page.');
+                return;
+            }
+            
+            if (!form) {
+                console.error('Approve form not found!');
+                alert('Error: Form not found. Please refresh the page.');
+                return;
+            }
+            
+            if (!companyDisplay) {
+                console.error('Company name display element not found!');
+            }
+            
+            // Clear any previous action and form data
+            form.action = '';
+            form.reset();
+            if (companyDisplay) {
+                companyDisplay.textContent = companyName || 'N/A';
+            }
             modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            console.log('Approve modal opened successfully');
         }
 
         function closeApproveModal() {
-            document.getElementById('approveModal').style.display = 'none';
+            const m = document.getElementById('approveModal');
+            if (m) m.style.display = 'none';
+            document.body.style.overflow = '';
+            currentApproveId = null;
+            // Clear form
+            const form = document.getElementById('approveForm');
+            if (form) {
+                form.reset();
+                form.action = '';
+            }
+        }
+
+        function handleApproveSubmit(event) {
+            console.log('handleApproveSubmit called, currentApproveId:', currentApproveId);
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (!currentApproveId) {
+                console.error('No currentApproveId set');
+                alert('Error: Validation ID not set. Please try again.');
+                return false;
+            }
+            
+            const form = document.getElementById('approveForm');
+            if (!form) {
+                console.error('Approve form not found in handleApproveSubmit');
+                alert('Error: Form not found. Please refresh the page and try again.');
+                return false;
+            }
+            
+            const overrideCheckbox = form.querySelector('input[name="override_duplicate"]');
+            const adminNotesField = form.querySelector('textarea[name="admin_notes"]');
+            
+            if (!overrideCheckbox) {
+                console.error('Override checkbox not found');
+                alert('Error: Form field not found. Please refresh the page.');
+                return false;
+            }
+            
+            if (!adminNotesField) {
+                console.error('Admin notes textarea not found');
+                alert('Error: Form field not found. Please refresh the page.');
+                return false;
+            }
+            
+            const adminNotes = adminNotesField.value.trim();
+            
+            if (!overrideCheckbox.checked) {
+                alert('Please confirm that you want to override the duplicate detection.');
+                return false;
+            }
+            
+            if (!adminNotes) {
+                alert('Please provide admin notes explaining why you are approving this duplicate permit.');
+                return false;
+            }
+            
+            // Set form action
+            const base = '{{ url('/admin/verifications') }}';
+            const actionUrl = `${base}/${currentApproveId}/approve`;
+            form.action = actionUrl;
+            form.method = 'POST';
+            console.log('Setting form action to:', actionUrl);
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+            }
+            
+            // Restore body overflow before submission
+            document.body.style.overflow = '';
+            
+            // Submit the form (page will reload after submission)
+            console.log('Submitting approve form...');
+            try {
+                form.submit();
+            } catch (error) {
+                console.error('Form submission error:', error);
+                alert('An error occurred while submitting the form. Please try again.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Approve with Override';
+                }
+                // Restore modal if submission failed
+                document.body.style.overflow = 'hidden';
+            }
+            
+            return false;
         }
 
         function openExpiryAlertsModal() {
             const modal = document.getElementById('expiryAlertsModal');
-            if (modal) modal.style.display = 'flex';
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         function closeExpiryAlertsModal() {
             const modal = document.getElementById('expiryAlertsModal');
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
         }
 
         async function markAllAdminNotificationsRead() {
@@ -1766,8 +1993,14 @@
             }
             
             try {
-                const dataAttr = row.getAttribute('data-validation-data');
-                console.log('Data attribute:', dataAttr);
+                let dataAttr = row.getAttribute('data-validation-data');
+                console.log('Data attribute (raw):', dataAttr);
+                
+                // The data is HTML-escaped, so we need to decode HTML entities
+                const textarea = document.createElement('textarea');
+                textarea.innerHTML = dataAttr;
+                dataAttr = textarea.value;
+                
                 const data = JSON.parse(dataAttr);
                 console.log('Parsed data:', data);
                 const ai = data.ai_analysis || {};
@@ -1924,29 +2157,44 @@
         }
 
         function closeDetailModal() {
-            document.getElementById('detailModal').style.display = 'none';
+            const modal = document.getElementById('detailModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
         }
 
-        // Close modals when clicking outside
+        // Close modals when clicking outside (on backdrop only)
         window.onclick = function(event) {
             const rejectModal = document.getElementById('rejectModal');
             const approveModal = document.getElementById('approveModal');
             const detailModal = document.getElementById('detailModal');
+            const expiryModal = document.getElementById('expiryAlertsModal');
             
+            // Only close if clicking directly on the modal backdrop, not on modal content
             if (event.target === rejectModal) {
-                rejectModal.style.display = 'none';
+                closeRejectModal();
             }
             if (event.target === approveModal) {
-                approveModal.style.display = 'none';
+                closeApproveModal();
             }
             if (event.target === detailModal) {
-                detailModal.style.display = 'none';
+                closeDetailModal();
             }
-            const expiryModal = document.getElementById('expiryAlertsModal');
             if (event.target === expiryModal) {
-                expiryModal.style.display = 'none';
+                closeExpiryAlertsModal();
             }
         }
+        
+        // Prevent modal content clicks from closing the modal
+        document.addEventListener('click', function(event) {
+            const modalContents = document.querySelectorAll('.modal-content');
+            modalContents.forEach(function(content) {
+                if (content.contains(event.target)) {
+                    event.stopPropagation();
+                }
+            });
+        });
 
         // Auto-hide success messages
         setTimeout(() => {
@@ -1966,3 +2214,4 @@
     </script>
 </body>
 </html>
+

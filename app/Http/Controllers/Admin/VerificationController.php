@@ -37,12 +37,27 @@ class VerificationController extends Controller
             'rejected' => User::where('user_type', 'job_seeker')->where('resume_verification_status', 'rejected')->count(),
         ];
 
-        // Permit statistics
+        // Permit statistics (count one latest permit per user so numbers reflect employees who have submitted)
+        $latestPermitIdsSubquery = function ($subquery) {
+            $subquery->selectRaw('MAX(id)')
+                ->from('document_validations')
+                ->where('document_type', 'business_permit')
+                ->groupBy('user_id');
+        };
+
+        $permitBase = DocumentValidation::where('document_type', 'business_permit')
+            ->whereIn('id', function ($q) {
+                $q->selectRaw('MAX(id)')
+                    ->from('document_validations')
+                    ->where('document_type', 'business_permit')
+                    ->groupBy('user_id');
+            });
+
         $permitStats = [
-            'total' => DocumentValidation::where('document_type', 'business_permit')->count(),
-            'approved' => DocumentValidation::where('document_type', 'business_permit')->where('validation_status', 'approved')->count(),
-            'pending' => DocumentValidation::where('document_type', 'business_permit')->where('validation_status', 'pending_review')->count(),
-            'rejected' => DocumentValidation::where('document_type', 'business_permit')->where('validation_status', 'rejected')->count(),
+            'total' => (clone $permitBase)->count(),
+            'approved' => (clone $permitBase)->where('validation_status', 'approved')->count(),
+            'pending' => (clone $permitBase)->where('validation_status', 'pending_review')->count(),
+            'rejected' => (clone $permitBase)->where('validation_status', 'rejected')->count(),
         ];
 
         // Fetch items based on active tab
@@ -162,20 +177,24 @@ class VerificationController extends Controller
 
         $pendingVerifications = $query->orderBy('created_at', 'desc')->get();
 
-        // Statistics
-        $approvedCount = DocumentValidation::where('document_type', 'business_permit')
-            ->where('validation_status', 'approved')->count();
-        $rejectedCount = DocumentValidation::where('document_type', 'business_permit')
-            ->where('validation_status', 'rejected')->count();
-        $pendingCount = DocumentValidation::where('document_type', 'business_permit')
-            ->where('validation_status', 'pending_review')->count();
-        $aiProcessedCount = DocumentValidation::where('document_type', 'business_permit')
-            ->where('validated_by', 'ai')->count();
-        $expiringSoonCount = DocumentValidation::where('document_type', 'business_permit')
+        // Statistics (count latest permit per user so numbers reflect employees who have submitted)
+        $permitBase = DocumentValidation::where('document_type', 'business_permit')
+            ->whereIn('id', function ($q) {
+                $q->selectRaw('MAX(id)')
+                    ->from('document_validations')
+                    ->where('document_type', 'business_permit')
+                    ->groupBy('user_id');
+            });
+
+        $approvedCount = (clone $permitBase)->where('validation_status', 'approved')->count();
+        $rejectedCount = (clone $permitBase)->where('validation_status', 'rejected')->count();
+        $pendingCount = (clone $permitBase)->where('validation_status', 'pending_review')->count();
+        $aiProcessedCount = (clone $permitBase)->where('validated_by', 'ai')->count();
+        $expiringSoonCount = (clone $permitBase)
             ->whereNotNull('permit_expiry_date')
             ->whereBetween('permit_expiry_date', [now()->startOfDay(), now()->addDays(30)->endOfDay()])
             ->count();
-        $expiredCount = DocumentValidation::where('document_type', 'business_permit')
+        $expiredCount = (clone $permitBase)
             ->whereNotNull('permit_expiry_date')
             ->where('permit_expiry_date', '<', now()->startOfDay())
             ->count();
